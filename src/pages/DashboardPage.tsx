@@ -1,7 +1,9 @@
 import { Badge, Card, CardContent, KpiCard, PageContainer, SectionHeader, Skeleton, useUserProfile } from '@foroba/ui';
 import { AllocationPie } from '../components/AllocationPie';
+import { FinanceTipsCard } from '../components/FinanceTipsCard';
 import { NetWorthChart } from '../components/NetWorthChart';
 import { ServiceStatusBar } from '../components/ServiceStatusBar';
+import { StreaksWidget } from '../components/StreaksWidget';
 import { useNetWorth } from '../hooks/useNetWorth';
 
 function greeting(name: string): string {
@@ -91,6 +93,12 @@ export function DashboardPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Goal streaks */}
+      <StreaksWidget />
+
+      {/* Daily finance tip */}
+      <FinanceTipsCard />
     </PageContainer>
   );
 }

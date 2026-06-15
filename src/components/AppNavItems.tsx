@@ -6,6 +6,7 @@ import {
   LayoutDashboard,
   Scale,
   Settings,
+  Target,
   User,
   Wallet,
 } from 'lucide-react';
@@ -15,6 +16,7 @@ export const APP_NAV_ITEMS: NavItem[] = [
   { label: 'Dashboard', href: '/', icon: LayoutDashboard },
   { label: 'Accounts', href: '/accounts', icon: Wallet },
   { label: 'Portfolio', href: '/portfolio', icon: BarChart3 },
+  { label: 'Goals', href: '/goals', icon: Target },
   { label: 'Profile', href: '/profile', icon: User },
   { label: 'Household', href: '/household', icon: Home },
   { label: 'Settings', href: '/settings', icon: Settings },

@@ -11,6 +11,7 @@ const AppSettingsPage   = lazy(() => import('./pages/AppSettingsPage').then(m =>
 const AppOnboardingPage = lazy(() => import('./pages/AppOnboardingPage').then(m => ({ default: m.AppOnboardingPage })));
 const ProfilePage       = lazy(() => import('./pages/ProfilePage').then(m => ({ default: m.ProfilePage })));
 const HouseholdPage     = lazy(() => import('./pages/HouseholdPage').then(m => ({ default: m.HouseholdPage })));
+const GoalsPage         = lazy(() => import('./pages/GoalsPage').then(m => ({ default: m.GoalsPage })));
 
 const Loading = () => (
   <div className="flex h-full items-center justify-center py-20">
@@ -33,6 +34,7 @@ export const router = createBrowserRouter([
       { path: 'settings',  element: <Suspense fallback={<Loading />}><AppSettingsPage /></Suspense> },
       { path: 'profile',   element: <Suspense fallback={<Loading />}><ProfilePage /></Suspense> },
       { path: 'household', element: <Suspense fallback={<Loading />}><HouseholdPage /></Suspense> },
+      { path: 'goals',     element: <Suspense fallback={<Loading />}><GoalsPage /></Suspense> },
       { path: 'help',      element: <HelpPage gitlabIssueUrl="https://gitlab.com/bambac961/foroba/-/issues" /> },
       { path: 'legal',    element: <LegalPage /> },
       { path: 'about',    element: <AboutPage appName="Foroba" version={__APP_VERSION__} /> },
