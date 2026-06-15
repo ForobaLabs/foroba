@@ -22,6 +22,10 @@ export default defineConfig(({ mode }) => {
           changeOrigin: true,
           rewrite: (p) => p.replace('/tsumi-api', ''),
         },
+        '/jeli': {
+          target: env.VITE_JELI_API_URL ?? 'http://localhost:8002',
+          changeOrigin: true,
+        },
       },
     },
   };
