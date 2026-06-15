@@ -7,6 +7,13 @@ import i18n from './i18n';
 import { router } from './router';
 import './global.css';
 
+// Register PWA service worker in production
+if ('serviceWorker' in navigator && import.meta.env.PROD) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {/* silent */});
+  });
+}
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
