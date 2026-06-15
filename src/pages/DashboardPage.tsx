@@ -1,8 +1,14 @@
-import { Badge, Card, CardContent, KpiCard, PageContainer, SectionHeader, Skeleton } from '@foroba/ui';
+import { Badge, Card, CardContent, KpiCard, PageContainer, SectionHeader, Skeleton, useUserProfile } from '@foroba/ui';
 import { AllocationPie } from '../components/AllocationPie';
 import { NetWorthChart } from '../components/NetWorthChart';
 import { ServiceStatusBar } from '../components/ServiceStatusBar';
 import { useNetWorth } from '../hooks/useNetWorth';
+
+function greeting(name: string): string {
+  const hour = new Date().getHours();
+  const salut = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+  return name ? `${salut}, ${name}` : salut;
+}
 
 function fmt(value: number) {
   return value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -10,10 +16,15 @@ function fmt(value: number) {
 
 export function DashboardPage() {
   const { data, isLoading, error } = useNetWorth();
+  const { profile } = useUserProfile();
 
   return (
     <PageContainer>
-      <SectionHeader title="Net Worth" className="mb-4" />
+      <SectionHeader
+        title={greeting(profile.name)}
+        description="Here's your financial overview"
+        className="mb-4"
+      />
 
       <ServiceStatusBar />
 

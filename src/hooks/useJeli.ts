@@ -19,7 +19,7 @@ function loadPersonality(): JeliPersonality {
   return { tone: 5, expertise: 5 };
 }
 
-export function useJeli() {
+export function useJeli(userName?: string) {
   const [messages, setMessages] = useState<JeliMessage[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -33,7 +33,6 @@ export function useJeli() {
 
   const sendMessage = useCallback(async (text: string) => {
     if (isStreaming || !text.trim()) return;
-
     setError(null);
     const userMsg: JeliMessage = { role: 'user', content: text.trim(), timestamp: new Date() };
     setMessages((prev) => [...prev, userMsg]);
@@ -50,6 +49,7 @@ export function useJeli() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: text.trim(),
+          user_name: userName || 'User',
           personality,
         }),
         signal: abortRef.current.signal,
@@ -93,7 +93,7 @@ export function useJeli() {
       setIsStreaming(false);
       abortRef.current = null;
     }
-  }, [isStreaming, personality]);
+  }, [isStreaming, personality, userName]);
 
   const clearMessages = useCallback(() => setMessages([]), []);
 

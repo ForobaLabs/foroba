@@ -4,10 +4,11 @@ import { useJeli } from '../hooks/useJeli';
 interface JeliPanelProps {
   open: boolean;
   onClose: () => void;
+  userName?: string;
 }
 
-export function JeliPanel({ open, onClose }: JeliPanelProps) {
-  const { messages, isStreaming, error, sendMessage, clearMessages, stopStreaming } = useJeli();
+export function JeliPanel({ open, onClose, userName }: JeliPanelProps) {
+  const { messages, isStreaming, error, sendMessage, clearMessages, stopStreaming } = useJeli(userName);
   const [input, setInput] = useState('');
   const bottomRef = useRef<HTMLDivElement>(null);
 

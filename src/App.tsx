@@ -1,4 +1,4 @@
-import { AppShell, Footer, Sidebar, Topbar, useTheme } from '@foroba/ui';
+import { AppShell, Footer, Sidebar, Topbar, useTheme, useUserProfile } from '@foroba/ui';
 import { useState } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { APP_NAV_ITEMS } from './components/AppNavItems';
@@ -9,6 +9,8 @@ export function App() {
   const location = useLocation();
   const navigate = useNavigate();
   const [jeliOpen, setJeliOpen] = useState(false);
+  const { profile } = useUserProfile();
+  const initials = profile.name ? profile.name.slice(0, 2).toUpperCase() : '?';
 
   return (
     <>
@@ -36,22 +38,46 @@ export function App() {
               },
             ]}
             actions={
-              <button
-                onClick={() => setJeliOpen((o) => !o)}
-                style={{
-                  padding: '6px 14px',
-                  borderRadius: '8px',
-                  border: '1px solid var(--color-accent)',
-                  backgroundColor: jeliOpen ? 'var(--color-accent)' : 'transparent',
-                  color: jeliOpen ? '#fff' : 'var(--color-accent)',
-                  fontSize: '13px',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  transition: 'all 0.15s',
-                }}
-              >
-                🌿 Jeli
-              </button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                {/* Profile avatar — links to /profile */}
+                <button
+                  onClick={() => navigate('/profile')}
+                  title={profile.name || 'Profile'}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: '32px',
+                    height: '32px',
+                    borderRadius: '50%',
+                    background: 'var(--color-accent)',
+                    color: '#fff',
+                    fontSize: '12px',
+                    fontWeight: 700,
+                    border: 'none',
+                    cursor: 'pointer',
+                  }}
+                >
+                  {initials}
+                </button>
+
+                <button
+                  onClick={() => setJeliOpen((o) => !o)}
+                  style={{
+                    padding: '6px 14px',
+                    borderRadius: '8px',
+                    border: '1px solid var(--color-accent)',
+                    backgroundColor: jeliOpen ? 'var(--color-accent)' : 'transparent',
+                    color: jeliOpen ? '#fff' : 'var(--color-accent)',
+                    fontSize: '13px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    transition: 'all 0.15s',
+                  }}
+                >
+                  🌿 Jeli
+                </button>
+              </div>
             }
           />
         }
@@ -59,7 +85,7 @@ export function App() {
       >
         <Outlet />
       </AppShell>
-      <JeliPanel open={jeliOpen} onClose={() => setJeliOpen(false)} />
+      <JeliPanel open={jeliOpen} onClose={() => setJeliOpen(false)} userName={profile.name || undefined} />
     </>
   );
 }
