@@ -1,12 +1,15 @@
+import { useEffect } from 'react';
 import { ProfileEditor, useUserProfile, PageContainer, SectionHeader, FinanceLevelBadge } from '@foroba/ui';
 
 export function ProfilePage() {
   const { profile, updateProfile } = useUserProfile();
 
-  // Auto-generate ID on first visit
-  if (!profile.id && typeof crypto !== 'undefined') {
-    updateProfile({ id: crypto.randomUUID() });
-  }
+  // Auto-generate ID on first visit — must be in useEffect, never in render
+  useEffect(() => {
+    if (!profile.id) {
+      updateProfile({ id: crypto.randomUUID() });
+    }
+  }, [profile.id, updateProfile]);
 
   return (
     <PageContainer>
