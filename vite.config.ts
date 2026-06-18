@@ -10,7 +10,7 @@ export default defineConfig(({ mode }) => {
       __APP_VERSION__: JSON.stringify(process.env.npm_package_version ?? '0.1.0'),
     },
     server: {
-      port: 5173,
+      port: 5175,
       proxy: {
         '/pazuru-api': {
           target: env.VITE_PAZURU_API_URL ?? 'http://localhost:8001',

@@ -37,7 +37,7 @@ export function App() {
                   'Dashboard',
               },
             ]}
-            actions={
+            right={
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 {/* Profile avatar — links to /profile */}
                 <button
