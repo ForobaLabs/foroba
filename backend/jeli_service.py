@@ -110,7 +110,7 @@ async def stream_chat(system_prompt: str, message: str) -> AsyncIterator[str]:
         ],
         "stream": True,
     }
-    async with httpx.AsyncClient(timeout=None) as client:
+    async with httpx.AsyncClient(timeout=httpx.Timeout(connect=10.0, read=300.0, write=30.0, pool=5.0)) as client:
         async with client.stream(
             "POST",
             f"{settings.ollama_base_url}/api/chat",
