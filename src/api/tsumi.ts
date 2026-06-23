@@ -26,7 +26,8 @@ export async function fetchTsumiSummary(): Promise<TsumiSummary | null> {
   try {
     const res = await fetch(`${BASE}/api/portfolio/summary`, { signal: AbortSignal.timeout(5000) });
     if (!res.ok) return null;
-    return (await res.json()) as TsumiSummary;
+    const data = (await res.json()) as { total_eur: number };
+    return { totalValueEur: data.total_eur ?? 0 };
   } catch {
     return null;
   }

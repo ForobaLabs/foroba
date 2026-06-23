@@ -25,9 +25,10 @@ export async function fetchPazuruHealth(): Promise<PazuruHealth> {
 
 export async function fetchPazuruSummary(): Promise<PazuruSummary | null> {
   try {
-    const res = await fetch(`${BASE}/api/accounts/summary`, { signal: AbortSignal.timeout(5000) });
+    const res = await fetch(`${BASE}/api/analytics/summary`, { signal: AbortSignal.timeout(5000) });
     if (!res.ok) return null;
-    return (await res.json()) as PazuruSummary;
+    const data = (await res.json()) as { total_balance_cents: number };
+    return { totalBalance: (data.total_balance_cents ?? 0) / 100, currency: 'EUR' };
   } catch {
     return null;
   }

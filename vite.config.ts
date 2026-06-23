@@ -13,12 +13,12 @@ export default defineConfig(({ mode }) => {
       port: 5175,
       proxy: {
         '/pazuru-api': {
-          target: env.VITE_PAZURU_API_URL ?? 'http://localhost:8001',
+          target: env.VITE_PAZURU_API_URL ?? 'http://localhost:8000',
           changeOrigin: true,
           rewrite: (p) => p.replace('/pazuru-api', ''),
         },
         '/tsumi-api': {
-          target: env.VITE_TSUMI_API_URL ?? 'http://localhost:8000',
+          target: env.VITE_TSUMI_API_URL ?? 'http://localhost:8050',
           changeOrigin: true,
           rewrite: (p) => p.replace('/tsumi-api', ''),
         },
