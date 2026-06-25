@@ -15,7 +15,8 @@ def test_create_token_includes_claims():
     assert claims["is_admin"] is True
 
 def test_create_token_default_claims():
-    token = create_token(1, SECRET, 60, tier="free", audience="base", is_admin=False)
+    """No kwargs — verifies signature defaults are tier=free, audience=base, is_admin=False."""
+    token = create_token(1, SECRET, 60)
     claims = decode_token(token, SECRET)
     assert claims["tier"] == "free"
     assert claims["audience"] == "base"
