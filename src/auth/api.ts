@@ -6,6 +6,7 @@ export interface SessionUser {
   audience: "base" | "expert";
   audience_locked: boolean;
   totp_enabled: boolean;
+  is_admin: boolean;
 }
 
 const opts: RequestInit = { credentials: "include" };

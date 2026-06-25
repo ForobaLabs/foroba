@@ -1,14 +1,17 @@
 import { AppShell, Footer, Sidebar, Spinner, Topbar, useTheme, useUserProfile } from '@foroba/ui';
 import { useState } from 'react';
 import { Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { APP_NAV_ITEMS } from './components/AppNavItems';
+import { getNavItems } from './components/AppNavItems';
 import { JeliPanel } from './components/JeliPanel';
 import { useAuth } from './auth/AuthProvider';
 
 export function App() {
   useTheme(); // Applies dark/light class on mount
   const location = useLocation();
+  const navigate = useNavigate();
   const { user, loading } = useAuth();
+  const [jeliOpen, setJeliOpen] = useState(false);
+  const { profile } = useUserProfile();
 
   if (loading) {
     return (
@@ -21,17 +24,21 @@ export function App() {
   if (!user) {
     return <Navigate to="/login" replace state={{ from: location }} />;
   }
-  const navigate = useNavigate();
-  const [jeliOpen, setJeliOpen] = useState(false);
-  const { profile } = useUserProfile();
+
+  // Admin route guard: non-admin users attempting to access /admin are redirected to /
+  if (location.pathname.startsWith('/admin') && !user.is_admin) {
+    return <Navigate to="/" replace />;
+  }
+
   const initials = profile.name ? profile.name.slice(0, 2).toUpperCase() : '?';
+  const navItems = getNavItems(user);
 
   return (
     <>
       <AppShell
         sidebar={
           <Sidebar
-            navItems={APP_NAV_ITEMS}
+            navItems={navItems}
             activePath={location.pathname}
             onNavigate={(href) => navigate(href)}
             logo={
@@ -47,7 +54,7 @@ export function App() {
               { label: 'Foroba', href: '/' },
               {
                 label:
-                  APP_NAV_ITEMS.find((n) => n.href === location.pathname)?.label ??
+                  navItems.find((n) => n.href === location.pathname)?.label ??
                   'Dashboard',
               },
             ]}
@@ -89,7 +96,7 @@ export function App() {
                     transition: 'all 0.15s',
                   }}
                 >
-                  🌿 Jeli
+                  Jeli
                 </button>
               </div>
             }

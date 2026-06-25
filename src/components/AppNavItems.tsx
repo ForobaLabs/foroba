@@ -6,11 +6,13 @@ import {
   LayoutDashboard,
   Scale,
   Settings,
+  ShieldCheck,
   Target,
   User,
   Wallet,
 } from 'lucide-react';
 import type { NavItem } from '@foroba/ui';
+import type { SessionUser } from '../auth/api';
 
 export const APP_NAV_ITEMS: NavItem[] = [
   { label: 'Dashboard', href: '/', icon: LayoutDashboard },
@@ -24,3 +26,10 @@ export const APP_NAV_ITEMS: NavItem[] = [
   { label: 'Legal', href: '/legal', icon: Scale },
   { label: 'About', href: '/about', icon: Info },
 ];
+
+export function getNavItems(user: SessionUser | null): NavItem[] {
+  if (user?.is_admin) {
+    return [...APP_NAV_ITEMS, { label: 'Admin', href: '/admin', icon: ShieldCheck }];
+  }
+  return APP_NAV_ITEMS;
+}
