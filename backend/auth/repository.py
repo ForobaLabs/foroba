@@ -28,3 +28,12 @@ def get_user_by_email(conn: sqlite3.Connection, email: str) -> dict | None:
 def get_user_by_id(conn: sqlite3.Connection, user_id: int) -> dict | None:
     row = conn.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
     return _row_to_dict(row)
+
+
+def set_audience(conn: sqlite3.Connection, user_id: int, audience: str,
+                 *, locked: bool) -> None:
+    conn.execute(
+        "UPDATE users SET audience = ?, audience_locked = ? WHERE id = ?",
+        (audience, 1 if locked else 0, user_id),
+    )
+    conn.commit()

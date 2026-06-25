@@ -37,6 +37,17 @@ def test_get_missing_returns_none(conn):
     assert repo.get_user_by_id(conn, 999) is None
 
 
+from auth import repository as repo
+
+
+def test_set_audience_locks(conn):
+    u = repo.create_user(conn, email="m@n.com", name="M", password_hash="h")
+    repo.set_audience(conn, u["id"], "expert", locked=True)
+    updated = repo.get_user_by_id(conn, u["id"])
+    assert updated["audience"] == "expert"
+    assert updated["audience_locked"] == 1
+
+
 from db import seed_mock_users
 
 
