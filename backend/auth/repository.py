@@ -40,5 +40,10 @@ def set_audience(conn: sqlite3.Connection, user_id: int, audience: str,
 
 
 def list_all_users(conn: sqlite3.Connection) -> list[dict]:
+    """Return all users as dicts (includes password_hash/totp_secret).
+
+    Callers MUST enforce response_model=UserPublic or equivalent
+    field filtering to prevent credential exposure in HTTP responses.
+    """
     rows = conn.execute("SELECT * FROM users ORDER BY id").fetchall()
     return [dict(r) for r in rows]

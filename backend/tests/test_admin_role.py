@@ -31,6 +31,7 @@ def test_is_admin_column_exists(tmp_path):
     conn, _ = fresh_db(tmp_path)
     row = conn.execute("SELECT is_admin FROM users LIMIT 1").fetchone()
     assert row is not None
+    assert "is_admin" in dict(row)
 
 
 def test_admin_seed_user_exists(tmp_path):
