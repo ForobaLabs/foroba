@@ -18,12 +18,18 @@ def verify_password(plain: str, hashed: str) -> bool:
     return _pwd.verify(plain, hashed)
 
 
-def create_token(user_id: int, secret: str, ttl_minutes: int) -> str:
+def create_token(
+    user_id: int, secret: str, ttl_minutes: int, *,
+    tier: str = "free", audience: str = "base", is_admin: bool = False
+) -> str:
     now = datetime.now(timezone.utc)
     payload = {
         "sub": str(user_id),
         "iat": now,
         "exp": now + timedelta(minutes=ttl_minutes),
+        "tier": tier,
+        "audience": audience,
+        "is_admin": is_admin,
     }
     return jwt.encode(payload, secret, algorithm=_ALGO)
 

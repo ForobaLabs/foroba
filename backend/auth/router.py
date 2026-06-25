@@ -15,8 +15,13 @@ from auth.security import create_token, hash_password, verify_password
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 
-def _set_session_cookie(response: Response, user_id: int) -> None:
-    token = create_token(user_id, settings.suite_jwt_secret, settings.jwt_ttl_minutes)
+def _set_session_cookie(response: Response, user: dict) -> None:
+    token = create_token(
+        user["id"], settings.suite_jwt_secret, settings.jwt_ttl_minutes,
+        tier=user.get("tier", "free"),
+        audience=user.get("audience", "base"),
+        is_admin=bool(user.get("is_admin", 0)),
+    )
     response.set_cookie(
         "suite_session", token, httponly=True, samesite="lax",
         secure=settings.cookie_secure, max_age=settings.jwt_ttl_minutes * 60,
@@ -30,7 +35,7 @@ def register(req: RegisterRequest, response: Response,
         raise HTTPException(status.HTTP_409_CONFLICT, "Email already registered")
     user = repo.create_user(conn, email=req.email, name=req.name,
                             password_hash=hash_password(req.password))
-    _set_session_cookie(response, user["id"])
+    _set_session_cookie(response, user)
     return user
 
 
@@ -40,7 +45,7 @@ def login(req: LoginRequest, response: Response,
     user = repo.get_user_by_email(conn, req.email)
     if user is None or not verify_password(req.password, user["password_hash"]):
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid credentials")
-    _set_session_cookie(response, user["id"])
+    _set_session_cookie(response, user)
     return user
 
 
