@@ -38,6 +38,8 @@ def list_entitlements(
 
 def require_feature(key: str) -> Callable[..., dict]:
     """Dependency factory: 403 if not visible (audience), 402 if locked (tier)."""
+    if key not in REGISTRY:
+        raise ValueError(f"require_feature: unknown feature key {key!r}")
     def _dep(
         user: dict = Depends(get_current_user),
         conn: sqlite3.Connection = Depends(get_conn),
