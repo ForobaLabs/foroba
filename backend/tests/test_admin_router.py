@@ -65,6 +65,16 @@ def test_patch_admin_setting(setup):
     assert resp2.json()["premium_gating_enabled"] == "true"
 
 
+def test_patch_invalid_value_returns_422(setup):
+    tc, conn, admin, _ = setup
+    tc.app.dependency_overrides[get_current_user] = lambda: admin
+    resp = tc.patch(
+        "/admin/settings/premium_gating_enabled",
+        json={"value": "yes"},
+    )
+    assert resp.status_code == 422
+
+
 def test_get_admin_users_returns_list(setup):
     tc, conn, admin, _ = setup
     tc.app.dependency_overrides[get_current_user] = lambda: admin
