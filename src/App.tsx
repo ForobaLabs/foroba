@@ -1,12 +1,26 @@
-import { AppShell, Footer, Sidebar, Topbar, useTheme, useUserProfile } from '@foroba/ui';
+import { AppShell, Footer, Sidebar, Spinner, Topbar, useTheme, useUserProfile } from '@foroba/ui';
 import { useState } from 'react';
-import { Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { APP_NAV_ITEMS } from './components/AppNavItems';
 import { JeliPanel } from './components/JeliPanel';
+import { useAuth } from './auth/AuthProvider';
 
 export function App() {
   useTheme(); // Applies dark/light class on mount
   const location = useLocation();
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-[var(--color-bg-primary)]">
+        <Spinner size="lg" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <Navigate to="/login" replace state={{ from: location }} />;
+  }
   const navigate = useNavigate();
   const [jeliOpen, setJeliOpen] = useState(false);
   const { profile } = useUserProfile();

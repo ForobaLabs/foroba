@@ -3,6 +3,8 @@ import { lazy, Suspense } from 'react';
 import { createBrowserRouter } from 'react-router-dom';
 import { Spinner } from '@foroba/ui';
 import { App } from './App';
+import { LoginPage } from './pages/LoginPage';
+import { RegisterPage } from './pages/RegisterPage';
 
 const DashboardPage     = lazy(() => import('./pages/DashboardPage').then(m => ({ default: m.DashboardPage })));
 const AccountsPage      = lazy(() => import('./pages/AccountsPage').then(m => ({ default: m.AccountsPage })));
@@ -20,6 +22,8 @@ const Loading = () => (
 );
 
 export const router = createBrowserRouter([
+  { path: '/login',    element: <LoginPage /> },
+  { path: '/register', element: <RegisterPage /> },
   {
     path: '/onboarding',
     element: <Suspense fallback={<Loading />}><AppOnboardingPage /></Suspense>,
