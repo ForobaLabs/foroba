@@ -3,25 +3,16 @@ from __future__ import annotations
 
 import sqlite3
 
-from fastapi import APIRouter, Cookie, Depends, HTTPException, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 
 from config import settings
-from db import connect
+from auth.conn import get_conn  # re-exported for tests that import it from here
 from auth import repository as repo
 from auth.dependencies import get_current_user
 from auth.models import LoginRequest, RegisterRequest, UserPublic
 from auth.security import create_token, hash_password, verify_password
 
 router = APIRouter(prefix="/auth", tags=["auth"])
-
-_conn: sqlite3.Connection | None = None
-
-
-def get_conn() -> sqlite3.Connection:
-    global _conn
-    if _conn is None:
-        _conn = connect(settings.auth_db_path)
-    return _conn
 
 
 def _set_session_cookie(response: Response, user_id: int) -> None:
@@ -59,6 +50,5 @@ def logout(response: Response) -> None:
 
 
 @router.get("/me", response_model=UserPublic)
-def me(conn: sqlite3.Connection = Depends(get_conn),
-       suite_session: str | None = Cookie(default=None)) -> dict:
-    return get_current_user(conn, suite_session)
+def me(user: dict = Depends(get_current_user)) -> dict:
+    return user

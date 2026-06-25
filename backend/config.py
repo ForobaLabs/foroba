@@ -16,6 +16,7 @@ class Settings(BaseSettings):
     cookie_secure: bool = False           # True behind HTTPS in prod
     auth_db_path: str = "foroba_identity.db"
     seed_mock_users: bool = True
+    premium_gating_enabled: bool = True
 
 
 settings = Settings()
