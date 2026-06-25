@@ -14,6 +14,8 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
 from config import settings
+from db import seed_mock_users as _seed
+from auth.router import router as auth_router, get_conn
 from jeli_service import build_system_prompt, gather_context, stream_chat
 
 logging.basicConfig(level=logging.INFO)
@@ -27,10 +29,25 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:5174"],
+    allow_origins=[
+        "http://localhost:5173",
+        "http://localhost:5174",
+        "http://localhost:5175",
+        "http://localhost:5178",
+    ],
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(auth_router)
+
+
+@app.on_event("startup")
+def _startup() -> None:
+    conn = get_conn()
+    if settings.seed_mock_users:
+        _seed(conn)
 
 
 class Personality(BaseModel):

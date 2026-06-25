@@ -10,5 +10,12 @@ class Settings(BaseSettings):
     tsumi_api_url: str = "http://localhost:8050"
     jeli_port: int = 8002
 
+    # --- Auth (SP9 / C1) ---
+    suite_jwt_secret: str = "dev-insecure-change-me"
+    jwt_ttl_minutes: int = 60
+    cookie_secure: bool = False           # True behind HTTPS in prod
+    auth_db_path: str = "foroba_identity.db"
+    seed_mock_users: bool = True
+
 
 settings = Settings()
