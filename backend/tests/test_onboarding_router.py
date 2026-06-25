@@ -1,0 +1,52 @@
+import sqlite3
+
+import pytest
+from fastapi import FastAPI
+from fastapi.testclient import TestClient
+
+from db import init_schema, seed_mock_users
+from auth.router import get_conn
+from auth.dependencies import get_current_user
+from onboarding.router import router
+
+
+@pytest.fixture
+def app_conn():
+    conn = sqlite3.connect(":memory:", check_same_thread=False)
+    conn.row_factory = sqlite3.Row
+    init_schema(conn)
+    seed_mock_users(conn)
+    app = FastAPI()
+    app.dependency_overrides[get_conn] = lambda: conn
+    app.dependency_overrides[get_current_user] = lambda: dict(
+        conn.execute("SELECT * FROM users WHERE email='demo@foroba.app'").fetchone())
+    app.include_router(router)
+    return TestClient(app), conn
+
+
+def test_get_questionnaire(app_conn):
+    c, _ = app_conn
+    r = c.get("/onboarding/mifid")
+    assert r.status_code == 200
+    assert "questions" in r.json()
+
+
+def test_submit_sets_and_locks_audience(app_conn):
+    c, conn = app_conn
+    answers = {"experience": 3, "instruments": 3, "frequency": 2,
+               "knowledge": 2, "risk": 2}
+    r = c.post("/onboarding/mifid", json={"answers": answers})
+    assert r.status_code == 200
+    assert r.json()["audience"] == "expert"
+    row = conn.execute("SELECT audience, audience_locked FROM users "
+                       "WHERE email='demo@foroba.app'").fetchone()
+    assert row["audience"] == "expert" and row["audience_locked"] == 1
+
+
+def test_manual_toggle(app_conn):
+    c, conn = app_conn
+    r = c.patch("/auth/audience", json={"audience": "expert"})
+    assert r.status_code == 200
+    row = conn.execute("SELECT audience FROM users "
+                       "WHERE email='demo@foroba.app'").fetchone()
+    assert row["audience"] == "expert"

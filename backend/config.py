@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     auth_db_path: str = "foroba_identity.db"
     seed_mock_users: bool = True
     premium_gating_enabled: bool = True
+    onboarding_mifid_enabled: bool = False
 
 
 settings = Settings()
