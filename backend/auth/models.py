@@ -22,4 +22,5 @@ class UserPublic(BaseModel):
     tier: str
     audience: str
     audience_locked: bool
+    is_admin: bool
     totp_enabled: bool

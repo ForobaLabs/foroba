@@ -53,7 +53,7 @@ from db import seed_mock_users
 
 def test_seed_mock_users_idempotent(conn):
     created = seed_mock_users(conn)
-    assert len(created) == 3
+    assert len(created) == 4
     # second call adds nothing
     again = seed_mock_users(conn)
     assert again == []

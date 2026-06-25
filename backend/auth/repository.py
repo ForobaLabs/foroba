@@ -37,3 +37,8 @@ def set_audience(conn: sqlite3.Connection, user_id: int, audience: str,
         (audience, 1 if locked else 0, user_id),
     )
     conn.commit()
+
+
+def list_all_users(conn: sqlite3.Connection) -> list[dict]:
+    rows = conn.execute("SELECT * FROM users ORDER BY id").fetchall()
+    return [dict(r) for r in rows]
