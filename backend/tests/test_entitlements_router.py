@@ -8,6 +8,7 @@ from db import init_schema, seed_mock_users
 from auth.router import get_conn
 from auth.dependencies import get_current_user
 from auth.entitlements_router import router, require_feature
+from settings_store import init_settings, set_value
 
 
 @pytest.fixture
@@ -16,6 +17,9 @@ def app_conn():
     conn.row_factory = sqlite3.Row
     init_schema(conn)
     seed_mock_users(conn)
+    init_settings(conn)
+    # Enable gating so entitlement checks are active in these tests
+    set_value(conn, "premium_gating_enabled", "true")
     app = FastAPI()
     app.dependency_overrides[get_conn] = lambda: conn
 
