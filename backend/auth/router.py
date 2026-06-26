@@ -50,7 +50,7 @@ def login(req: LoginRequest, response: Response,
     if settings.auth_2fa_enabled and user.get("totp_enabled"):
         return {"mfa_required": True, "email": user["email"]}
     _set_session_cookie(response, user)
-    return user
+    return UserPublic(**user).model_dump()
 
 
 class Login2FARequest(BaseModel):
@@ -67,7 +67,7 @@ def login_2fa(req: Login2FARequest, response: Response,
     if not verify_code(user["totp_secret"], req.code):
         raise HTTPException(401, "Invalid code")
     _set_session_cookie(response, user)
-    return user
+    return UserPublic(**user).model_dump()
 
 
 @router.post("/logout", status_code=204)
