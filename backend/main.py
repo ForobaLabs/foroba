@@ -8,7 +8,7 @@ from __future__ import annotations
 import logging
 from typing import Annotated
 
-from fastapi import FastAPI, Query
+from fastapi import Depends, FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
@@ -16,6 +16,7 @@ from pydantic import BaseModel, Field
 from config import settings
 from db import seed_mock_users as _seed
 from auth.router import router as auth_router, get_conn
+from auth.dependencies import get_current_user
 from auth.entitlements_router import router as entitlements_router
 from onboarding.router import router as onboarding_router
 from admin_router import router as admin_router
@@ -77,7 +78,8 @@ async def health() -> dict[str, str]:
 
 
 @app.post("/jeli/chat")
-async def jeli_chat(req: ChatRequest) -> StreamingResponse:
+async def jeli_chat(req: ChatRequest,
+                    _: dict = Depends(get_current_user)) -> StreamingResponse:
     """Stream a Jeli response for the given message.
 
     Gathers context from Pazuru + Tsumi, builds the system prompt,
