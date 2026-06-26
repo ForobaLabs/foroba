@@ -47,3 +47,20 @@ def list_all_users(conn: sqlite3.Connection) -> list[dict]:
     """
     rows = conn.execute("SELECT * FROM users ORDER BY id").fetchall()
     return [dict(r) for r in rows]
+
+
+def set_totp_secret(conn: sqlite3.Connection, user_id: int, secret: str) -> None:
+    conn.execute("UPDATE users SET totp_secret = ?, totp_enabled = 0 WHERE id = ?",
+                 (secret, user_id))
+    conn.commit()
+
+
+def enable_totp(conn: sqlite3.Connection, user_id: int) -> None:
+    conn.execute("UPDATE users SET totp_enabled = 1 WHERE id = ?", (user_id,))
+    conn.commit()
+
+
+def disable_totp(conn: sqlite3.Connection, user_id: int) -> None:
+    conn.execute("UPDATE users SET totp_enabled = 0, totp_secret = NULL WHERE id = ?",
+                 (user_id,))
+    conn.commit()

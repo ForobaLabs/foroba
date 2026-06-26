@@ -60,3 +60,16 @@ def test_seed_mock_users_idempotent(conn):
     rows = conn.execute("SELECT email FROM users ORDER BY email").fetchall()
     emails = [r["email"] for r in rows]
     assert "demo@foroba.app" in emails
+
+
+def test_totp_lifecycle(conn):
+    from auth import repository as repo
+    u = repo.create_user(conn, email="t@f.com", name="T", password_hash="h")
+    repo.set_totp_secret(conn, u["id"], "SECRET234567")
+    assert repo.get_user_by_id(conn, u["id"])["totp_secret"] == "SECRET234567"
+    assert repo.get_user_by_id(conn, u["id"])["totp_enabled"] == 0
+    repo.enable_totp(conn, u["id"])
+    assert repo.get_user_by_id(conn, u["id"])["totp_enabled"] == 1
+    repo.disable_totp(conn, u["id"])
+    row = repo.get_user_by_id(conn, u["id"])
+    assert row["totp_enabled"] == 0 and row["totp_secret"] is None

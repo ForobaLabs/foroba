@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     seed_mock_users: bool = True
     premium_gating_enabled: bool = True
     onboarding_mifid_enabled: bool = False
+    auth_2fa_enabled: bool = False
 
 
 settings = Settings()

@@ -4,6 +4,7 @@ from __future__ import annotations
 import sqlite3
 
 from fastapi import APIRouter, Depends, HTTPException, Response, status
+from pydantic import BaseModel
 
 from config import settings
 from auth.conn import get_conn  # re-exported for tests that import it from here
@@ -11,6 +12,7 @@ from auth import repository as repo
 from auth.dependencies import get_current_user
 from auth.models import LoginRequest, RegisterRequest, UserPublic
 from auth.security import create_token, hash_password, verify_password
+from twofa.totp import verify_code
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -39,12 +41,31 @@ def register(req: RegisterRequest, response: Response,
     return user
 
 
-@router.post("/login", response_model=UserPublic)
+@router.post("/login", response_model=None)
 def login(req: LoginRequest, response: Response,
           conn: sqlite3.Connection = Depends(get_conn)) -> dict:
     user = repo.get_user_by_email(conn, req.email)
     if user is None or not verify_password(req.password, user["password_hash"]):
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid credentials")
+    if settings.auth_2fa_enabled and user.get("totp_enabled"):
+        return {"mfa_required": True, "email": user["email"]}
+    _set_session_cookie(response, user)
+    return user
+
+
+class Login2FARequest(BaseModel):
+    email: str
+    code: str
+
+
+@router.post("/login/2fa", response_model=None)
+def login_2fa(req: Login2FARequest, response: Response,
+              conn: sqlite3.Connection = Depends(get_conn)) -> dict:
+    user = repo.get_user_by_email(conn, req.email)
+    if user is None or not user.get("totp_enabled") or not user.get("totp_secret"):
+        raise HTTPException(400, "2FA not set up")
+    if not verify_code(user["totp_secret"], req.code):
+        raise HTTPException(401, "Invalid code")
     _set_session_cookie(response, user)
     return user
 
