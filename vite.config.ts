@@ -25,6 +25,7 @@ export default defineConfig(({ mode }) => {
         '/jeli': {
           target: env.VITE_JELI_API_URL ?? 'http://localhost:8002',
           changeOrigin: true,
+          rewrite: (p) => p.replace(/^\/jeli/, ''),
         },
       },
     },

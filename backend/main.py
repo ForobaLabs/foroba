@@ -77,7 +77,7 @@ async def health() -> dict[str, str]:
     return {"status": "ok", "service": "foroba-jeli", "version": "0.1.0"}
 
 
-@app.post("/jeli/chat")
+@app.post("/chat")
 async def jeli_chat(req: ChatRequest,
                     _: dict = Depends(get_current_user)) -> StreamingResponse:
     """Stream a Jeli response for the given message.
