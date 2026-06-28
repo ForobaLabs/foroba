@@ -8,7 +8,7 @@ from __future__ import annotations
 import logging
 from typing import Annotated
 
-from fastapi import Depends, FastAPI, Query
+from fastapi import Cookie, Depends, FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
@@ -23,6 +23,7 @@ from admin_router import router as admin_router
 from twofa.router import router as twofa_router
 from settings_store import init_settings
 from jeli_service import build_system_prompt, gather_context, stream_chat
+import markets_service
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -75,6 +76,22 @@ class ChatRequest(BaseModel):
 @app.get("/health")
 async def health() -> dict[str, str]:
     return {"status": "ok", "service": "foroba-jeli", "version": "0.1.0"}
+
+
+@app.get("/markets/snapshot")
+async def markets_snapshot(
+    symbol: str = Query(..., min_length=1, max_length=32),
+    asset_class: str = Query("crypto"),
+    suite_session: str | None = Cookie(default=None),
+) -> dict:
+    """Aggregate Tsumi rating + sentiment + top movers for one symbol.
+
+    Read-only superapp surface. Degrades gracefully if Tsumi is offline:
+    failed sections are null and `degraded` is true; never returns 500.
+    """
+    return await markets_service.fetch_snapshot(
+        symbol, asset_class, cookie=suite_session
+    )
 
 
 @app.post("/chat")
