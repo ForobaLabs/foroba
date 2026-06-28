@@ -43,7 +43,7 @@ class _FakeClient:
         raise RuntimeError(f"unrouted url: {url}")
 
 
-_COMBINED = {"symbol": "BTCUSDT", "rating": {"label": "buy", "score": 0.42}}
+_COMBINED = {"symbol": "BTCUSDT", "consensus": {"label": "buy", "score": 0.42}}
 _SENTIMENT = {"symbol": "BTCUSDT", "sentiment": "positive", "headlines": []}
 _SCAN = {"screen": "top_movers", "results": [{"symbol": "ETHUSDT", "change_pct": 5.0}]}
 
@@ -66,7 +66,7 @@ def test_fetch_snapshot_assembles_all_sections(monkeypatch):
     snap = asyncio.run(ms.fetch_snapshot("BTCUSDT", "crypto"))
     assert snap["symbol"] == "BTCUSDT"
     assert snap["asset_class"] == "crypto"
-    assert snap["rating"] == _COMBINED["rating"]
+    assert snap["rating"] == _COMBINED["consensus"]
     assert snap["sentiment"]["sentiment"] == "positive"
     assert snap["movers"][0]["symbol"] == "ETHUSDT"
     assert snap["degraded"] is False
@@ -86,7 +86,7 @@ def test_fetch_snapshot_degrades_on_one_failure(monkeypatch):
         ),
     )
     snap = asyncio.run(ms.fetch_snapshot("BTCUSDT", "crypto"))
-    assert snap["rating"] == _COMBINED["rating"]
+    assert snap["rating"] == _COMBINED["consensus"]
     assert snap["sentiment"] is None
     assert snap["movers"][0]["symbol"] == "ETHUSDT"
     assert snap["degraded"] is True

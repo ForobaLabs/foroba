@@ -4,7 +4,7 @@ Foroba's flat-backend style (mirrors jeli_service.py): outward HTTP via httpx
 with per-call timeout + try/except so a Tsumi outage degrades gracefully. Each
 section that fails becomes None and flips `degraded` to True; the snapshot is
 never an error. A1/A3/A4 supply the upstream endpoints:
-  - GET {tsumi}/api/markets/combined      -> {rating: {...}, ...}
+  - GET {tsumi}/api/markets/combined      -> {consensus: {...}, ...}
   - GET {tsumi}/api/news/sentiment         -> {sentiment, headlines, ...}
   - GET {tsumi}/api/screener/scan          -> {results: [...]}
 """
@@ -65,7 +65,7 @@ async def fetch_snapshot(
             ),
         )
 
-    rating = combined.get("rating") if isinstance(combined, dict) else None
+    rating = combined.get("consensus") if isinstance(combined, dict) else None
     movers = scan.get("results") if isinstance(scan, dict) else None
     degraded = rating is None or sentiment is None or movers is None
 

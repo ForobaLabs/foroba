@@ -50,6 +50,7 @@ export function App() {
         }
         header={
           <Topbar
+            hasSidebar={false}
             breadcrumbs={[
               { label: 'Foroba', href: '/' },
               {

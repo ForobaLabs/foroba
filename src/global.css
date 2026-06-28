@@ -1,5 +1,6 @@
 @import "@foroba/ui/tokens.css";
 @import "tailwindcss";
+@source "../node_modules/@foroba/ui/dist";
 
 /* Safe-area insets for notched devices */
 body {

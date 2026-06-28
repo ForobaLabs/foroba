@@ -76,6 +76,16 @@ export function useJeli(userName?: string) {
           return updated;
         });
       }
+      if (!accumulated) {
+        setMessages((prev) => {
+          const updated = [...prev];
+          updated[updated.length - 1] = {
+            ...updated[updated.length - 1],
+            content: 'Jeli is unavailable (AI offline). Make sure Ollama is running on this device.',
+          };
+          return updated;
+        });
+      }
     } catch (err) {
       if ((err as Error).name !== 'AbortError') {
         const msg = err instanceof Error ? err.message : 'Unknown error';
