@@ -1,4 +1,4 @@
-import { AlertCircle, CheckCircle2 } from 'lucide-react';
+import { AlertCircle } from 'lucide-react';
 import { Badge } from '@foroba/ui';
 import { usePazuruHealth, useTsumiHealth } from '../hooks/useServiceHealth';
 

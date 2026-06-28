@@ -9,7 +9,7 @@ function wrapper({ children }: { children: React.ReactNode }) {
 }
 
 beforeEach(() => {
-  global.fetch = vi.fn().mockResolvedValue({
+  (globalThis as typeof globalThis & { fetch: unknown }).fetch = vi.fn().mockResolvedValue({
     ok: true,
     json: async () => ({ id: 1, email: "a@b.com", name: "A", tier: "free",
       audience: "base", audience_locked: false, totp_enabled: false }),

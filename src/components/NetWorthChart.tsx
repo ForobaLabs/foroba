@@ -47,7 +47,7 @@ export function NetWorthChart({ data }: NetWorthChartProps) {
         <Tooltip
           contentStyle={theme.tooltip.contentStyle}
           cursor={theme.tooltip.cursor}
-          formatter={(v: number) => [`€${v.toLocaleString('en-US', { minimumFractionDigits: 2 })}`, 'Net Worth']}
+          formatter={(v) => [`€${(v as number).toLocaleString('en-US', { minimumFractionDigits: 2 })}`, 'Net Worth']}
         />
         <Area
           type="monotone"

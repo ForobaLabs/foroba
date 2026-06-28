@@ -6,7 +6,7 @@ type Tab = 'flags' | 'users';
 export default function AdminPage(): React.ReactElement {
   const [activeTab, setActiveTab] = useState<Tab>('flags');
   const { settings, loading: flagsLoading, toggle } = useAdminSettings();
-  const { users, loading: usersLoading } = useAdminUsers();
+  const { users } = useAdminUsers();
 
   return (
     <PageContainer>

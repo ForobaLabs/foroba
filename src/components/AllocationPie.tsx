@@ -34,7 +34,7 @@ export function AllocationPie({ cashEur, portfolioEur }: AllocationPieProps) {
           </Pie>
           <Tooltip
             contentStyle={theme.tooltip.contentStyle}
-            formatter={(v: number) => `€${v.toLocaleString('en-US', { minimumFractionDigits: 0 })}`}
+            formatter={(v) => `€${(v as number).toLocaleString('en-US', { minimumFractionDigits: 0 })}`}
           />
         </PieChart>
       </ResponsiveContainer>
