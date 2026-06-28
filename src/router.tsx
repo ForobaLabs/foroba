@@ -15,6 +15,7 @@ const ProfilePage       = lazy(() => import('./pages/ProfilePage').then(m => ({ 
 const HouseholdPage     = lazy(() => import('./pages/HouseholdPage').then(m => ({ default: m.HouseholdPage })));
 const GoalsPage         = lazy(() => import('./pages/GoalsPage').then(m => ({ default: m.GoalsPage })));
 const AdminPage         = lazy(() => import('./pages/AdminPage'));
+const MarketsPage       = lazy(() => import('./pages/MarketsPage').then(m => ({ default: m.MarketsPage })));
 
 const Loading = () => (
   <div className="flex h-full items-center justify-center py-20">
@@ -36,6 +37,7 @@ export const router = createBrowserRouter([
       { index: true,      element: <Suspense fallback={<Loading />}><DashboardPage /></Suspense> },
       { path: 'accounts', element: <Suspense fallback={<Loading />}><AccountsPage /></Suspense> },
       { path: 'portfolio',element: <Suspense fallback={<Loading />}><PortfolioPage /></Suspense> },
+      { path: 'markets', element: <Suspense fallback={<Loading />}><MarketsPage /></Suspense> },
       { path: 'settings',  element: <Suspense fallback={<Loading />}><AppSettingsPage /></Suspense> },
       { path: 'profile',   element: <Suspense fallback={<Loading />}><ProfilePage /></Suspense> },
       { path: 'household', element: <Suspense fallback={<Loading />}><HouseholdPage /></Suspense> },
