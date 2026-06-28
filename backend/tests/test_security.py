@@ -3,7 +3,7 @@ import time
 import jwt
 import pytest
 
-from auth.security import hash_password, verify_password, create_token, decode_token
+from auth.security import hash_password, verify_password, needs_rehash, create_token, decode_token
 
 
 def test_hash_and_verify_roundtrip():
@@ -11,6 +11,26 @@ def test_hash_and_verify_roundtrip():
     assert h != "s3cret!"
     assert verify_password("s3cret!", h) is True
     assert verify_password("wrong", h) is False
+
+
+def test_hash_and_verify_argon2():
+    h = hash_password("secret123")
+    assert h.startswith("$argon2")
+    assert verify_password("secret123", h) is True
+    assert verify_password("wrong", h) is False
+
+
+def test_verify_legacy_bcrypt():
+    import bcrypt as _bcrypt
+    legacy = _bcrypt.hashpw(b"secret123", _bcrypt.gensalt()).decode()
+    assert verify_password("secret123", legacy) is True
+    assert verify_password("wrong", legacy) is False
+    assert needs_rehash(legacy) is True
+
+
+def test_needs_rehash_argon2_is_false():
+    h = hash_password("secret")
+    assert needs_rehash(h) is False
 
 
 def test_token_roundtrip_contains_subject():

@@ -11,7 +11,7 @@ from auth.conn import get_conn  # re-exported for tests that import it from here
 from auth import repository as repo
 from auth.dependencies import get_current_user
 from auth.models import LoginRequest, RegisterRequest, UserPublic
-from auth.security import create_token, hash_password, verify_password
+from auth.security import create_token, hash_password, needs_rehash, verify_password
 from twofa.totp import verify_code
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -47,6 +47,10 @@ def login(req: LoginRequest, response: Response,
     user = repo.get_user_by_email(conn, req.email)
     if user is None or not verify_password(req.password, user["password_hash"]):
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid credentials")
+    if needs_rehash(user["password_hash"]):
+        new_hash = hash_password(req.password)
+        conn.execute("UPDATE users SET password_hash = ? WHERE id = ?", (new_hash, user["id"]))
+        conn.commit()
     if settings.auth_2fa_enabled and user.get("totp_enabled"):
         return {"mfa_required": True, "email": user["email"]}
     _set_session_cookie(response, user)
