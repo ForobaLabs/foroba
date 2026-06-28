@@ -8,13 +8,6 @@ import { router } from './router';
 import { AuthProvider } from './auth/AuthProvider';
 import './global.css';
 
-// Register PWA service worker in production
-if ('serviceWorker' in navigator && import.meta.env.PROD) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').catch(() => {/* silent */});
-  });
-}
-
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {

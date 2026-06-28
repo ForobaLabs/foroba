@@ -1,2 +1,24 @@
 @import "@foroba/ui/tokens.css";
 @import "tailwindcss";
+
+/* Safe-area insets for notched devices */
+body {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
+}
+
+.safe-area-bottom {
+  padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+}
+
+.safe-area-top {
+  padding-top: calc(0px + env(safe-area-inset-top, 0px));
+}
+
+/* Mobile: hide sidebar to prevent overflow on small screens */
+@media (max-width: 767px) {
+  :root {
+    --sidebar-width: 0px;
+  }
+}
