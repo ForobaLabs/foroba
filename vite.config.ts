@@ -27,6 +27,11 @@ export default defineConfig(({ mode }) => {
           changeOrigin: true,
           rewrite: (p) => p.replace(/^\/jeli/, ''),
         },
+        '/foroba-api': {
+          target: env.VITE_FOROBA_API_URL ?? 'http://localhost:8002',
+          changeOrigin: true,
+          rewrite: (p) => p.replace('/foroba-api', ''),
+        },
       },
     },
   };
