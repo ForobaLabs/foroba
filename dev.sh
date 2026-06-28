@@ -14,7 +14,7 @@ trap cleanup EXIT INT TERM
 
 echo "Starting Foroba Jeli backend on port 8002..."
 cd "$ROOT/backend"
-.venv/bin/uvicorn main:app --host 127.0.0.1 --port 8002 --reload &
+AUTH_DEV_BYPASS=true .venv/bin/uvicorn main:app --host 127.0.0.1 --port 8002 --reload &
 BACKEND_PID=$!
 
 echo "Starting Foroba frontend on port 5175..."

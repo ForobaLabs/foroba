@@ -44,6 +44,9 @@ export default defineConfig(({ mode }) => {
         },
       }),
     ],
+    optimizeDeps: {
+      exclude: ['@foroba/ui', '@foroba/ui/i18n', '@foroba/ui/charts'],
+    },
     define: {
       __APP_VERSION__: JSON.stringify(process.env.npm_package_version ?? '0.1.0'),
     },
