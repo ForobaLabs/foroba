@@ -5,6 +5,7 @@ import { Spinner } from '@foroba/ui';
 import { App } from './App';
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
+import { FOROBA_FAQ } from './data/faq';
 
 const DashboardPage     = lazy(() => import('./pages/DashboardPage').then(m => ({ default: m.DashboardPage })));
 const AccountsPage      = lazy(() => import('./pages/AccountsPage').then(m => ({ default: m.AccountsPage })));
@@ -16,6 +17,7 @@ const HouseholdPage     = lazy(() => import('./pages/HouseholdPage').then(m => (
 const GoalsPage         = lazy(() => import('./pages/GoalsPage').then(m => ({ default: m.GoalsPage })));
 const AdminPage         = lazy(() => import('./pages/AdminPage'));
 const MarketsPage       = lazy(() => import('./pages/MarketsPage').then(m => ({ default: m.MarketsPage })));
+const JeliLabPage       = lazy(() => import('./pages/JeliLabPage').then(m => ({ default: m.JeliLabPage })));
 
 const Loading = () => (
   <div className="flex h-full items-center justify-center py-20">
@@ -38,12 +40,13 @@ export const router = createBrowserRouter([
       { path: 'accounts', element: <Suspense fallback={<Loading />}><AccountsPage /></Suspense> },
       { path: 'portfolio',element: <Suspense fallback={<Loading />}><PortfolioPage /></Suspense> },
       { path: 'markets', element: <Suspense fallback={<Loading />}><MarketsPage /></Suspense> },
+      { path: 'lab', element: <Suspense fallback={<Loading />}><JeliLabPage /></Suspense> },
       { path: 'settings',  element: <Suspense fallback={<Loading />}><AppSettingsPage /></Suspense> },
       { path: 'profile',   element: <Suspense fallback={<Loading />}><ProfilePage /></Suspense> },
       { path: 'household', element: <Suspense fallback={<Loading />}><HouseholdPage /></Suspense> },
       { path: 'goals',     element: <Suspense fallback={<Loading />}><GoalsPage /></Suspense> },
       { path: 'admin',     element: <Suspense fallback={<Loading />}><AdminPage /></Suspense> },
-      { path: 'help',      element: <HelpPage gitlabIssueUrl="https://gitlab.com/bambac961/foroba/-/issues" /> },
+      { path: 'help',      element: <HelpPage faqItems={FOROBA_FAQ} gitlabIssueUrl="https://gitlab.com/bambac961/foroba/-/issues" /> },
       { path: 'legal',    element: <LegalPage /> },
       { path: 'about',    element: <AboutPage appName="Foroba" version={__APP_VERSION__} /> },
     ],

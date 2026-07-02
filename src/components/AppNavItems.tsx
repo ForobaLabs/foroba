@@ -1,5 +1,6 @@
 import {
   BarChart3,
+  FlaskConical,
   HelpCircle,
   Home,
   Info,
@@ -20,6 +21,7 @@ export const APP_NAV_ITEMS: NavItem[] = [
   { label: 'Accounts', href: '/accounts', icon: Wallet },
   { label: 'Portfolio', href: '/portfolio', icon: BarChart3 },
   { label: 'Markets', href: '/markets', icon: LineChart },
+  { label: 'Jeli Lab', href: '/lab', icon: FlaskConical },
   { label: 'Goals', href: '/goals', icon: Target },
   { label: 'Profile', href: '/profile', icon: User },
   { label: 'Household', href: '/household', icon: Home },
