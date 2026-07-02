@@ -34,6 +34,7 @@ from auth.dependencies import get_current_user
 from auth.entitlements_router import router as entitlements_router
 from onboarding.router import router as onboarding_router
 from admin_router import router as admin_router
+from lab_router import router as lab_router
 from twofa.router import router as twofa_router
 from settings_store import init_settings
 from jeli_service import build_system_prompt, gather_context, stream_chat
@@ -77,6 +78,7 @@ app.include_router(auth_router)
 app.include_router(entitlements_router)
 app.include_router(onboarding_router)
 app.include_router(admin_router)
+app.include_router(lab_router)
 app.include_router(twofa_router)
 
 
