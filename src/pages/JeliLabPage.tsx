@@ -189,10 +189,16 @@ export function JeliLabPage() {
           </div>
 
           <div className="flex flex-col gap-2">
-            <label className="flex items-center gap-1.5 text-xs text-[var(--color-text-secondary)]">
+            <label
+              className="flex items-center gap-1.5 text-xs text-[var(--color-text-secondary)]"
+              title="Searches the public web via a local search instance; results are not saved beyond this conversation's memory."
+            >
               <input type="checkbox" checked={allowInternet} onChange={(e) => setAllowInternet(e.target.checked)} />
               Allow web search for this question
             </label>
+            <div className="text-[11px] text-[var(--color-text-secondary)]">
+              Searches the public web via a local search instance; results are not saved beyond this conversation's memory.
+            </div>
             <div className="flex gap-2">
               <input
                 value={input}
