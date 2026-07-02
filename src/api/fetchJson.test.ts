@@ -52,6 +52,22 @@ test('throws (does not swallow) on network failure', async () => {
   );
 });
 
+test('throws a descriptive Error when a 2xx response body is not valid JSON', async () => {
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async () => ({
+      ok: true,
+      status: 200,
+      statusText: 'OK',
+      json: async () => {
+        throw new SyntaxError('Unexpected token < in JSON at position 0');
+      },
+    })),
+  );
+
+  await expect(fetchJson('https://example.test/bad-json')).rejects.toThrow(/invalid JSON/);
+});
+
 test('passes a timeout-derived AbortSignal through to fetch by default', async () => {
   const fetchMock = vi.fn(async () => ({
     ok: true,

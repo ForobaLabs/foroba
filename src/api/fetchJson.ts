@@ -43,5 +43,10 @@ export async function fetchJson<T>(url: string, options: FetchJsonOptions = {}):
     throw new Error(`Request to ${url} failed with status ${res.status} ${res.statusText}`.trim());
   }
 
-  return (await res.json()) as T;
+  try {
+    return (await res.json()) as T;
+  } catch (cause) {
+    const reason = cause instanceof Error ? cause.message : String(cause);
+    throw new Error(`Request to ${url} returned invalid JSON: ${reason}`, { cause });
+  }
 }
