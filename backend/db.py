@@ -18,6 +18,23 @@ CREATE TABLE IF NOT EXISTS users (
     is_admin INTEGER NOT NULL DEFAULT 0,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
+
+CREATE TABLE IF NOT EXISTS sandbox_conversations (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id TEXT NOT NULL,
+    session_id TEXT NOT NULL,
+    role TEXT NOT NULL,
+    content TEXT NOT NULL,
+    code TEXT,
+    artifacts_json TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS sandbox_user_context (
+    user_id TEXT PRIMARY KEY,
+    context_text TEXT NOT NULL DEFAULT '',
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
 """
 
 
@@ -60,6 +77,59 @@ def seed_mock_users(conn: sqlite3.Connection) -> list[str]:
         created.append(email)
     conn.commit()
     return created
+
+
+def save_sandbox_turn(
+    conn: sqlite3.Connection,
+    user_id: str,
+    session_id: str,
+    question: str,
+    answer: str,
+    code: str | None = None,
+    artifacts_json: str | None = None,
+) -> None:
+    """Persist a user question + assistant answer as two conversation rows."""
+    conn.execute(
+        "INSERT INTO sandbox_conversations (user_id, session_id, role, content) VALUES (?, ?, 'user', ?)",
+        (user_id, session_id, question),
+    )
+    conn.execute(
+        "INSERT INTO sandbox_conversations (user_id, session_id, role, content, code, artifacts_json) "
+        "VALUES (?, ?, 'assistant', ?, ?, ?)",
+        (user_id, session_id, answer, code, artifacts_json),
+    )
+    conn.commit()
+
+
+def get_sandbox_history(
+    conn: sqlite3.Connection, user_id: str, session_id: str, limit: int = 20
+) -> list[dict]:
+    """Return the most recent `limit` conversation rows, in chronological order."""
+    rows = conn.execute(
+        "SELECT role, content, code FROM sandbox_conversations "
+        "WHERE user_id = ? AND session_id = ? ORDER BY created_at DESC, id DESC LIMIT ?",
+        (user_id, session_id, limit),
+    ).fetchall()
+    result = [dict(row) for row in rows]
+    result.reverse()
+    return result
+
+
+def get_sandbox_user_context(conn: sqlite3.Connection, user_id: str) -> str:
+    row = conn.execute(
+        "SELECT context_text FROM sandbox_user_context WHERE user_id = ?", (user_id,)
+    ).fetchone()
+    return row["context_text"] if row else ""
+
+
+def update_sandbox_user_context(conn: sqlite3.Connection, user_id: str, context_text: str) -> None:
+    conn.execute(
+        "INSERT INTO sandbox_user_context (user_id, context_text, updated_at) "
+        "VALUES (?, ?, datetime('now')) "
+        "ON CONFLICT(user_id) DO UPDATE SET context_text = excluded.context_text, updated_at = excluded.updated_at",
+        (user_id, context_text),
+    )
+    conn.commit()
 
 
 def connect(db_path: str) -> sqlite3.Connection:
