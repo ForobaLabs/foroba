@@ -1,9 +1,10 @@
 import { AppShell, Footer, Sidebar, Spinner, Topbar, useTheme, useUserProfile } from '@foroba/ui';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { getNavItems } from './components/AppNavItems';
 import { JeliPanel } from './components/JeliPanel';
 import { useAuth } from './auth/AuthProvider';
+import i18n from './i18n';
 
 export function App() {
   useTheme(); // Applies dark/light class on mount
@@ -12,6 +13,11 @@ export function App() {
   const { user, loading } = useAuth();
   const [jeliOpen, setJeliOpen] = useState(false);
   const { profile } = useUserProfile();
+
+  useEffect(() => {
+    i18n.changeLanguage(profile.language);
+    document.documentElement.lang = profile.language;
+  }, [profile.language]);
 
   if (loading) {
     return (
