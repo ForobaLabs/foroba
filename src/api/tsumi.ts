@@ -10,6 +10,19 @@ export interface TsumiSummary {
   totalValueEur: number;
 }
 
+export interface PortfolioPosition {
+  id: number | null;
+  isin: string;
+  name: string;
+  assetClass: string;
+  currency: string;
+  quantity: number;
+  valueEur: number;
+  pnlEur: number;
+  pnlPct: number;
+  source: string;
+}
+
 // Deliberately soft/never-throwing: a health probe's "unavailable" result
 // IS its valid outcome, not a failure to distinguish from loading/error.
 async function safeFetch<T>(url: string, fallback: T): Promise<T> {
@@ -32,4 +45,36 @@ export async function fetchTsumiSummary(): Promise<TsumiSummary> {
     { timeoutMs: 5000 },
   );
   return { totalValueEur: data.total_eur ?? 0 };
+}
+
+interface RawPosition {
+  id: number | null;
+  isin: string;
+  name: string;
+  asset_class: string;
+  currency: string;
+  quantity: number;
+  value_eur: number;
+  pnl_eur: number;
+  pnl_pct: number;
+  source: string;
+}
+
+export async function fetchPortfolioPositions(): Promise<PortfolioPosition[]> {
+  const data = await fetchJson<RawPosition[]>(`${BASE}/api/portfolio/positions`, {
+    credentials: 'include',
+    timeoutMs: 5000,
+  });
+  return data.map((p) => ({
+    id: p.id,
+    isin: p.isin,
+    name: p.name,
+    assetClass: p.asset_class,
+    currency: p.currency,
+    quantity: p.quantity,
+    valueEur: p.value_eur,
+    pnlEur: p.pnl_eur,
+    pnlPct: p.pnl_pct,
+    source: p.source,
+  }));
 }
