@@ -88,7 +88,9 @@ export function MarketsPage() {
                   Sentiment
                 </h3>
                 <span className="text-sm text-[var(--color-text-secondary)]">
-                  {data.sentiment?.sentiment ?? 'Unavailable'}
+                  {data.sentiment
+                    ? `${data.sentiment.sentiment.label} (${data.sentiment.sentiment.score.toFixed(2)})`
+                    : 'Unavailable'}
                 </span>
               </div>
 

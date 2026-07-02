@@ -9,11 +9,20 @@ export interface MarketRating {
   score: number;
 }
 
+export interface MarketSentiment {
+  score: number;
+  label: string;
+  positive: number;
+  neutral: number;
+  negative: number;
+  count: number;
+}
+
 export interface MarketSnapshot {
   symbol: string;
   asset_class: AssetClass;
   rating: MarketRating | null;
-  sentiment: { sentiment?: string; headlines?: unknown[] } | null;
+  sentiment: { symbol: string; sentiment: MarketSentiment; sample_headlines?: unknown[] } | null;
   movers: Array<{ symbol: string; change_pct: number }> | null;
   degraded: boolean;
   disclaimer: string;

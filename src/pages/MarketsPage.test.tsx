@@ -21,7 +21,11 @@ beforeEach(() => {
         symbol: 'BTCUSDT',
         asset_class: 'crypto',
         rating: { label: 'buy', score: 0.42 },
-        sentiment: { sentiment: 'positive' },
+        sentiment: {
+          symbol: 'BTCUSDT',
+          sentiment: { score: 0.42, label: 'positive', positive: 8, neutral: 16, negative: 6, count: 30 },
+          sample_headlines: [],
+        },
         movers: [{ symbol: 'ETHUSDT', change_pct: 5.0 }],
         degraded: false,
         disclaimer: 'Informational only — not financial advice.',
