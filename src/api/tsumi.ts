@@ -1,3 +1,5 @@
+import { fetchJson } from './fetchJson';
+
 const BASE = import.meta.env.VITE_TSUMI_API_URL ?? '/tsumi-api';
 
 export interface TsumiHealth {
@@ -8,6 +10,8 @@ export interface TsumiSummary {
   totalValueEur: number;
 }
 
+// Deliberately soft/never-throwing: a health probe's "unavailable" result
+// IS its valid outcome, not a failure to distinguish from loading/error.
 async function safeFetch<T>(url: string, fallback: T): Promise<T> {
   try {
     const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
@@ -22,13 +26,10 @@ export async function fetchTsumiHealth(): Promise<TsumiHealth> {
   return safeFetch(`${BASE}/health`, { status: 'unavailable' as const });
 }
 
-export async function fetchTsumiSummary(): Promise<TsumiSummary | null> {
-  try {
-    const res = await fetch(`${BASE}/api/portfolio/summary`, { signal: AbortSignal.timeout(5000) });
-    if (!res.ok) return null;
-    const data = (await res.json()) as { total_eur: number };
-    return { totalValueEur: data.total_eur ?? 0 };
-  } catch {
-    return null;
-  }
+export async function fetchTsumiSummary(): Promise<TsumiSummary> {
+  const data = await fetchJson<{ total_eur: number }>(
+    `${BASE}/api/portfolio/summary`,
+    { timeoutMs: 5000 },
+  );
+  return { totalValueEur: data.total_eur ?? 0 };
 }

@@ -1,4 +1,4 @@
-import { Badge, Card, CardContent, PageContainer, SectionHeader, Spinner } from '@foroba/ui';
+import { Badge, Card, CardContent, EmptyState, ErrorState, LoadingState, PageContainer, SectionHeader } from '@foroba/ui';
 import { useState } from 'react';
 import { useMarketSnapshot } from '../hooks/useMarketSnapshot';
 import type { AssetClass } from '../api/markets';
@@ -11,7 +11,7 @@ const SYMBOLS: Record<AssetClass, string[]> = {
 export function MarketsPage() {
   const [assetClass, setAssetClass] = useState<AssetClass>('crypto');
   const [symbol, setSymbol] = useState<string>('BTCUSDT');
-  const { data, isLoading } = useMarketSnapshot(symbol, assetClass);
+  const { data, isLoading, isError, refetch } = useMarketSnapshot(symbol, assetClass);
 
   return (
     <PageContainer>
@@ -51,22 +51,20 @@ export function MarketsPage() {
 
       <Card>
         <CardContent className="p-6">
-          {isLoading && (
-            <div className="flex items-center gap-2">
-              <Spinner size="sm" />
-              <span className="text-sm text-[var(--color-text-secondary)]">
-                Loading snapshot…
-              </span>
-            </div>
+          {isLoading && <LoadingState message="Loading snapshot…" />}
+
+          {!isLoading && isError && (
+            <ErrorState
+              message="Market data is currently unavailable. Make sure Tsumi is running."
+              onRetry={() => refetch()}
+            />
           )}
 
-          {!isLoading && !data && (
-            <p className="text-sm text-[var(--color-text-muted)]">
-              Market data is currently unavailable. Make sure Tsumi is running.
-            </p>
+          {!isLoading && !isError && !data && (
+            <EmptyState message="No market data available for this symbol yet." />
           )}
 
-          {!isLoading && data && (
+          {!isLoading && !isError && data && (
             <div className="space-y-4">
               {data.degraded && (
                 <Badge variant="warning">Partial data — some sections offline</Badge>

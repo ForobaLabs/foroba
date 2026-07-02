@@ -11,7 +11,10 @@ import './global.css';
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      retry: 1,
+      // 2 retries + react-query's default exponential backoff
+      // (attempt => min(1000 * 2**attempt, 30000)) so a transiently-down
+      // sub-app gets a real chance to recover before we surface an error.
+      retry: 2,
       staleTime: 30_000,
     },
   },

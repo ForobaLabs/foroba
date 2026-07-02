@@ -1,4 +1,4 @@
-import { Badge, Card, CardContent, KpiCard, PageContainer, SectionHeader, Skeleton, useUserProfile } from '@foroba/ui';
+import { Badge, Card, CardContent, ErrorState, KpiCard, PageContainer, SectionHeader, Skeleton, useUserProfile } from '@foroba/ui';
 import { AllocationPie } from '../components/AllocationPie';
 import { FinanceTipsCard } from '../components/FinanceTipsCard';
 import { NetWorthChart } from '../components/NetWorthChart';
@@ -16,9 +16,17 @@ function fmt(value: number) {
   return value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
+const SOURCE_LABELS: Record<string, string> = {
+  pazuru: 'Pazuru',
+  tsumi: 'Tsumi',
+};
+
 export function DashboardPage() {
-  const { data, isLoading, error } = useNetWorth();
+  const { data, isLoading, isError, refetch } = useNetWorth();
   const { profile } = useUserProfile();
+
+  const snapshot = data?.snapshot;
+  const degradedSources = data?.degradedSources ?? [];
 
   return (
     <PageContainer>
@@ -30,16 +38,24 @@ export function DashboardPage() {
 
       <ServiceStatusBar />
 
+      {degradedSources.length > 0 && (
+        <div className="mt-4">
+          <Badge variant="warning">
+            Partial data — {degradedSources.map((s) => SOURCE_LABELS[s] ?? s).join(', ')} unavailable
+          </Badge>
+        </div>
+      )}
+
       {/* Main KPI */}
       <div className="mt-4">
         {isLoading ? (
           <Skeleton className="h-16 w-64" />
-        ) : error ? (
-          <p className="text-sm text-[var(--color-negative)]">Failed to load net worth data.</p>
+        ) : isError ? (
+          <ErrorState message="Failed to load net worth data." onRetry={() => refetch()} />
         ) : (
           <div>
             <p className="font-['JetBrains_Mono',monospace] text-4xl font-bold text-[var(--color-text-primary)]">
-              €&thinsp;{fmt(data?.totalEur ?? 0)}
+              €&thinsp;{fmt(snapshot?.totalEur ?? 0)}
             </p>
             <div className="mt-1 flex items-center gap-2">
               <Badge variant="default" className="text-xs">
@@ -54,13 +70,13 @@ export function DashboardPage() {
       <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
         <KpiCard
           label="Cash (Pazuru)"
-          value={data ? `€ ${fmt(data.cashEur)}` : '–'}
+          value={snapshot ? `€ ${fmt(snapshot.cashEur)}` : '–'}
           loading={isLoading}
           subtitle="Bank accounts"
         />
         <KpiCard
           label="Portfolio (Tsumi)"
-          value={data ? `€ ${fmt(data.portfolioEur)}` : '–'}
+          value={snapshot ? `€ ${fmt(snapshot.portfolioEur)}` : '–'}
           loading={isLoading}
           subtitle="ETF + crypto"
         />
@@ -74,8 +90,8 @@ export function DashboardPage() {
           </p>
           <NetWorthChart
             data={
-              data
-                ? [{ date: data.date, totalEur: data.totalEur }]
+              snapshot
+                ? [{ date: snapshot.date, totalEur: snapshot.totalEur }]
                 : []
             }
           />
@@ -86,8 +102,8 @@ export function DashboardPage() {
       <Card className="mt-4">
         <CardContent className="p-4">
           <p className="mb-3 text-sm font-medium text-[var(--color-text-secondary)]">Allocation</p>
-          {data ? (
-            <AllocationPie cashEur={data.cashEur} portfolioEur={data.portfolioEur} />
+          {snapshot ? (
+            <AllocationPie cashEur={snapshot.cashEur} portfolioEur={snapshot.portfolioEur} />
           ) : (
             <Skeleton className="h-32 w-full" />
           )}

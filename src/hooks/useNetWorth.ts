@@ -1,9 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
-import type { NetWorthSnapshot } from '@foroba/ui';
-import { fetchNetWorth } from '../api/foroba';
+import { fetchNetWorth, type NetWorthResult } from '../api/foroba';
 
 export function useNetWorth() {
-  return useQuery<NetWorthSnapshot>({
+  return useQuery<NetWorthResult>({
     queryKey: ['netWorth'],
     queryFn: fetchNetWorth,
     refetchInterval: 60_000,

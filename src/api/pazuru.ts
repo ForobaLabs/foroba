@@ -1,3 +1,5 @@
+import { fetchJson } from './fetchJson';
+
 const BASE = import.meta.env.VITE_PAZURU_API_URL ?? '/pazuru-api';
 
 export interface PazuruHealth {
@@ -9,6 +11,8 @@ export interface PazuruSummary {
   currency: string;
 }
 
+// Deliberately soft/never-throwing: a health probe's "unavailable" result
+// IS its valid outcome, not a failure to distinguish from loading/error.
 async function safeFetch<T>(url: string, fallback: T): Promise<T> {
   try {
     const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
@@ -23,13 +27,10 @@ export async function fetchPazuruHealth(): Promise<PazuruHealth> {
   return safeFetch(`${BASE}/health`, { status: 'unavailable' as const });
 }
 
-export async function fetchPazuruSummary(): Promise<PazuruSummary | null> {
-  try {
-    const res = await fetch(`${BASE}/api/analytics/summary`, { signal: AbortSignal.timeout(5000) });
-    if (!res.ok) return null;
-    const data = (await res.json()) as { total_balance_cents: number };
-    return { totalBalance: (data.total_balance_cents ?? 0) / 100, currency: 'EUR' };
-  } catch {
-    return null;
-  }
+export async function fetchPazuruSummary(): Promise<PazuruSummary> {
+  const data = await fetchJson<{ total_balance_cents: number }>(
+    `${BASE}/api/analytics/summary`,
+    { timeoutMs: 5000 },
+  );
+  return { totalBalance: (data.total_balance_cents ?? 0) / 100, currency: 'EUR' };
 }
