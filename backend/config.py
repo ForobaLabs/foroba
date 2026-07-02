@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     tsumi_api_url: str = "http://localhost:8050"
     jeli_port: int = 8002
     sandbox_image: str = "foroba-sandbox:latest"
+    searxng_url: str = "http://localhost:8080"
 
     # --- Auth (SP9 / C1) ---
     suite_jwt_secret: str = "dev-insecure-change-me"

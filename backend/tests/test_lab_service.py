@@ -119,3 +119,27 @@ async def test_run_lab_turn_generate_code_exception_retries_then_succeeds(monkey
     events = await _collect(lab_service.run_lab_turn("q", {}, [], ""))
     assert events[-1]["type"] == "done"
     assert calls["n"] == 2
+
+
+@pytest.mark.asyncio
+async def test_run_lab_turn_passes_web_results_to_codegen(monkeypatch):
+    monkeypatch.setattr(sandbox_docker, "is_docker_running", lambda: True)
+    monkeypatch.setattr(
+        sandbox_docker, "run_sandbox",
+        lambda code, dfs: {"ok": True, "text": "done", "artifacts": []},
+    )
+    captured = {}
+
+    def _fake_generate(*args, **kwargs):
+        captured["web_results"] = args[5] if len(args) > 5 else kwargs.get("web_results")
+        return {"explanation": "done", "code": "result_text = 'x'"}
+
+    monkeypatch.setattr(lab_service, "_generate_code", _fake_generate)
+    monkeypatch.setattr(lab_service, "check_imports", lambda code: None)
+    monkeypatch.setattr(lab_service, "_update_user_context", lambda *a, **k: "ctx")
+
+    await _collect(lab_service.run_lab_turn(
+        "q", {}, [], "", web_results=[{"title": "T", "snippet": "S", "url": "U"}],
+    ))
+
+    assert captured["web_results"][0]["title"] == "T"

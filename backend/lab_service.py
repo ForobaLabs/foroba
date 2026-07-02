@@ -38,12 +38,16 @@ def _generate_code(
     history: list[dict[str, Any]],
     user_context: str,
     error_feedback: str | None = None,
+    web_results: list[dict[str, str]] | None = None,
 ) -> dict[str, str]:
     messages = [{"role": "system", "content": CODEGEN_SYSTEM_PROMPT.format(
         dataframe_names=", ".join(dataframe_names)
     )}]
     if user_context:
         messages.append({"role": "system", "content": f"What we know about this user: {user_context}"})
+    if web_results:
+        summary = "\n".join(f"- {r['title']}: {r['snippet']} ({r['url']})" for r in web_results)
+        messages.append({"role": "system", "content": f"Recent web search results:\n{summary}"})
     for turn in history:
         messages.append({"role": turn["role"], "content": turn["content"]})
     messages.append({"role": "user", "content": question})
@@ -102,6 +106,7 @@ async def _attempt_turn(
     history: list[dict[str, Any]],
     user_context: str,
     error_feedback: str | None,
+    web_results: list[dict[str, str]] | None = None,
 ) -> dict[str, Any]:
     """Generate code for one attempt, guard it, and run it in the sandbox.
 
@@ -113,7 +118,7 @@ async def _attempt_turn(
     try:
         generated = await asyncio.to_thread(
             _generate_code,
-            question, dataframe_names, history, user_context, error_feedback,
+            question, dataframe_names, history, user_context, error_feedback, web_results,
         )
     except Exception as exc:  # noqa: BLE001 — network errors, malformed JSON, Ollama down
         return {"ok": False, "code": "", "error": str(exc)}
@@ -163,6 +168,7 @@ async def run_lab_turn(
     dataframes: dict[str, pd.DataFrame],
     history: list[dict[str, Any]],
     user_context: str,
+    web_results: list[dict[str, str]] | None = None,
 ) -> AsyncGenerator[dict[str, Any], None]:
     """Drive the generate-guard-run-retry loop for one chat turn, yielding NDJSON events."""
     async for event in _ensure_sandbox_ready():
@@ -176,7 +182,7 @@ async def run_lab_turn(
 
     for _attempt in range(MAX_ATTEMPTS):
         result = await _attempt_turn(
-            question, dataframe_names, dataframes, history, user_context, error_feedback,
+            question, dataframe_names, dataframes, history, user_context, error_feedback, web_results,
         )
         code = result.get("code", "")
 

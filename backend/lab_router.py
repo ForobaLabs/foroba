@@ -18,6 +18,7 @@ from db import (
 )
 from lab_data_aggregator import gather_dataframes
 from lab_service import run_lab_turn
+from searxng_client import search_web
 
 router = APIRouter(prefix="/lab", tags=["lab"])
 
@@ -42,6 +43,13 @@ async def lab_chat(
     history = get_sandbox_history(conn, user_id, body.session_id)
     context = get_sandbox_user_context(conn, user_id)
 
+    web_results = None
+    search_note = None
+    if body.allow_internet:
+        web_results = await search_web(body.message, settings.searxng_url)
+        if not web_results:
+            search_note = "Web search was unavailable for this answer."
+
     async def _stream():
         code = None
         artifacts: list[dict] = []
@@ -49,6 +57,7 @@ async def lab_chat(
         error_message: str | None = None
         async for event in run_lab_turn(
             question=body.message, dataframes=dataframes, history=history, user_context=context,
+            web_results=web_results,
         ):
             if event["type"] == "token":
                 answer_parts.append(event["value"])
@@ -62,6 +71,9 @@ async def lab_chat(
                 code = event.get("code")
                 error_message = event["value"]
             yield json.dumps(event) + "\n"
+
+        if search_note:
+            yield json.dumps({"type": "token", "value": f" ({search_note})"}) + "\n"
 
         if code is not None:
             save_sandbox_turn(
