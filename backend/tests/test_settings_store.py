@@ -15,6 +15,7 @@ def test_init_creates_defaults(conn):
     settings = get_all(conn)
     assert settings["premium_gating_enabled"] == "false"
     assert settings["onboarding_mifid_enabled"] == "false"
+    assert settings["lab_service_enabled"] == "true"
 
 
 def test_set_value_updates_key(conn):

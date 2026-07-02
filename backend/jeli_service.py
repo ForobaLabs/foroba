@@ -110,22 +110,30 @@ async def stream_chat(system_prompt: str, message: str) -> AsyncIterator[str]:
         ],
         "stream": True,
     }
-    async with httpx.AsyncClient(timeout=httpx.Timeout(connect=10.0, read=300.0, write=30.0, pool=5.0)) as client:
-        async with client.stream(
-            "POST",
-            f"{settings.ollama_base_url}/api/chat",
-            json=payload,
-        ) as response:
-            response.raise_for_status()
-            async for line in response.aiter_lines():
-                if not line:
-                    continue
-                try:
-                    chunk = json.loads(line)
-                    content = chunk.get("message", {}).get("content", "")
-                    if content:
-                        yield content
-                    if chunk.get("done"):
-                        break
-                except json.JSONDecodeError:
-                    continue
+    try:
+        async with httpx.AsyncClient(timeout=httpx.Timeout(connect=10.0, read=300.0, write=30.0, pool=5.0)) as client:
+            async with client.stream(
+                "POST",
+                f"{settings.ollama_base_url}/api/chat",
+                json=payload,
+            ) as response:
+                response.raise_for_status()
+                async for line in response.aiter_lines():
+                    if not line:
+                        continue
+                    try:
+                        chunk = json.loads(line)
+                        content = chunk.get("message", {}).get("content", "")
+                        if content:
+                            yield content
+                        if chunk.get("done"):
+                            break
+                    except json.JSONDecodeError:
+                        continue
+    except httpx.HTTPError as exc:
+        # Ollama unreachable or erroring — end the stream cleanly instead of
+        # aborting the already-committed 200 response mid-flight. The
+        # frontend treats an empty completed stream as "AI offline" and shows
+        # a graceful fallback rather than a crash.
+        logger.warning("Ollama unavailable, degrading gracefully: %s", exc)
+        return

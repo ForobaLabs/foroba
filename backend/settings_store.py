@@ -12,6 +12,7 @@ _SCHEMA = (
 DEFAULT_SETTINGS: dict[str, str] = {
     "premium_gating_enabled": "false",
     "onboarding_mifid_enabled": "false",
+    "lab_service_enabled": "true",
 }
 
 
