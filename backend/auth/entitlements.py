@@ -27,6 +27,7 @@ REGISTRY: dict[str, dict[str, str]] = {
     "markets.volume_scanners":   {"audience": "expert", "tier": "premium"},
     "markets.rating_filter":     {"audience": "expert", "tier": "premium"},
     "markets.sentiment":         {"audience": "base",   "tier": "premium"},
+    "markets.sentiment_divergence": {"audience": "expert", "tier": "premium"},
     "markets.market_snapshot":   {"audience": "base",   "tier": "premium"},
 }
 
