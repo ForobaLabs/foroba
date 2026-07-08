@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 import { MarketsPage } from './MarketsPage';
 
@@ -7,7 +8,9 @@ function renderPage() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={qc}>
-      <MarketsPage />
+      <MemoryRouter>
+        <MarketsPage />
+      </MemoryRouter>
     </QueryClientProvider>,
   );
 }
@@ -18,15 +21,13 @@ beforeEach(() => {
     vi.fn(async () => ({
       ok: true,
       json: async () => ({
-        symbol: 'BTCUSDT',
         asset_class: 'crypto',
-        rating: { label: 'buy', score: 0.42 },
-        sentiment: {
+        gainers: [{ symbol: 'BTCUSDT', change_pct: 12.0 }],
+        losers: [{ symbol: 'ETHUSDT', change_pct: -8.0 }],
+        news: {
           symbol: 'BTCUSDT',
-          sentiment: { score: 0.42, label: 'positive', positive: 8, neutral: 16, negative: 6, count: 30 },
-          sample_headlines: [],
+          items: [{ title: 'Bitcoin rallies', link: 'https://example.com', published: '', source: 'yahoo' }],
         },
-        movers: [{ symbol: 'ETHUSDT', change_pct: 5.0 }],
         degraded: false,
         disclaimer: 'Informational only — not financial advice.',
       }),
@@ -43,11 +44,14 @@ test('renders the Markets heading', () => {
   expect(screen.getByText('Markets')).toBeInTheDocument();
 });
 
-test('renders the disclaimer once the snapshot loads', async () => {
+test('renders news, top gainers/losers, and the disclaimer once the overview loads', async () => {
   renderPage();
   await waitFor(() =>
     expect(screen.getByText(/not financial advice/i)).toBeInTheDocument(),
   );
+  expect(screen.getByText('Bitcoin rallies')).toBeInTheDocument();
+  expect(screen.getByText('BTCUSDT')).toBeInTheDocument();
+  expect(screen.getByText('ETHUSDT')).toBeInTheDocument();
 });
 
 test('renders ErrorState with a working Retry button when the query fails', async () => {

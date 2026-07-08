@@ -122,6 +122,18 @@ async def markets_snapshot(
     )
 
 
+@app.get("/markets/overview")
+async def markets_overview(
+    asset_class: str = Query("crypto"),
+    suite_session: str | None = Cookie(default=None),
+) -> dict:
+    """Top gainers/losers + news for the Markets landing page (FB-3).
+
+    Read-only superapp surface. Degrades gracefully if Tsumi is offline.
+    """
+    return await markets_service.fetch_overview(asset_class, cookie=suite_session)
+
+
 @app.post("/chat")
 async def jeli_chat(req: ChatRequest,
                     _: dict = Depends(get_current_user)) -> StreamingResponse:

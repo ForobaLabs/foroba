@@ -35,3 +35,27 @@ export async function fetchMarketSnapshot(
   const url = `${BASE}/markets/snapshot?symbol=${encodeURIComponent(symbol)}&asset_class=${assetClass}`;
   return fetchJson<MarketSnapshot>(url, { credentials: 'include', timeoutMs: 8000 });
 }
+
+export interface MarketMover {
+  symbol: string;
+  change_pct: number;
+}
+
+export interface MarketNews {
+  symbol: string;
+  items: Array<{ title: string; link: string; published: string; source: string }>;
+}
+
+export interface MarketOverview {
+  asset_class: AssetClass;
+  gainers: MarketMover[] | null;
+  losers: MarketMover[] | null;
+  news: MarketNews | null;
+  degraded: boolean;
+  disclaimer: string;
+}
+
+export async function fetchMarketOverview(assetClass: AssetClass): Promise<MarketOverview> {
+  const url = `${BASE}/markets/overview?asset_class=${assetClass}`;
+  return fetchJson<MarketOverview>(url, { credentials: 'include', timeoutMs: 8000 });
+}

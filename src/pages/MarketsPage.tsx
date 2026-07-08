@@ -1,23 +1,85 @@
-import { Badge, Card, CardContent, EmptyState, ErrorState, LoadingState, PageContainer, SectionHeader } from '@foroba/ui';
+import {
+  Badge,
+  Card,
+  CardContent,
+  EmptyState,
+  ErrorState,
+  LoadingState,
+  PageContainer,
+  SectionHeader,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@foroba/ui';
 import { useState } from 'react';
-import { useMarketSnapshot } from '../hooks/useMarketSnapshot';
-import type { AssetClass } from '../api/markets';
+import { useNavigate } from 'react-router-dom';
+import type { AssetClass, MarketMover } from '../api/markets';
+import { useMarketOverview } from '../hooks/useMarketSnapshot';
 
-const SYMBOLS: Record<AssetClass, string[]> = {
-  crypto: ['BTCUSDT', 'ETHUSDT', 'SOLUSDT'],
-  equity: ['AAPL.US', 'MSFT.US', 'NVDA.US'],
-};
+function MoversTable({
+  title,
+  movers,
+  onSelect,
+}: {
+  title: string;
+  movers: MarketMover[] | null;
+  onSelect: (symbol: string) => void;
+}) {
+  return (
+    <div>
+      <p className="mb-2 text-sm font-medium text-[var(--color-text-primary)]">{title}</p>
+      {!movers || movers.length === 0 ? (
+        <p className="text-sm text-[var(--color-text-muted)]">Unavailable</p>
+      ) : (
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Symbol</TableHead>
+              <TableHead className="text-right">Change</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {movers.map((m) => (
+              <TableRow key={m.symbol}>
+                <TableCell>
+                  <button
+                    type="button"
+                    onClick={() => onSelect(m.symbol)}
+                    className="text-left text-[var(--color-accent)] hover:underline"
+                  >
+                    {m.symbol}
+                  </button>
+                </TableCell>
+                <TableCell
+                  className={`text-right ${m.change_pct >= 0 ? 'text-[var(--color-positive)]' : 'text-[var(--color-negative)]'}`}
+                >
+                  {m.change_pct >= 0 ? '+' : ''}
+                  {m.change_pct.toFixed(2)}%
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      )}
+    </div>
+  );
+}
 
 export function MarketsPage() {
   const [assetClass, setAssetClass] = useState<AssetClass>('crypto');
-  const [symbol, setSymbol] = useState<string>('BTCUSDT');
-  const { data, isLoading, isError, refetch } = useMarketSnapshot(symbol, assetClass);
+  const { data, isLoading, isError, refetch } = useMarketOverview(assetClass);
+  const navigate = useNavigate();
+
+  const goToDetail = (symbol: string) => navigate(`/markets/${assetClass}/${symbol}`);
 
   return (
     <PageContainer>
       <SectionHeader
         title="Markets"
-        description="A cross-app market snapshot aggregated from Tsumi analysis"
+        description="Market news, top movers, and asset detail — powered by Tsumi"
         className="mb-6"
       />
 
@@ -25,101 +87,74 @@ export function MarketsPage() {
         <select
           aria-label="Asset class"
           value={assetClass}
-          onChange={(e) => {
-            const next = e.target.value as AssetClass;
-            setAssetClass(next);
-            setSymbol(SYMBOLS[next][0]);
-          }}
+          onChange={(e) => setAssetClass(e.target.value as AssetClass)}
           className="rounded border border-[var(--color-border)] bg-[var(--color-bg-elevated)] px-3 py-1.5 text-sm"
         >
           <option value="crypto">Crypto</option>
           <option value="equity">Equity</option>
         </select>
-        <select
-          aria-label="Symbol"
-          value={symbol}
-          onChange={(e) => setSymbol(e.target.value)}
-          className="rounded border border-[var(--color-border)] bg-[var(--color-bg-elevated)] px-3 py-1.5 text-sm"
-        >
-          {SYMBOLS[assetClass].map((s) => (
-            <option key={s} value={s}>
-              {s}
-            </option>
-          ))}
-        </select>
       </div>
 
-      <Card>
-        <CardContent className="p-6">
-          {isLoading && <LoadingState message="Loading snapshot…" />}
-
-          {!isLoading && isError && (
-            <ErrorState
-              message="Market data is currently unavailable. Make sure Tsumi is running."
-              onRetry={() => refetch()}
-            />
+      {isLoading ? (
+        <LoadingState message="Loading markets…" />
+      ) : isError ? (
+        <ErrorState
+          message="Market data is currently unavailable. Make sure Tsumi is running."
+          onRetry={() => refetch()}
+        />
+      ) : !data ? (
+        <EmptyState message="No market data available yet." />
+      ) : (
+        <div className="space-y-6">
+          {data.degraded && (
+            <Badge variant="warning">Partial data — some sections offline</Badge>
           )}
 
-          {!isLoading && !isError && !data && (
-            <EmptyState message="No market data available for this symbol yet." />
-          )}
-
-          {!isLoading && !isError && data && (
-            <div className="space-y-4">
-              {data.degraded && (
-                <Badge variant="warning">Partial data — some sections offline</Badge>
-              )}
-
-              <div>
-                <h3 className="mb-1 text-sm font-medium text-[var(--color-text-primary)]">
-                  {data.symbol} · rating
-                </h3>
-                {data.rating ? (
-                  <Badge variant="positive">
-                    {data.rating.label} ({data.rating.score.toFixed(2)})
-                  </Badge>
-                ) : (
-                  <span className="text-sm text-[var(--color-text-muted)]">Unavailable</span>
-                )}
-              </div>
-
-              <div>
-                <h3 className="mb-1 text-sm font-medium text-[var(--color-text-primary)]">
-                  Sentiment
-                </h3>
-                <span className="text-sm text-[var(--color-text-secondary)]">
-                  {data.sentiment
-                    ? `${data.sentiment.sentiment.label} (${data.sentiment.sentiment.score.toFixed(2)})`
-                    : 'Unavailable'}
-                </span>
-              </div>
-
-              <div>
-                <h3 className="mb-1 text-sm font-medium text-[var(--color-text-primary)]">
-                  Top movers
-                </h3>
-                {data.movers && data.movers.length > 0 ? (
-                  <ul className="space-y-1">
-                    {data.movers.map((m) => (
-                      <li
-                        key={m.symbol}
-                        className="flex justify-between text-sm text-[var(--color-text-secondary)]"
+          <Card>
+            <CardContent className="p-6">
+              <p className="mb-3 text-sm font-medium text-[var(--color-text-primary)]">
+                Market news
+              </p>
+              {data.news && data.news.items.length > 0 ? (
+                <ul className="space-y-2">
+                  {data.news.items.map((item) => (
+                    <li key={item.title} className="text-sm">
+                      <a
+                        href={item.link}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-[var(--color-text-primary)] hover:underline"
                       >
-                        <span>{m.symbol}</span>
-                        <span>{m.change_pct.toFixed(2)}%</span>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <span className="text-sm text-[var(--color-text-muted)]">Unavailable</span>
-                )}
-              </div>
+                        {item.title}
+                      </a>
+                      <span className="ml-2 text-xs text-[var(--color-text-muted)]">
+                        {item.source}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-sm text-[var(--color-text-muted)]">Unavailable</p>
+              )}
+            </CardContent>
+          </Card>
 
-              <p className="pt-2 text-xs text-[var(--color-text-muted)]">{data.disclaimer}</p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            <Card>
+              <CardContent className="p-6">
+                <MoversTable title="Top gainers" movers={data.gainers} onSelect={goToDetail} />
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-6">
+                <MoversTable title="Top losers" movers={data.losers} onSelect={goToDetail} />
+              </CardContent>
+            </Card>
+          </div>
+
+          <p className="text-xs text-[var(--color-text-muted)]">{data.disclaimer}</p>
+        </div>
+      )}
     </PageContainer>
   );
 }

@@ -125,3 +125,100 @@ def test_fetch_snapshot_forwards_cookie(monkeypatch):
     monkeypatch.setattr(ms.httpx, "AsyncClient", _factory)
     asyncio.run(ms.fetch_snapshot("BTCUSDT", "crypto", cookie="abc123"))
     assert seen["cookies"] == {"suite_session": "abc123"}
+
+
+_GAINERS_SCAN = {
+    "screen": "top_movers",
+    "results": [{"symbol": "BTCUSDT", "change_pct": 12.0}],
+}
+_LOSERS_SCAN = {
+    "screen": "top_movers",
+    "results": [{"symbol": "ETHUSDT", "change_pct": -8.0}],
+}
+_HEADLINES = {"symbol": "BTCUSDT", "items": [{"title": "Bitcoin rallies", "source": "yahoo"}]}
+
+
+class _DirectionRoutingClient:
+    """Routes /screener/scan by the `direction` query param, else by URL substring."""
+
+    def __init__(self, routes: dict[str, Any]) -> None:
+        self._routes = routes
+
+    async def __aenter__(self) -> "_DirectionRoutingClient":
+        return self
+
+    async def __aexit__(self, *exc: Any) -> None:
+        return None
+
+    async def get(self, url: str, **kwargs: Any) -> _FakeResponse:
+        params = kwargs.get("params", {})
+        if "screener/scan" in url:
+            key = f"screener/scan:{params.get('direction')}"
+        elif "news/headlines" in url:
+            key = "news/headlines"
+        else:
+            key = url
+        for needle, value in self._routes.items():
+            if needle in key:
+                if isinstance(value, Exception):
+                    raise value
+                return _FakeResponse(value)
+        raise RuntimeError(f"unrouted url: {url} params={params}")
+
+
+def test_fetch_overview_assembles_gainers_losers_and_news(monkeypatch):
+    monkeypatch.setattr(
+        ms.httpx,
+        "AsyncClient",
+        lambda *a, **kw: _DirectionRoutingClient(
+            {
+                "screener/scan:gainers": _GAINERS_SCAN,
+                "screener/scan:losers": _LOSERS_SCAN,
+                "news/headlines": _HEADLINES,
+            }
+        ),
+    )
+    overview = asyncio.run(ms.fetch_overview("crypto"))
+    assert overview["asset_class"] == "crypto"
+    assert overview["gainers"][0]["symbol"] == "BTCUSDT"
+    assert overview["losers"][0]["symbol"] == "ETHUSDT"
+    assert overview["news"]["items"][0]["title"] == "Bitcoin rallies"
+    assert overview["degraded"] is False
+    assert overview["disclaimer"]
+
+
+def test_fetch_overview_degrades_when_losers_fail(monkeypatch):
+    monkeypatch.setattr(
+        ms.httpx,
+        "AsyncClient",
+        lambda *a, **kw: _DirectionRoutingClient(
+            {
+                "screener/scan:gainers": _GAINERS_SCAN,
+                "screener/scan:losers": RuntimeError("tsumi down"),
+                "news/headlines": _HEADLINES,
+            }
+        ),
+    )
+    overview = asyncio.run(ms.fetch_overview("crypto"))
+    assert overview["gainers"][0]["symbol"] == "BTCUSDT"
+    assert overview["losers"] is None
+    assert overview["degraded"] is True
+
+
+def test_fetch_overview_no_gainers_skips_news(monkeypatch):
+    empty_scan = {"screen": "top_movers", "results": []}
+    monkeypatch.setattr(
+        ms.httpx,
+        "AsyncClient",
+        lambda *a, **kw: _DirectionRoutingClient(
+            {
+                "screener/scan:gainers": empty_scan,
+                "screener/scan:losers": _LOSERS_SCAN,
+                "news/headlines": _HEADLINES,
+            }
+        ),
+    )
+    overview = asyncio.run(ms.fetch_overview("equity"))
+    assert overview["gainers"] == []
+    assert overview["news"] is None
+    assert overview["degraded"] is True
