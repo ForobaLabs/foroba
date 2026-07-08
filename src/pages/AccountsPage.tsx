@@ -9,6 +9,7 @@ import {
   PageContainer,
   SectionHeader,
 } from '@foroba/ui';
+import { useNavigate } from 'react-router-dom';
 import { useAccountsList, usePazuruHealth } from '../hooks/useServiceHealth';
 
 const BANK_LABELS: Record<string, string> = {
@@ -22,6 +23,7 @@ export function AccountsPage() {
   const health = usePazuruHealth();
   const online = health.data?.status === 'ok';
   const accounts = useAccountsList();
+  const navigate = useNavigate();
 
   return (
     <PageContainer>
@@ -61,15 +63,37 @@ export function AccountsPage() {
         />
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <KpiCard
+            label="Totale"
+            value={
+              new Set(accounts.data.map((a) => a.currency)).size === 1
+                ? new Intl.NumberFormat('en-US', {
+                    style: 'currency',
+                    currency: accounts.data[0].currency,
+                  }).format(accounts.data.reduce((sum, a) => sum + a.balance, 0))
+                : accounts.data.reduce((sum, a) => sum + a.balance, 0).toFixed(2)
+            }
+            subtitle={
+              new Set(accounts.data.map((a) => a.currency)).size === 1
+                ? undefined
+                : 'Mixed currencies'
+            }
+          />
           {accounts.data.map((acc) => (
-            <KpiCard
+            <button
               key={acc.id}
-              label={`${BANK_LABELS[acc.bankName] ?? acc.bankName} — ${acc.displayName}`}
-              value={new Intl.NumberFormat('en-US', {
-                style: 'currency',
-                currency: acc.currency,
-              }).format(acc.balance)}
-            />
+              type="button"
+              onClick={() => navigate(`/accounts/${acc.id}`)}
+              className="text-left"
+            >
+              <KpiCard
+                label={`${BANK_LABELS[acc.bankName] ?? acc.bankName} — ${acc.displayName}`}
+                value={new Intl.NumberFormat('en-US', {
+                  style: 'currency',
+                  currency: acc.currency,
+                }).format(acc.balance)}
+              />
+            </button>
           ))}
         </div>
       )}

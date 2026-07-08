@@ -9,6 +9,7 @@ import { FOROBA_FAQ } from './data/faq';
 
 const DashboardPage     = lazy(() => import('./pages/DashboardPage').then(m => ({ default: m.DashboardPage })));
 const AccountsPage      = lazy(() => import('./pages/AccountsPage').then(m => ({ default: m.AccountsPage })));
+const AccountDetailPage = lazy(() => import('./pages/AccountDetailPage').then(m => ({ default: m.AccountDetailPage })));
 const PortfolioPage     = lazy(() => import('./pages/PortfolioPage').then(m => ({ default: m.PortfolioPage })));
 const AppSettingsPage   = lazy(() => import('./pages/AppSettingsPage').then(m => ({ default: m.AppSettingsPage })));
 const AppOnboardingPage = lazy(() => import('./pages/AppOnboardingPage').then(m => ({ default: m.AppOnboardingPage })));
@@ -38,6 +39,7 @@ export const router = createBrowserRouter([
     children: [
       { index: true,      element: <Suspense fallback={<Loading />}><DashboardPage /></Suspense> },
       { path: 'accounts', element: <Suspense fallback={<Loading />}><AccountsPage /></Suspense> },
+      { path: 'accounts/:id', element: <Suspense fallback={<Loading />}><AccountDetailPage /></Suspense> },
       { path: 'portfolio',element: <Suspense fallback={<Loading />}><PortfolioPage /></Suspense> },
       { path: 'markets', element: <Suspense fallback={<Loading />}><MarketsPage /></Suspense> },
       { path: 'lab', element: <Suspense fallback={<Loading />}><JeliLabPage /></Suspense> },

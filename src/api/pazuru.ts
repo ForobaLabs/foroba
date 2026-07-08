@@ -64,3 +64,76 @@ export async function fetchPazuruAccounts(): Promise<PazuruAccount[]> {
     balance: a.balance_cents / 100,
   }));
 }
+
+export interface PazuruAccountMonth {
+  month: string;
+  incomeCents: number;
+  expenseCents: number;
+  savingsCents: number;
+}
+
+export interface PazuruAccountDetail extends PazuruAccount {
+  monthlyTrend: PazuruAccountMonth[];
+}
+
+interface RawPazuruAccountDetail extends RawPazuruAccount {
+  monthly_trend: { month: string; income_cents: number; expense_cents: number; savings_cents: number }[];
+}
+
+export async function fetchPazuruAccountDetail(accountId: number): Promise<PazuruAccountDetail> {
+  const data = await fetchJson<RawPazuruAccountDetail>(`${BASE}/api/accounts/${accountId}`, {
+    credentials: 'include',
+    timeoutMs: 5000,
+  });
+  return {
+    id: data.id,
+    bankName: data.bank_name,
+    displayName: data.display_name,
+    currency: data.currency,
+    balance: data.balance_cents / 100,
+    monthlyTrend: data.monthly_trend.map((m) => ({
+      month: m.month,
+      incomeCents: m.income_cents,
+      expenseCents: m.expense_cents,
+      savingsCents: m.savings_cents,
+    })),
+  };
+}
+
+export interface PazuruTransaction {
+  id: number;
+  bookedDate: string;
+  amount: number;
+  currency: string;
+  merchant: string;
+  category: string | null;
+}
+
+interface RawPazuruTransactionsPage {
+  items: {
+    id: number;
+    booked_date: string;
+    amount_cents: number;
+    currency: string;
+    raw_label: string;
+    normalized_merchant: string | null;
+    category: string | null;
+  }[];
+}
+
+export async function fetchPazuruAccountTransactions(
+  accountId: number,
+): Promise<PazuruTransaction[]> {
+  const data = await fetchJson<RawPazuruTransactionsPage>(
+    `${BASE}/api/transactions?account_id=${accountId}&page_size=25`,
+    { credentials: 'include', timeoutMs: 5000 },
+  );
+  return data.items.map((t) => ({
+    id: t.id,
+    bookedDate: t.booked_date,
+    amount: t.amount_cents / 100,
+    currency: t.currency,
+    merchant: t.normalized_merchant ?? t.raw_label,
+    category: t.category,
+  }));
+}

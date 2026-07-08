@@ -1,5 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
-import { fetchPazuruAccounts, fetchPazuruHealth } from '../api/pazuru';
+import {
+  fetchPazuruAccountDetail,
+  fetchPazuruAccounts,
+  fetchPazuruAccountTransactions,
+  fetchPazuruHealth,
+} from '../api/pazuru';
 import { fetchPortfolioPositions, fetchTsumiHealth } from '../api/tsumi';
 
 export function usePazuruHealth() {
@@ -22,6 +27,22 @@ export function useAccountsList() {
   return useQuery({
     queryKey: ['pazuruAccounts'],
     queryFn: fetchPazuruAccounts,
+    refetchInterval: 30_000,
+  });
+}
+
+export function useAccountDetail(accountId: number) {
+  return useQuery({
+    queryKey: ['pazuruAccountDetail', accountId],
+    queryFn: () => fetchPazuruAccountDetail(accountId),
+    refetchInterval: 30_000,
+  });
+}
+
+export function useAccountTransactions(accountId: number) {
+  return useQuery({
+    queryKey: ['pazuruAccountTransactions', accountId],
+    queryFn: () => fetchPazuruAccountTransactions(accountId),
     refetchInterval: 30_000,
   });
 }
