@@ -31,6 +31,7 @@ export function GoalsPage() {
   const [target, setTarget] = useState('');
   const [current, setCurrent] = useState('0');
   const [targetDate, setTargetDate] = useState('');
+  const [contribution, setContribution] = useState('0');
 
   const activeGoals = goals.filter((g) => g.status !== 'completed');
   const doneGoals = goals.filter((g) => g.status === 'completed');
@@ -47,8 +48,9 @@ export function GoalsPage() {
       currentAmount: parseFloat(current) || 0,
       currency: profile.baseCurrency || 'EUR',
       targetDate: targetDate || undefined,
+      monthlyContribution: parseFloat(contribution) || 0,
     });
-    setTitle(''); setTarget(''); setCurrent('0'); setTargetDate('');
+    setTitle(''); setTarget(''); setCurrent('0'); setTargetDate(''); setContribution('0');
     setShowForm(false);
   };
 
@@ -96,6 +98,10 @@ export function GoalsPage() {
             <div>
               <label className={labelCls}>Target date (optional)</label>
               <input className={inputCls} type="date" value={targetDate} onChange={(e) => setTargetDate(e.target.value)} />
+            </div>
+            <div>
+              <label className={labelCls}>Monthly contribution ({profile.baseCurrency})</label>
+              <input className={inputCls} type="number" min="0" value={contribution} onChange={(e) => setContribution(e.target.value)} placeholder="200" />
             </div>
           </div>
           <div className="mt-4 flex gap-2">
