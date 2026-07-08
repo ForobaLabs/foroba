@@ -5,7 +5,12 @@ import {
   fetchPazuruAccountTransactions,
   fetchPazuruHealth,
 } from '../api/pazuru';
-import { fetchPortfolioPositions, fetchTsumiHealth } from '../api/tsumi';
+import {
+  fetchPortfolioAllocations,
+  fetchPortfolioPositions,
+  fetchTsumiHealth,
+  fetchTsumiSummary,
+} from '../api/tsumi';
 
 export function usePazuruHealth() {
   return useQuery({
@@ -51,6 +56,22 @@ export function usePortfolioPositions() {
   return useQuery({
     queryKey: ['portfolioPositions'],
     queryFn: fetchPortfolioPositions,
+    refetchInterval: 30_000,
+  });
+}
+
+export function usePortfolioSummary() {
+  return useQuery({
+    queryKey: ['portfolioSummary'],
+    queryFn: fetchTsumiSummary,
+    refetchInterval: 30_000,
+  });
+}
+
+export function usePortfolioAllocations() {
+  return useQuery({
+    queryKey: ['portfolioAllocations'],
+    queryFn: fetchPortfolioAllocations,
     refetchInterval: 30_000,
   });
 }

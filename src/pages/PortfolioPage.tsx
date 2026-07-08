@@ -8,13 +8,59 @@ import {
   LoadingState,
   PageContainer,
   SectionHeader,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from '@foroba/ui';
-import { usePortfolioPositions, useTsumiHealth } from '../hooks/useServiceHealth';
+import { useNavigate } from 'react-router-dom';
+import type { PortfolioAllocationGroup } from '../api/tsumi';
+import {
+  usePortfolioAllocations,
+  usePortfolioPositions,
+  usePortfolioSummary,
+  useTsumiHealth,
+} from '../hooks/useServiceHealth';
+
+function formatCurrency(amount: number, currency = 'EUR') {
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(amount);
+}
+
+function AllocationTable({ title, groups }: { title: string; groups: PortfolioAllocationGroup[] }) {
+  return (
+    <div>
+      <p className="mb-2 text-sm font-medium text-[var(--color-text-primary)]">{title}</p>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Label</TableHead>
+            <TableHead className="text-right">Value</TableHead>
+            <TableHead className="text-right">%</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {groups.map((g) => (
+            <TableRow key={g.label}>
+              <TableCell>{g.label}</TableCell>
+              <TableCell className="text-right">{formatCurrency(g.valueEur)}</TableCell>
+              <TableCell className="text-right">{g.pct.toFixed(1)}%</TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}
 
 export function PortfolioPage() {
   const health = useTsumiHealth();
   const online = health.data?.status === 'ok';
+  const summary = usePortfolioSummary();
   const positions = usePortfolioPositions();
+  const allocations = usePortfolioAllocations();
+  const navigate = useNavigate();
 
   return (
     <PageContainer>
@@ -53,21 +99,52 @@ export function PortfolioPage() {
           message="Add a position in Tsumi to see your portfolio here."
         />
       ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {positions.data.map((p) => (
+        <>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 mb-6">
             <KpiCard
-              key={`${p.source}-${p.isin}`}
-              label={`${p.name} (${p.isin})`}
-              value={new Intl.NumberFormat('en-US', {
-                style: 'currency',
-                currency: p.currency,
-              }).format(p.valueEur)}
-              delta={p.pnlEur}
-              deltaPct={p.pnlPct}
-              subtitle={`${p.quantity} · ${p.source}`}
+              label="Totale"
+              value={formatCurrency(summary.data?.totalValueEur ?? 0)}
             />
-          ))}
-        </div>
+            <KpiCard
+              label="P&L"
+              value={formatCurrency(summary.data?.pnlEur ?? 0)}
+              delta={summary.data?.pnlEur}
+              deltaPct={summary.data?.pnlPct}
+            />
+            <KpiCard
+              label="Positions"
+              value={String(summary.data?.positionCount ?? positions.data.length)}
+            />
+          </div>
+
+          {allocations.data && (
+            <div className="mb-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
+              <AllocationTable title="By asset class" groups={allocations.data.byAssetClass} />
+              <AllocationTable title="By broker" groups={allocations.data.byBroker} />
+              <AllocationTable title="By currency" groups={allocations.data.byCurrency} />
+            </div>
+          )}
+
+          <SectionHeader title="Positions" className="mb-3" />
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {positions.data.map((p) => (
+              <button
+                key={`${p.source}-${p.isin}`}
+                type="button"
+                onClick={() => navigate(`/portfolio/${p.source}/${p.isin}`)}
+                className="text-left"
+              >
+                <KpiCard
+                  label={`${p.name} (${p.isin})`}
+                  value={formatCurrency(p.valueEur, p.currency)}
+                  delta={p.pnlEur}
+                  deltaPct={p.pnlPct}
+                  subtitle={`${p.quantity} · ${p.source}`}
+                />
+              </button>
+            ))}
+          </div>
+        </>
       )}
     </PageContainer>
   );

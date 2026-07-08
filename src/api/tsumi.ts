@@ -8,6 +8,9 @@ export interface TsumiHealth {
 
 export interface TsumiSummary {
   totalValueEur: number;
+  pnlEur: number;
+  pnlPct: number;
+  positionCount: number;
 }
 
 export interface PortfolioPosition {
@@ -17,10 +20,26 @@ export interface PortfolioPosition {
   assetClass: string;
   currency: string;
   quantity: number;
+  avgCost: number;
+  currentPrice: number;
+  purchaseDate: string | null;
+  accountType: string;
   valueEur: number;
   pnlEur: number;
   pnlPct: number;
   source: string;
+}
+
+export interface PortfolioAllocationGroup {
+  label: string;
+  valueEur: number;
+  pct: number;
+}
+
+export interface PortfolioAllocations {
+  byAssetClass: PortfolioAllocationGroup[];
+  byBroker: PortfolioAllocationGroup[];
+  byCurrency: PortfolioAllocationGroup[];
 }
 
 // Deliberately soft/never-throwing: a health probe's "unavailable" result
@@ -40,11 +59,18 @@ export async function fetchTsumiHealth(): Promise<TsumiHealth> {
 }
 
 export async function fetchTsumiSummary(): Promise<TsumiSummary> {
-  const data = await fetchJson<{ total_eur: number }>(
-    `${BASE}/api/portfolio/summary`,
-    { timeoutMs: 5000 },
-  );
-  return { totalValueEur: data.total_eur ?? 0 };
+  const data = await fetchJson<{
+    total_eur: number;
+    pnl_eur: number;
+    pnl_pct: number;
+    position_count: number;
+  }>(`${BASE}/api/portfolio/summary`, { timeoutMs: 5000 });
+  return {
+    totalValueEur: data.total_eur ?? 0,
+    pnlEur: data.pnl_eur ?? 0,
+    pnlPct: data.pnl_pct ?? 0,
+    positionCount: data.position_count ?? 0,
+  };
 }
 
 interface RawPosition {
@@ -54,6 +80,10 @@ interface RawPosition {
   asset_class: string;
   currency: string;
   quantity: number;
+  avg_cost: number;
+  current_price: number;
+  purchase_date: string | null;
+  account_type: string;
   value_eur: number;
   pnl_eur: number;
   pnl_pct: number;
@@ -72,9 +102,34 @@ export async function fetchPortfolioPositions(): Promise<PortfolioPosition[]> {
     assetClass: p.asset_class,
     currency: p.currency,
     quantity: p.quantity,
+    avgCost: p.avg_cost,
+    currentPrice: p.current_price,
+    purchaseDate: p.purchase_date,
+    accountType: p.account_type,
     valueEur: p.value_eur,
     pnlEur: p.pnl_eur,
     pnlPct: p.pnl_pct,
     source: p.source,
   }));
+}
+
+interface RawAllocationGroup {
+  label: string;
+  value_eur: number;
+  pct: number;
+}
+
+export async function fetchPortfolioAllocations(): Promise<PortfolioAllocations> {
+  const data = await fetchJson<{
+    by_asset_class: RawAllocationGroup[];
+    by_broker: RawAllocationGroup[];
+    by_currency: RawAllocationGroup[];
+  }>(`${BASE}/api/portfolio/allocations`, { credentials: 'include', timeoutMs: 5000 });
+  const map = (g: RawAllocationGroup[]): PortfolioAllocationGroup[] =>
+    g.map((x) => ({ label: x.label, valueEur: x.value_eur, pct: x.pct }));
+  return {
+    byAssetClass: map(data.by_asset_class),
+    byBroker: map(data.by_broker),
+    byCurrency: map(data.by_currency),
+  };
 }

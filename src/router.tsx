@@ -11,6 +11,7 @@ const DashboardPage     = lazy(() => import('./pages/DashboardPage').then(m => (
 const AccountsPage      = lazy(() => import('./pages/AccountsPage').then(m => ({ default: m.AccountsPage })));
 const AccountDetailPage = lazy(() => import('./pages/AccountDetailPage').then(m => ({ default: m.AccountDetailPage })));
 const PortfolioPage     = lazy(() => import('./pages/PortfolioPage').then(m => ({ default: m.PortfolioPage })));
+const PortfolioDetailPage = lazy(() => import('./pages/PortfolioDetailPage').then(m => ({ default: m.PortfolioDetailPage })));
 const AppSettingsPage   = lazy(() => import('./pages/AppSettingsPage').then(m => ({ default: m.AppSettingsPage })));
 const AppOnboardingPage = lazy(() => import('./pages/AppOnboardingPage').then(m => ({ default: m.AppOnboardingPage })));
 const ProfilePage       = lazy(() => import('./pages/ProfilePage').then(m => ({ default: m.ProfilePage })));
@@ -41,6 +42,7 @@ export const router = createBrowserRouter([
       { path: 'accounts', element: <Suspense fallback={<Loading />}><AccountsPage /></Suspense> },
       { path: 'accounts/:id', element: <Suspense fallback={<Loading />}><AccountDetailPage /></Suspense> },
       { path: 'portfolio',element: <Suspense fallback={<Loading />}><PortfolioPage /></Suspense> },
+      { path: 'portfolio/:source/:isin', element: <Suspense fallback={<Loading />}><PortfolioDetailPage /></Suspense> },
       { path: 'markets', element: <Suspense fallback={<Loading />}><MarketsPage /></Suspense> },
       { path: 'lab', element: <Suspense fallback={<Loading />}><JeliLabPage /></Suspense> },
       { path: 'settings',  element: <Suspense fallback={<Loading />}><AppSettingsPage /></Suspense> },
