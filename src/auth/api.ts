@@ -47,3 +47,55 @@ export async function register(
 export async function logout(): Promise<void> {
   await fetch("/jeli/auth/logout", { ...opts, method: "POST" });
 }
+
+export interface HouseholdMember {
+  id: number;
+  email: string;
+  name: string;
+}
+
+export interface HouseholdState {
+  household_id: string | null;
+  members: HouseholdMember[];
+  share_preferences: Record<string, boolean>;
+}
+
+export async function fetchHousehold(): Promise<HouseholdState> {
+  const r = await fetch("/jeli/auth/household", opts);
+  if (!r.ok) throw new Error("failed to load household");
+  return r.json();
+}
+
+export async function joinHousehold(
+  email: string,
+): Promise<{ household_id: string; members: HouseholdMember[] }> {
+  const r = await fetch("/jeli/auth/household/join", {
+    ...opts,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email }),
+  });
+  if (!r.ok) {
+    const body = await r.json().catch(() => null);
+    throw new Error(body?.detail ?? "failed to join household");
+  }
+  return r.json();
+}
+
+export async function leaveHousehold(): Promise<void> {
+  const r = await fetch("/jeli/auth/household/leave", { ...opts, method: "POST" });
+  if (!r.ok) throw new Error("failed to leave household");
+}
+
+export async function setSharePreference(
+  resourceType: string,
+  shared: boolean,
+): Promise<void> {
+  const r = await fetch("/jeli/auth/household/share", {
+    ...opts,
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ resource_type: resourceType, shared }),
+  });
+  if (!r.ok) throw new Error("failed to update share preference");
+}

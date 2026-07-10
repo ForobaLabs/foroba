@@ -24,3 +24,12 @@ class UserPublic(BaseModel):
     audience_locked: bool
     is_admin: bool
     totp_enabled: bool
+
+
+class HouseholdJoinRequest(BaseModel):
+    email: EmailStr
+
+
+class ShareToggleRequest(BaseModel):
+    resource_type: str = Field(min_length=1, max_length=40)
+    shared: bool

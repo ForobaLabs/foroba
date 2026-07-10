@@ -16,7 +16,20 @@ CREATE TABLE IF NOT EXISTS users (
     totp_secret TEXT,
     totp_enabled INTEGER NOT NULL DEFAULT 0,
     is_admin INTEGER NOT NULL DEFAULT 0,
+    household_id TEXT,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- Per-user, per-resource-type opt-in sharing toggle. If a row exists with
+-- shared=1, the user's resources of that type become visible to household
+-- members (via GET /auth/visible-owners). Default (no row, or shared=0) is
+-- private: only the owner can see their own data.
+CREATE TABLE IF NOT EXISTS share_preferences (
+    user_id INTEGER NOT NULL,
+    resource_type TEXT NOT NULL,
+    shared INTEGER NOT NULL DEFAULT 0,
+    updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+    PRIMARY KEY (user_id, resource_type)
 );
 
 CREATE TABLE IF NOT EXISTS sandbox_conversations (
@@ -44,6 +57,12 @@ def init_schema(conn: sqlite3.Connection) -> None:
     # Idempotent migration: add is_admin column if it doesn't exist
     try:
         conn.execute("ALTER TABLE users ADD COLUMN is_admin INTEGER NOT NULL DEFAULT 0")
+        conn.commit()
+    except sqlite3.OperationalError:
+        pass  # column already exists
+    # Idempotent migration: add household_id column if it doesn't exist
+    try:
+        conn.execute("ALTER TABLE users ADD COLUMN household_id TEXT")
         conn.commit()
     except sqlite3.OperationalError:
         pass  # column already exists
@@ -77,6 +96,23 @@ def seed_mock_users(conn: sqlite3.Connection) -> list[str]:
         created.append(email)
     conn.commit()
     return created
+
+
+# Fixed demo household linking demo@foroba.app + pro@foroba.app for local dev/testing
+# of the FB-5 household-sharing feature. Sharing itself stays OFF (private) by default
+# — a user must explicitly opt in via PUT /auth/household/share. test@foroba.app is
+# intentionally left with no household_id, to exercise the isolated/private-only path.
+_DEMO_HOUSEHOLD_ID = "demo-household-0001"
+_DEMO_HOUSEHOLD_EMAILS = ("demo@foroba.app", "pro@foroba.app")
+
+
+def seed_demo_household(conn: sqlite3.Connection) -> None:
+    for email in _DEMO_HOUSEHOLD_EMAILS:
+        row = conn.execute("SELECT id, household_id FROM users WHERE email = ?", (email,)).fetchone()
+        if row is None or row["household_id"]:
+            continue
+        conn.execute("UPDATE users SET household_id = ? WHERE id = ?", (_DEMO_HOUSEHOLD_ID, row["id"]))
+    conn.commit()
 
 
 def save_sandbox_turn(

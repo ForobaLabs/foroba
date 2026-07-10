@@ -124,11 +124,18 @@ async def _attempt_turn(
         return {"ok": False, "code": "", "error": str(exc)}
 
     code = generated.get("code", "")
-    explanation = generated.get("explanation", "")
+    explanation = generated.get("explanation") or ""
+
+    if not isinstance(code, str):
+        return {
+            "ok": False,
+            "code": "",
+            "error": f"Generated code was not valid Python source (got {type(code).__name__})",
+        }
 
     try:
         check_imports(code)
-    except DisallowedImportError as exc:
+    except (DisallowedImportError, SyntaxError) as exc:
         return {"ok": False, "code": code, "explanation": explanation, "error": str(exc)}
 
     result = await asyncio.to_thread(sandbox_docker.run_sandbox, code, dataframes)

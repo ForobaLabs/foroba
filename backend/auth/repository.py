@@ -64,3 +64,60 @@ def disable_totp(conn: sqlite3.Connection, user_id: int) -> None:
     conn.execute("UPDATE users SET totp_enabled = 0, totp_secret = NULL WHERE id = ?",
                  (user_id,))
     conn.commit()
+
+
+def set_household_id(conn: sqlite3.Connection, user_id: int, household_id: str | None) -> None:
+    conn.execute("UPDATE users SET household_id = ? WHERE id = ?", (household_id, user_id))
+    conn.commit()
+
+
+def get_household_members(conn: sqlite3.Connection, household_id: str) -> list[dict]:
+    """Return all users (id/email/name only) sharing the given household_id."""
+    rows = conn.execute(
+        "SELECT id, email, name FROM users WHERE household_id = ? ORDER BY id",
+        (household_id,),
+    ).fetchall()
+    return [dict(r) for r in rows]
+
+
+def get_share_preferences(conn: sqlite3.Connection, user_id: int) -> dict[str, bool]:
+    """Return {resource_type: shared} for every preference this user has set."""
+    rows = conn.execute(
+        "SELECT resource_type, shared FROM share_preferences WHERE user_id = ?",
+        (user_id,),
+    ).fetchall()
+    return {r["resource_type"]: bool(r["shared"]) for r in rows}
+
+
+def set_share_preference(conn: sqlite3.Connection, user_id: int, resource_type: str,
+                         shared: bool) -> None:
+    conn.execute(
+        "INSERT INTO share_preferences (user_id, resource_type, shared, updated_at) "
+        "VALUES (?, ?, ?, datetime('now')) "
+        "ON CONFLICT(user_id, resource_type) DO UPDATE SET "
+        "shared = excluded.shared, updated_at = excluded.updated_at",
+        (user_id, resource_type, 1 if shared else 0),
+    )
+    conn.commit()
+
+
+def get_visible_owner_ids(conn: sqlite3.Connection, user_id: int, resource_type: str) -> list[int]:
+    """Return [user_id, ...household mates who opted to share this resource_type].
+
+    Fails closed to [user_id] (private-only) if the user has no household.
+    """
+    user = get_user_by_id(conn, user_id)
+    if user is None or not user.get("household_id"):
+        return [user_id]
+    household_id = user["household_id"]
+    rows = conn.execute(
+        """
+        SELECT u.id FROM users u
+        JOIN share_preferences sp ON sp.user_id = u.id
+        WHERE u.household_id = ? AND sp.resource_type = ? AND sp.shared = 1
+        """,
+        (household_id, resource_type),
+    ).fetchall()
+    shared_ids = {r["id"] for r in rows}
+    shared_ids.add(user_id)
+    return sorted(shared_ids)

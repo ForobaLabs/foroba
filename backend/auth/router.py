@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import sqlite3
+import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from pydantic import BaseModel
@@ -10,7 +11,9 @@ from config import settings
 from auth.conn import get_conn  # re-exported for tests that import it from here
 from auth import repository as repo
 from auth.dependencies import get_current_user
-from auth.models import LoginRequest, RegisterRequest, UserPublic
+from auth.models import (
+    HouseholdJoinRequest, LoginRequest, RegisterRequest, ShareToggleRequest, UserPublic,
+)
 from auth.security import create_token, hash_password, needs_rehash, verify_password
 from twofa.totp import verify_code
 
@@ -82,3 +85,50 @@ def logout(response: Response) -> None:
 @router.get("/me", response_model=UserPublic)
 def me(user: dict = Depends(get_current_user)) -> dict:
     return user
+
+
+@router.get("/household")
+def get_household(user: dict = Depends(get_current_user),
+                  conn: sqlite3.Connection = Depends(get_conn)) -> dict:
+    household_id = user.get("household_id")
+    members = repo.get_household_members(conn, household_id) if household_id else []
+    return {
+        "household_id": household_id,
+        "members": members,
+        "share_preferences": repo.get_share_preferences(conn, user["id"]),
+    }
+
+
+@router.post("/household/join")
+def join_household(req: HouseholdJoinRequest, user: dict = Depends(get_current_user),
+                   conn: sqlite3.Connection = Depends(get_conn)) -> dict:
+    if req.email == user["email"]:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Cannot join a household with yourself")
+    other = repo.get_user_by_email(conn, req.email)
+    if other is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "No user with that email")
+    household_id = user.get("household_id") or other.get("household_id") or str(uuid.uuid4())
+    repo.set_household_id(conn, user["id"], household_id)
+    repo.set_household_id(conn, other["id"], household_id)
+    return {
+        "household_id": household_id,
+        "members": repo.get_household_members(conn, household_id),
+    }
+
+
+@router.post("/household/leave", status_code=204)
+def leave_household(user: dict = Depends(get_current_user),
+                    conn: sqlite3.Connection = Depends(get_conn)) -> None:
+    repo.set_household_id(conn, user["id"], None)
+
+
+@router.put("/household/share", status_code=204)
+def set_share_preference(req: ShareToggleRequest, user: dict = Depends(get_current_user),
+                         conn: sqlite3.Connection = Depends(get_conn)) -> None:
+    repo.set_share_preference(conn, user["id"], req.resource_type, req.shared)
+
+
+@router.get("/visible-owners")
+def visible_owners(resource_type: str, user: dict = Depends(get_current_user),
+                   conn: sqlite3.Connection = Depends(get_conn)) -> dict:
+    return {"owner_ids": repo.get_visible_owner_ids(conn, user["id"], resource_type)}

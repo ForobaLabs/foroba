@@ -29,6 +29,11 @@ REGISTRY: dict[str, dict[str, str]] = {
     "markets.sentiment":         {"audience": "base",   "tier": "premium"},
     "markets.sentiment_divergence": {"audience": "expert", "tier": "premium"},
     "markets.market_snapshot":   {"audience": "base",   "tier": "premium"},
+    "banking.chat":               {"audience": "base",   "tier": "premium"},
+    "banking.ai_insights":        {"audience": "base",   "tier": "premium"},
+    "banking.tax_export":         {"audience": "expert", "tier": "premium"},
+    "banking.recurring_predictions": {"audience": "base", "tier": "premium"},
+    "banking.budget_alerts":      {"audience": "base",   "tier": "premium"},
 }
 
 

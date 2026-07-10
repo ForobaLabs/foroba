@@ -28,7 +28,7 @@ ALLOWED_ORIGINS = os.getenv(
     "http://localhost:5175,http://localhost:5173,http://localhost:5174,http://localhost:5178",
 ).split(",")
 limiter = Limiter(key_func=get_remote_address)
-from db import seed_mock_users as _seed
+from db import seed_demo_household as _seed_household, seed_mock_users as _seed
 from auth.router import router as auth_router, get_conn
 from auth.dependencies import get_current_user
 from auth.entitlements_router import router as entitlements_router
@@ -87,6 +87,7 @@ def _startup() -> None:
     conn = get_conn()
     if settings.seed_mock_users:
         _seed(conn)
+        _seed_household(conn)
     init_settings(conn)
 
 
@@ -136,7 +137,8 @@ async def markets_overview(
 
 @app.post("/chat")
 async def jeli_chat(req: ChatRequest,
-                    _: dict = Depends(get_current_user)) -> StreamingResponse:
+                    _: dict = Depends(get_current_user),
+                    suite_session: str | None = Cookie(default=None)) -> StreamingResponse:
     """Stream a Jeli response for the given message.
 
     Gathers context from Pazuru + Tsumi, builds the system prompt,
@@ -145,6 +147,7 @@ async def jeli_chat(req: ChatRequest,
     pazuru_ctx, tsumi_ctx = await gather_context(
         settings.pazuru_api_url,
         settings.tsumi_api_url,
+        cookie=suite_session,
     )
     system_prompt = build_system_prompt(
         pazuru_context=pazuru_ctx,

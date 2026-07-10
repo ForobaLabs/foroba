@@ -56,9 +56,12 @@ def _expertise_description(value: int) -> str:
 # Context gathering
 # ---------------------------------------------------------------------------
 
-async def _fetch_context(client: httpx.AsyncClient, url: str, label: str) -> str:
+async def _fetch_context(
+    client: httpx.AsyncClient, url: str, label: str, cookie: str | None
+) -> str:
     try:
-        resp = await client.get(url, timeout=3.0)
+        headers = {"Cookie": f"suite_session={cookie}"} if cookie else {}
+        resp = await client.get(url, timeout=3.0, headers=headers)
         resp.raise_for_status()
         data = resp.json()
         return json.dumps(data, indent=2)
@@ -67,10 +70,15 @@ async def _fetch_context(client: httpx.AsyncClient, url: str, label: str) -> str
         return f"{label} is currently offline — no data available."
 
 
-async def gather_context(pazuru_url: str, tsumi_url: str) -> tuple[str, str]:
+async def gather_context(
+    pazuru_url: str, tsumi_url: str, cookie: str | None = None
+) -> tuple[str, str]:
+    """Gather Pazuru + Tsumi /jeli/context, forwarding the caller's suite_session
+    cookie (FB-5) so both apps scope the returned data to the caller's own
+    (or shared household) portfolio/accounts instead of 401ing."""
     async with httpx.AsyncClient() as client:
-        pazuru_task = _fetch_context(client, f"{pazuru_url}/jeli/context", "Pazuru")
-        tsumi_task = _fetch_context(client, f"{tsumi_url}/jeli/context", "Tsumi")
+        pazuru_task = _fetch_context(client, f"{pazuru_url}/jeli/context", "Pazuru", cookie)
+        tsumi_task = _fetch_context(client, f"{tsumi_url}/jeli/context", "Tsumi", cookie)
         pazuru_ctx, tsumi_ctx = await asyncio.gather(pazuru_task, tsumi_task)
     return pazuru_ctx, tsumi_ctx
 

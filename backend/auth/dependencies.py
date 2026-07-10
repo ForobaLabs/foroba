@@ -21,6 +21,7 @@ _DEV_USER: dict = {
     "audience_locked": False,
     "is_admin": False,
     "totp_enabled": False,
+    "household_id": None,
 }
 
 

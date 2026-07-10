@@ -122,6 +122,50 @@ async def test_run_lab_turn_generate_code_exception_retries_then_succeeds(monkey
 
 
 @pytest.mark.asyncio
+async def test_run_lab_turn_handles_null_code_from_llm(monkeypatch):
+    """Regression: Ollama can return {"code": null} — must not crash ast.parse(None)."""
+    monkeypatch.setattr(sandbox_docker, "is_docker_running", lambda: True)
+    monkeypatch.setattr(
+        lab_service, "_generate_code",
+        lambda *a, **k: {"explanation": "no code needed", "code": None},
+    )
+
+    # Must not raise TypeError from ast.parse(None) — caught by the isinstance(code, str)
+    # guard and fed back for retry instead of ever reaching check_imports/ast.parse.
+    events = await _collect(lab_service.run_lab_turn("q", {}, [], ""))
+    assert events[-1]["type"] == "error"
+
+
+@pytest.mark.asyncio
+async def test_run_lab_turn_handles_non_string_code_from_llm(monkeypatch):
+    """Regression: Ollama can return {"code": [...]} or other non-string JSON types —
+    generated.get("code") or "" only coerces falsy values, not wrong-typed truthy ones."""
+    monkeypatch.setattr(sandbox_docker, "is_docker_running", lambda: True)
+    monkeypatch.setattr(
+        lab_service, "_generate_code",
+        lambda *a, **k: {"explanation": "computing", "code": ["result_text = 'hi'"]},
+    )
+
+    # Must not raise TypeError from ast.parse(list) — caught by the isinstance(code, str) guard.
+    events = await _collect(lab_service.run_lab_turn("q", {}, [], ""))
+    assert events[-1]["type"] == "error"
+
+
+@pytest.mark.asyncio
+async def test_run_lab_turn_handles_markdown_fenced_code(monkeypatch):
+    """Regression: LLM wrapping code in ```python fences must not crash ast.parse with SyntaxError."""
+    monkeypatch.setattr(sandbox_docker, "is_docker_running", lambda: True)
+    monkeypatch.setattr(
+        lab_service, "_generate_code",
+        lambda *a, **k: {"explanation": "computing", "code": "```python\nresult_text = 'hi'\n```"},
+    )
+
+    # Must not raise SyntaxError from ast.parse — caught and fed back for retry instead.
+    events = await _collect(lab_service.run_lab_turn("q", {}, [], ""))
+    assert events[-1]["type"] == "error"
+
+
+@pytest.mark.asyncio
 async def test_run_lab_turn_passes_web_results_to_codegen(monkeypatch):
     monkeypatch.setattr(sandbox_docker, "is_docker_running", lambda: True)
     monkeypatch.setattr(
