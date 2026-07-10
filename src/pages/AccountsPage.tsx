@@ -4,6 +4,7 @@ import {
   CardContent,
   EmptyState,
   ErrorState,
+  ExportButton,
   KpiCard,
   LoadingState,
   PageContainer,
@@ -27,11 +28,15 @@ export function AccountsPage() {
 
   return (
     <PageContainer>
-      <SectionHeader
-        title="Accounts"
-        description="Bank accounts & cashflow powered by Pazuru"
-        className="mb-6"
-      />
+      <div className="flex items-start justify-between mb-6">
+        <SectionHeader
+          title="Accounts"
+          description="Bank accounts & cashflow powered by Pazuru"
+        />
+        {online && (
+          <ExportButton onExport={(fmt) => { window.location.href = `/pazuru-api/export/transactions?format=${fmt}`; }} />
+        )}
+      </div>
 
       {!online ? (
         <Card>
