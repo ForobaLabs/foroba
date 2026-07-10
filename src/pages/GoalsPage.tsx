@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   GoalCard,
   PageContainer,
@@ -6,6 +6,8 @@ import {
   SavingsBadge,
   useGoals,
   useUserProfile,
+  suggestTargetDate,
+  suggestMonthlyContribution,
   type GoalCategory,
 } from '@foroba/ui';
 
@@ -38,6 +40,27 @@ export function GoalsPage() {
 
   // Compute total savings rate if we have enough data (placeholder)
   const savingsRate = 18; // will be driven by Pazuru context in SP6+
+
+  const targetAmount = parseFloat(target || '0');
+  const currentAmount = parseFloat(current || '0');
+  const contributionAmount = parseFloat(contribution || '0');
+  const hasTarget = targetAmount > 0;
+  const hasDeadline = !!targetDate;
+  const hasContribution = contributionAmount > 0;
+
+  // Bidirectional live hints
+  const suggestion = useMemo(() => {
+    if (!hasTarget) return null;
+    if (hasContribution && !hasDeadline) {
+      const date = suggestTargetDate(targetAmount, currentAmount, contributionAmount);
+      return date ? { type: 'date' as const, value: date } : null;
+    }
+    if (hasDeadline && !hasContribution) {
+      const monthly = suggestMonthlyContribution(targetAmount, currentAmount, targetDate);
+      return monthly !== null ? { type: 'monthly' as const, value: monthly } : null;
+    }
+    return null;
+  }, [targetAmount, currentAmount, contributionAmount, targetDate, hasTarget, hasDeadline, hasContribution]);
 
   const handleAdd = () => {
     if (!title.trim() || !target) return;
@@ -112,6 +135,26 @@ export function GoalsPage() {
               Cancel
             </button>
           </div>
+
+          {suggestion && (
+            <div className="mt-3 flex items-center gap-2 rounded-lg border border-[var(--color-accent)]/30 bg-[var(--color-accent)]/5 px-3 py-2 text-sm">
+              <span className="inline-flex shrink-0 items-center rounded-full bg-[var(--color-accent)] px-2 py-0.5 text-[11px] font-semibold text-white">
+                Suggested
+              </span>
+              {suggestion.type === 'date' && (
+                <span className="text-[var(--color-text-primary)]">
+                  At {profile.baseCurrency} {contributionAmount.toFixed(2)}/month you&rsquo;ll reach this goal by{' '}
+                  <strong>{suggestion.value as string}</strong>.
+                </span>
+              )}
+              {suggestion.type === 'monthly' && (
+                <span className="text-[var(--color-text-primary)]">
+                  To hit your {targetDate} deadline, contribute{' '}
+                  <strong>{profile.baseCurrency} {(suggestion.value as number).toFixed(2)}/month</strong>.
+                </span>
+              )}
+            </div>
+          )}
         </div>
       )}
 
