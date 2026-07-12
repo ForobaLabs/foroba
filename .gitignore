@@ -17,6 +17,14 @@ dist
 dist-ssr
 *.local
 
+# Python
+backend/.venv/
+__pycache__/
+*.pyc
+
+# Stray "name 2.ext" duplicate files (macOS/cloud-sync conflict copies)
+*[ ]2.*
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
