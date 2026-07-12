@@ -6,6 +6,7 @@ from db import connect, seed_mock_users
 from auth.conn import get_conn
 from auth.dependencies import get_current_user, require_admin
 from auth.security import create_token
+from auth import keys
 from config import settings
 
 
@@ -48,8 +49,9 @@ def test_require_admin_allows_admin(tmp_path):
     admin = dict(conn.execute(
         "SELECT * FROM users WHERE email = ?", ("admin@foroba.app",)
     ).fetchone())
+    private_key, _, _ = keys.get_keypair(settings)
     token = create_token(
-        admin["id"], settings.suite_jwt_secret, 60,
+        admin["id"], private_key, 60,
         tier=admin["tier"], audience=admin["audience"], is_admin=bool(admin["is_admin"]),
     )
     app = make_app(admin_only=True)
@@ -64,8 +66,9 @@ def test_require_admin_blocks_regular_user(tmp_path):
     user = dict(conn.execute(
         "SELECT * FROM users WHERE email = ?", ("demo@foroba.app",)
     ).fetchone())
+    private_key, _, _ = keys.get_keypair(settings)
     token = create_token(
-        user["id"], settings.suite_jwt_secret, 60,
+        user["id"], private_key, 60,
         tier=user["tier"], audience=user["audience"], is_admin=False,
     )
     app = make_app(admin_only=True)

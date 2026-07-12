@@ -9,6 +9,7 @@ from pydantic import BaseModel
 
 from config import settings
 from auth.conn import get_conn  # re-exported for tests that import it from here
+from auth import keys
 from auth import repository as repo
 from auth.dependencies import get_current_user
 from auth.models import (
@@ -21,11 +22,13 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 
 def _set_session_cookie(response: Response, user: dict) -> None:
+    private_key, _, kid = keys.get_keypair(settings)
     token = create_token(
-        user["id"], settings.suite_jwt_secret, settings.jwt_ttl_minutes,
+        user["id"], private_key, settings.jwt_ttl_minutes,
         tier=user.get("tier", "free"),
         audience=user.get("audience", "base"),
         is_admin=bool(user.get("is_admin", 0)),
+        kid=kid,
     )
     response.set_cookie(
         "suite_session", token, httponly=True, samesite="lax",

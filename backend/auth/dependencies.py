@@ -8,6 +8,7 @@ import jwt
 from fastapi import Cookie, Depends, HTTPException, status
 
 from config import settings
+from auth import keys
 from auth import repository as repo
 from auth.conn import get_conn
 from auth.security import decode_token
@@ -34,7 +35,8 @@ def get_current_user(
     if not suite_session:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Not authenticated")
     try:
-        claims = decode_token(suite_session, settings.suite_jwt_secret)
+        _, public_key, _ = keys.get_keypair(settings)
+        claims = decode_token(suite_session, public_key)
     except jwt.PyJWTError:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid session")
     user = repo.get_user_by_id(conn, int(claims["sub"]))
