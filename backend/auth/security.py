@@ -9,7 +9,7 @@ from argon2 import PasswordHasher
 from argon2.exceptions import InvalidHashError, VerificationError, VerifyMismatchError
 
 _ph = PasswordHasher()  # argon2id, secure defaults
-_ALGO = "HS256"
+_ALGO = "RS256"
 
 
 def hash_password(plain: str) -> str:
@@ -37,8 +37,8 @@ def needs_rehash(hashed: str) -> bool:
 
 
 def create_token(
-    user_id: int, secret: str, ttl_minutes: int, *,
-    tier: str = "free", audience: str = "base", is_admin: bool = False
+    user_id: int, private_key: str, ttl_minutes: int, *,
+    tier: str = "free", audience: str = "base", is_admin: bool = False, kid: str | None = None,
 ) -> str:
     now = datetime.now(timezone.utc)
     payload = {
@@ -49,8 +49,9 @@ def create_token(
         "audience": audience,
         "is_admin": is_admin,
     }
-    return jwt.encode(payload, secret, algorithm=_ALGO)
+    headers = {"kid": kid} if kid else None
+    return jwt.encode(payload, private_key, algorithm=_ALGO, headers=headers)
 
 
-def decode_token(token: str, secret: str) -> dict:
-    return jwt.decode(token, secret, algorithms=[_ALGO])
+def decode_token(token: str, public_key: str) -> dict:
+    return jwt.decode(token, public_key, algorithms=[_ALGO])
