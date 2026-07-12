@@ -168,9 +168,26 @@ def update_sandbox_user_context(conn: sqlite3.Connection, user_id: str, context_
     conn.commit()
 
 
+def run_migrations(db_path: str) -> None:
+    """Apply all pending Alembic migrations to the SQLite file at db_path."""
+    from alembic import command
+    from alembic.config import Config
+
+    backend_dir = Path(__file__).resolve().parent
+    cfg = Config(str(backend_dir / "alembic.ini"))
+    cfg.set_main_option("script_location", str(backend_dir / "alembic"))
+    cfg.set_main_option("sqlalchemy.url", f"sqlite:///{db_path}")
+    command.upgrade(cfg, "head")
+
+
 def connect(db_path: str) -> sqlite3.Connection:
     Path(db_path).parent.mkdir(parents=True, exist_ok=True)
+    if db_path == ":memory:":
+        conn = sqlite3.connect(db_path, check_same_thread=False)
+        conn.row_factory = sqlite3.Row
+        init_schema(conn)
+        return conn
+    run_migrations(db_path)
     conn = sqlite3.connect(db_path, check_same_thread=False)
     conn.row_factory = sqlite3.Row
-    init_schema(conn)
     return conn
