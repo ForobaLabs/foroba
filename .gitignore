@@ -1,5 +1,8 @@
 .env
 .env.local
+
+# RS256 JWT signing keypair (foroba#149) — generated+persisted on first startup, never commit
+backend/keys/
 # Logs
 logs
 *.log
