@@ -1,32 +1,48 @@
-# ── Stage 1: Build React frontend ────────────────────────────────────────────
-FROM node:22-alpine AS frontend-build
-WORKDIR /app/frontend
-COPY package.json pnpm-lock.yaml ./
+# Build context is the REPO ROOT (see root docker-compose.yml `build.context: .`), not this
+# directory — needed because the frontend depends on the sibling `foroba-ui/` package via
+# `"@foroba/ui": "file:../foroba-ui"`, which Docker can only COPY if it's inside the context.
+
+# ── Stage 1: build the shared @foroba/ui design system ──────────────────────
+FROM node:22-alpine AS foroba-ui-build
+WORKDIR /app/foroba-ui
+COPY foroba-ui/package.json foroba-ui/pnpm-lock.yaml foroba-ui/pnpm-workspace.yaml ./
 RUN npm install -g pnpm && pnpm install --frozen-lockfile
-COPY . .
+COPY foroba-ui/ .
 RUN pnpm build
 
-# ── Stage 2: Python backend ──────────────────────────────────────────────────
+# ── Stage 2: build React frontend ────────────────────────────────────────────
+FROM node:22-alpine AS frontend-build
+WORKDIR /app/foroba
+COPY --from=foroba-ui-build /app/foroba-ui /app/foroba-ui
+COPY foroba/package.json foroba/pnpm-lock.yaml ./
+RUN npm install -g pnpm && pnpm install --frozen-lockfile
+COPY foroba/ .
+RUN pnpm build
+
+# ── Stage 3: Python backend ──────────────────────────────────────────────────
 FROM python:3.12-slim AS backend
 WORKDIR /app/backend
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc libffi-dev && rm -rf /var/lib/apt/lists/*
 
-COPY backend/requirements.txt .
+COPY foroba/backend/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY backend/ .
+COPY foroba/backend/ .
 
-# ── Stage 3: Final image ──────────────────────────────────────────────────────
+# ── Stage 4: Final image ──────────────────────────────────────────────────────
 FROM python:3.12-slim AS final
 WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl && rm -rf /var/lib/apt/lists/*
 
 COPY --from=backend /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
 COPY --from=backend /usr/local/bin /usr/local/bin
 COPY --from=backend /app/backend /app/backend
 
-COPY --from=frontend-build /app/frontend/dist /app/static
+COPY --from=frontend-build /app/foroba/dist /app/static
 
 RUN mkdir -p /data
 
