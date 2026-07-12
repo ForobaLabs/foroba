@@ -21,6 +21,7 @@ from starlette.requests import Request as StarletteRequest
 from starlette.responses import Response
 
 from config import settings
+from auth import keys
 
 RATE_LIMIT_DEFAULT = os.getenv("RATE_LIMIT_DEFAULT", "60/minute")
 ALLOWED_ORIGINS = os.getenv(
@@ -105,6 +106,22 @@ class ChatRequest(BaseModel):
 @app.get("/health")
 async def health() -> dict[str, str]:
     return {"status": "ok", "service": "foroba-jeli", "version": "0.1.0"}
+
+
+@app.get("/.well-known/jwks.json", include_in_schema=False)
+async def jwks() -> dict:
+    """Public JWKS — lets Pazuru/Tsumi verify Foroba-issued RS256 tokens without ever
+    holding the private key (foroba#149)."""
+    import json
+
+    from cryptography.hazmat.primitives.serialization import load_pem_public_key
+    from jwt.algorithms import RSAAlgorithm
+
+    _, public_pem, kid = keys.get_keypair(settings)
+    key_obj = load_pem_public_key(public_pem.encode())
+    jwk = json.loads(RSAAlgorithm.to_jwk(key_obj))
+    jwk.update({"kid": kid, "use": "sig", "alg": "RS256"})
+    return {"keys": [jwk]}
 
 
 @app.get("/markets/snapshot")
