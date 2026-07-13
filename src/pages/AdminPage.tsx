@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { AdminFlagsPanel, AdminUsersTable, PageContainer, SectionHeader, useAdminSettings, useAdminUsers } from '@foroba/ui';
 
-type Tab = 'flags' | 'users';
+type Tab = 'flags' | 'users' | 'backup';
 
 export default function AdminPage(): React.ReactElement {
   const [activeTab, setActiveTab] = useState<Tab>('flags');
@@ -38,6 +38,16 @@ export default function AdminPage(): React.ReactElement {
         >
           Users
         </button>
+        <button
+          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+            activeTab === 'backup'
+              ? 'border-[var(--color-accent)] text-[var(--color-accent)]'
+              : 'border-transparent text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
+          }`}
+          onClick={() => setActiveTab('backup')}
+        >
+          Backup
+        </button>
       </div>
 
       {/* Tab content */}
@@ -51,6 +61,134 @@ export default function AdminPage(): React.ReactElement {
       {activeTab === 'users' && (
         <AdminUsersTable users={users} />
       )}
+      {activeTab === 'backup' && <AdminBackupPanel />}
     </PageContainer>
+  );
+}
+
+function AdminBackupPanel(): React.ReactElement {
+  const [exportPassphrase, setExportPassphrase] = useState('');
+  const [exportBusy, setExportBusy] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
+
+  const [importPassphrase, setImportPassphrase] = useState('');
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [importBusy, setImportBusy] = useState(false);
+  const [importError, setImportError] = useState<string | null>(null);
+  const [importResult, setImportResult] = useState<Record<string, unknown> | null>(null);
+
+  async function handleExport() {
+    setExportBusy(true);
+    setExportError(null);
+    try {
+      const resp = await fetch('/jeli/admin/backup/export-suite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ passphrase: exportPassphrase }),
+      });
+      if (!resp.ok) throw new Error(`Export failed (${resp.status})`);
+      const blob = await resp.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `pfh-backup-${Date.now()}.pfhbak`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      setExportError(err instanceof Error ? err.message : 'Export failed');
+    } finally {
+      setExportBusy(false);
+    }
+  }
+
+  async function handleImport() {
+    if (!importFile) return;
+    const confirmed = window.confirm(
+      'This will overwrite live data on all 3 apps (Foroba, Pazuru, Tsumi). Continue?'
+    );
+    if (!confirmed) return;
+
+    setImportBusy(true);
+    setImportError(null);
+    setImportResult(null);
+    try {
+      const form = new FormData();
+      form.append('file', importFile);
+      form.append('passphrase', importPassphrase);
+      const resp = await fetch('/jeli/admin/backup/import-suite', {
+        method: 'POST',
+        credentials: 'same-origin',
+        body: form,
+      });
+      if (!resp.ok) throw new Error(`Restore failed (${resp.status})`);
+      setImportResult(await resp.json());
+    } catch (err) {
+      setImportError(err instanceof Error ? err.message : 'Restore failed');
+    } finally {
+      setImportBusy(false);
+    }
+  }
+
+  return (
+    <div className="space-y-8 max-w-xl">
+      <section>
+        <h3 className="text-sm font-semibold text-[var(--color-text-primary)] mb-2">Export backup</h3>
+        <p className="text-sm text-[var(--color-text-secondary)] mb-3">
+          Downloads one encrypted file containing Foroba, Pazuru, and Tsumi data.
+          The passphrase is never stored anywhere — write it down, you'll need it to restore.
+        </p>
+        <input
+          type="password"
+          value={exportPassphrase}
+          onChange={(e) => setExportPassphrase(e.target.value)}
+          placeholder="Backup passphrase"
+          className="w-full mb-2 px-3 py-2 rounded border border-[var(--color-border)] bg-transparent text-[var(--color-text-primary)]"
+        />
+        <button
+          onClick={handleExport}
+          disabled={exportBusy || !exportPassphrase}
+          className="px-4 py-2 rounded bg-[var(--color-accent)] text-white text-sm font-medium disabled:opacity-50"
+        >
+          {exportBusy ? 'Exporting…' : 'Export backup'}
+        </button>
+        {exportError && <p className="text-sm text-[var(--color-negative)] mt-2">{exportError}</p>}
+      </section>
+
+      <section>
+        <h3 className="text-sm font-semibold text-[var(--color-text-primary)] mb-2">Restore backup</h3>
+        <p className="text-sm text-[var(--color-text-secondary)] mb-3">
+          Overwrites live data on all 3 apps. All 3 backends need a manual restart after restoring.
+        </p>
+        <input
+          type="file"
+          accept=".pfhbak"
+          onChange={(e) => setImportFile(e.target.files?.[0] ?? null)}
+          className="w-full mb-2 text-sm text-[var(--color-text-primary)]"
+        />
+        <input
+          type="password"
+          value={importPassphrase}
+          onChange={(e) => setImportPassphrase(e.target.value)}
+          placeholder="Backup passphrase"
+          className="w-full mb-2 px-3 py-2 rounded border border-[var(--color-border)] bg-transparent text-[var(--color-text-primary)]"
+        />
+        <button
+          onClick={handleImport}
+          disabled={importBusy || !importFile || !importPassphrase}
+          className="px-4 py-2 rounded bg-[var(--color-negative)] text-white text-sm font-medium disabled:opacity-50"
+        >
+          {importBusy ? 'Restoring…' : 'Restore backup'}
+        </button>
+        {importError && <p className="text-sm text-[var(--color-negative)] mt-2">{importError}</p>}
+        {importResult && (
+          <pre className="text-xs mt-3 p-3 rounded bg-[var(--color-surface)] border border-[var(--color-border)] overflow-auto">
+            {JSON.stringify(importResult, null, 2)}
+          </pre>
+        )}
+      </section>
+    </div>
   );
 }
