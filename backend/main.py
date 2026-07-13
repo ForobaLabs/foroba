@@ -9,9 +9,11 @@ import logging
 import os
 from typing import Annotated
 
-from fastapi import Cookie, Depends, FastAPI, Query
+import asyncio
+
+from fastapi import Cookie, Depends, FastAPI, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel, Field
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
@@ -22,6 +24,7 @@ from starlette.responses import Response
 
 from config import settings
 from auth import keys
+from auth.dependencies import require_admin
 
 RATE_LIMIT_DEFAULT = os.getenv("RATE_LIMIT_DEFAULT", "60/minute")
 ALLOWED_ORIGINS = os.getenv(
@@ -103,9 +106,41 @@ class ChatRequest(BaseModel):
     personality: Personality = Personality()
 
 
+async def _check_db() -> str:
+    def _query() -> None:
+        conn = get_conn()
+        conn.execute("SELECT 1")
+
+    try:
+        await asyncio.wait_for(asyncio.to_thread(_query), timeout=2.0)
+        return "ok"
+    except Exception:
+        return "down"
+
+
 @app.get("/health")
-async def health() -> dict[str, str]:
-    return {"status": "ok", "service": "foroba-jeli", "version": "0.1.0"}
+@limiter.limit("1/second")
+async def health(request: Request) -> JSONResponse:
+    db_status = await _check_db()
+    ok = db_status == "ok"
+    body = {
+        "status": "ok" if ok else "degraded",
+        "checks": {"db": db_status},
+        "version": "0.1.0",
+    }
+    return JSONResponse(content=body, status_code=200 if ok else 503)
+
+
+@app.get("/health/detailed")
+@limiter.limit("1/second")
+async def health_detailed(request: Request, _: dict = Depends(require_admin)) -> dict:
+    db_status = await _check_db()
+    return {
+        "status": "ok" if db_status == "ok" else "degraded",
+        "checks": {"db": db_status},
+        "version": "0.1.0",
+        "dependencies": {},
+    }
 
 
 @app.get("/.well-known/jwks.json", include_in_schema=False)
