@@ -6,9 +6,11 @@ from __future__ import annotations
 
 import sqlite3
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Cookie, Depends, Form, HTTPException, Response, UploadFile, status
 from pydantic import BaseModel
 
+import backup_orchestrator
+import backup_service
 from auth.conn import get_conn
 from auth.dependencies import get_current_user, require_admin
 from auth import repository as repo
@@ -20,6 +22,10 @@ router = APIRouter(tags=["admin"])
 
 class SettingPatch(BaseModel):
     value: str
+
+
+class BackupExportRequest(BaseModel):
+    passphrase: str
 
 
 @router.get("/admin/settings")
@@ -57,3 +63,42 @@ def admin_get_users(
 def public_get_settings(conn: sqlite3.Connection = Depends(get_conn)) -> dict[str, str]:
     """Unauthenticated read — for Pazuru/Tsumi SettingsCache polling."""
     return get_all(conn)
+
+
+@router.get("/admin/backup/export")
+def admin_export_backup(_: dict = Depends(require_admin)) -> Response:
+    data = backup_service.export_archive()
+    return Response(content=data, media_type="application/gzip")
+
+
+@router.post("/admin/backup/import")
+async def admin_import_backup(file: UploadFile, _: dict = Depends(require_admin)) -> dict:
+    data = await file.read()
+    try:
+        return backup_service.import_archive(data)
+    except (ValueError, OSError) as exc:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc))
+
+
+@router.post("/admin/backup/export-suite")
+async def admin_export_suite(
+    body: BackupExportRequest,
+    _: dict = Depends(require_admin),
+    suite_session: str | None = Cookie(default=None),
+) -> Response:
+    data = await backup_orchestrator.export_suite(body.passphrase, cookie=suite_session)
+    return Response(content=data, media_type="application/octet-stream")
+
+
+@router.post("/admin/backup/import-suite")
+async def admin_import_suite(
+    file: UploadFile,
+    passphrase: str = Form(...),
+    _: dict = Depends(require_admin),
+    suite_session: str | None = Cookie(default=None),
+) -> dict:
+    data = await file.read()
+    try:
+        return await backup_orchestrator.import_suite(data, passphrase, cookie=suite_session)
+    except (backup_orchestrator.InvalidPassphrase, ValueError) as exc:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc))

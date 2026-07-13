@@ -83,3 +83,65 @@ def test_get_admin_users_returns_list(setup):
     users = resp.json()
     assert isinstance(users, list)
     assert any(u["email"] == "admin@foroba.app" for u in users)
+
+
+def test_export_backup_requires_admin(setup):
+    tc, conn, _, regular = setup
+    tc.app.dependency_overrides[get_current_user] = lambda: regular
+    resp = tc.post("/admin/backup/export-suite", json={"passphrase": "pw"})
+    assert resp.status_code == 403
+
+
+def test_export_backup_calls_orchestrator(setup, monkeypatch):
+    import admin_router
+
+    tc, conn, admin, _ = setup
+    tc.app.dependency_overrides[get_current_user] = lambda: admin
+
+    async def _fake_export_suite(passphrase, cookie):
+        assert passphrase == "pw"
+        return b"encrypted-bytes"
+
+    monkeypatch.setattr(admin_router.backup_orchestrator, "export_suite", _fake_export_suite)
+    resp = tc.post("/admin/backup/export-suite", json={"passphrase": "pw"})
+    assert resp.status_code == 200
+    assert resp.content == b"encrypted-bytes"
+
+
+def test_import_backup_calls_orchestrator(setup, monkeypatch):
+    import admin_router
+
+    tc, conn, admin, _ = setup
+    tc.app.dependency_overrides[get_current_user] = lambda: admin
+
+    async def _fake_import_suite(encrypted, passphrase, cookie):
+        assert passphrase == "pw"
+        assert encrypted == b"uploaded-bytes"
+        return {"foroba": {"restored_files": []}, "pazuru": {}, "tsumi": {}}
+
+    monkeypatch.setattr(admin_router.backup_orchestrator, "import_suite", _fake_import_suite)
+    resp = tc.post(
+        "/admin/backup/import-suite",
+        data={"passphrase": "pw"},
+        files={"file": ("backup.pfhbak", b"uploaded-bytes", "application/octet-stream")},
+    )
+    assert resp.status_code == 200
+    assert resp.json()["foroba"]["restored_files"] == []
+
+
+def test_import_backup_wrong_passphrase_returns_400(setup, monkeypatch):
+    import admin_router
+
+    tc, conn, admin, _ = setup
+    tc.app.dependency_overrides[get_current_user] = lambda: admin
+
+    async def _fake_import_suite(encrypted, passphrase, cookie):
+        raise admin_router.backup_orchestrator.InvalidPassphrase("bad pw")
+
+    monkeypatch.setattr(admin_router.backup_orchestrator, "import_suite", _fake_import_suite)
+    resp = tc.post(
+        "/admin/backup/import-suite",
+        data={"passphrase": "wrong"},
+        files={"file": ("backup.pfhbak", b"x", "application/octet-stream")},
+    )
+    assert resp.status_code == 400
