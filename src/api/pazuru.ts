@@ -22,18 +22,6 @@ export interface PazuruAccount {
   balance: number;
 }
 
-// Deliberately soft/never-throwing: a health probe's "unavailable" result
-// IS its valid outcome, not a failure to distinguish from loading/error.
-async function safeFetch<T>(url: string, fallback: T): Promise<T> {
-  try {
-    const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
-    if (!res.ok) return fallback;
-    return (await res.json()) as T;
-  } catch {
-    return fallback;
-  }
-}
-
 export async function fetchPazuruHealth(): Promise<PazuruHealth> {
   return fetchHealthBody(`${BASE}/health`, { status: 'unavailable' as const });
 }

@@ -17,7 +17,7 @@ describe('AdminPage', () => {
   });
 
   it('renders a Status tab that fetches detailed health for all 3 apps', async () => {
-    vi.spyOn(global, 'fetch').mockResolvedValue({
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue({
       ok: true,
       json: async () => ({
         status: 'ok',

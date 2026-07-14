@@ -7,7 +7,7 @@ describe('fetchPazuruHealth', () => {
   });
 
   it('returns the parsed body even on a 503 (backend-reported degraded)', async () => {
-    vi.spyOn(global, 'fetch').mockResolvedValue({
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue({
       ok: false,
       json: async () => ({ status: 'degraded', checks: { db: 'down' } }),
     } as Response);
@@ -17,7 +17,7 @@ describe('fetchPazuruHealth', () => {
   });
 
   it('returns unavailable on a real network failure', async () => {
-    vi.spyOn(global, 'fetch').mockRejectedValue(new Error('network error'));
+    vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('network error'));
 
     const result = await fetchPazuruHealth();
     expect(result.status).toBe('unavailable');

@@ -18,7 +18,7 @@ describe('StatusPage', () => {
   });
 
   it('renders all 3 apps as operational when all healthy', async () => {
-    vi.spyOn(global, 'fetch').mockResolvedValue({
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue({
       ok: true,
       json: async () => ({ status: 'ok', checks: { db: 'ok' } }),
     } as Response);
@@ -31,7 +31,7 @@ describe('StatusPage', () => {
   });
 
   it('shows one app as unreachable while the other two stay ok', async () => {
-    vi.spyOn(global, 'fetch').mockImplementation(async (url) => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (url) => {
       if (String(url).includes('tsumi')) {
         throw new Error('network error');
       }
