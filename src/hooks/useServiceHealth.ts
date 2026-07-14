@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { fetchForobaHealth } from '../api/foroba';
 import {
   fetchPazuruAccountDetail,
   fetchPazuruAccounts,
@@ -11,6 +12,14 @@ import {
   fetchTsumiHealth,
   fetchTsumiSummary,
 } from '../api/tsumi';
+
+export function useForobaHealth() {
+  return useQuery({
+    queryKey: ['forobaHealth'],
+    queryFn: fetchForobaHealth,
+    refetchInterval: 30_000,
+  });
+}
 
 export function usePazuruHealth() {
   return useQuery({

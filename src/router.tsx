@@ -21,6 +21,7 @@ const AdminPage         = lazy(() => import('./pages/AdminPage'));
 const MarketsPage       = lazy(() => import('./pages/MarketsPage').then(m => ({ default: m.MarketsPage })));
 const MarketDetailPage  = lazy(() => import('./pages/MarketDetailPage').then(m => ({ default: m.MarketDetailPage })));
 const JeliLabPage       = lazy(() => import('./pages/JeliLabPage').then(m => ({ default: m.JeliLabPage })));
+const StatusPage        = lazy(() => import('./pages/StatusPage').then(m => ({ default: m.StatusPage })));
 
 const Loading = () => (
   <div className="flex h-full items-center justify-center py-20">
@@ -31,6 +32,7 @@ const Loading = () => (
 export const router = createBrowserRouter([
   { path: '/login',    element: <LoginPage /> },
   { path: '/register', element: <RegisterPage /> },
+  { path: '/status',   element: <Suspense fallback={<Loading />}><StatusPage /></Suspense> },
   {
     path: '/onboarding',
     element: <Suspense fallback={<Loading />}><AppOnboardingPage /></Suspense>,

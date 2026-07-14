@@ -1,7 +1,20 @@
-import React, { useState } from 'react';
-import { AdminFlagsPanel, AdminUsersTable, PageContainer, SectionHeader, useAdminSettings, useAdminUsers } from '@foroba/ui';
+import React, { useEffect, useState } from 'react';
+import {
+  AdminFlagsPanel,
+  AdminUsersTable,
+  PageContainer,
+  SectionHeader,
+  StatusCard,
+  useAdminSettings,
+  useAdminUsers,
+} from '@foroba/ui';
+import type { HealthStatus } from '@foroba/ui';
+import { fetchForobaHealthDetailed } from '../api/foroba';
+import type { DetailedHealth } from '../api/foroba';
+import { fetchPazuruHealthDetailed } from '../api/pazuru';
+import { fetchTsumiHealthDetailed } from '../api/tsumi';
 
-type Tab = 'flags' | 'users' | 'backup';
+type Tab = 'flags' | 'users' | 'backup' | 'status';
 
 export default function AdminPage(): React.ReactElement {
   const [activeTab, setActiveTab] = useState<Tab>('flags');
@@ -48,6 +61,16 @@ export default function AdminPage(): React.ReactElement {
         >
           Backup
         </button>
+        <button
+          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+            activeTab === 'status'
+              ? 'border-[var(--color-accent)] text-[var(--color-accent)]'
+              : 'border-transparent text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
+          }`}
+          onClick={() => setActiveTab('status')}
+        >
+          Status
+        </button>
       </div>
 
       {/* Tab content */}
@@ -62,6 +85,7 @@ export default function AdminPage(): React.ReactElement {
         <AdminUsersTable users={users} />
       )}
       {activeTab === 'backup' && <AdminBackupPanel />}
+      {activeTab === 'status' && <AdminStatusPanel />}
     </PageContainer>
   );
 }
@@ -189,6 +213,75 @@ function AdminBackupPanel(): React.ReactElement {
           </pre>
         )}
       </section>
+    </div>
+  );
+}
+
+function toHealthStatus(backendStatus: string): HealthStatus {
+  if (backendStatus === 'ok') return 'ok';
+  if (backendStatus === 'degraded') return 'down';
+  return 'unreachable';
+}
+
+function AdminStatusPanel(): React.ReactElement {
+  const [apps, setApps] = useState<
+    { name: string; health: DetailedHealth; lastChecked: string }[]
+  >([]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function refresh() {
+      const [foroba, pazuru, tsumi] = await Promise.allSettled([
+        fetchForobaHealthDetailed(),
+        fetchPazuruHealthDetailed(),
+        fetchTsumiHealthDetailed(),
+      ]);
+      if (cancelled) return;
+
+      const unavailable: DetailedHealth = { status: 'unavailable', dependencies: {} };
+      setApps([
+        { name: 'Foroba', health: foroba.status === 'fulfilled' ? foroba.value : unavailable, lastChecked: new Date().toISOString() },
+        { name: 'Pazuru', health: pazuru.status === 'fulfilled' ? pazuru.value : unavailable, lastChecked: new Date().toISOString() },
+        { name: 'Tsumi', health: tsumi.status === 'fulfilled' ? tsumi.value : unavailable, lastChecked: new Date().toISOString() },
+      ]);
+    }
+
+    void refresh();
+    const id = setInterval(() => void refresh(), 30_000);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
+  }, []);
+
+  return (
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      {apps.map(({ name, health, lastChecked }) => (
+        <StatusCard
+          key={name}
+          name={name}
+          status={toHealthStatus(health.status)}
+          lastChecked={lastChecked}
+        >
+          {Object.entries(health.dependencies).map(([depName, dep]) => (
+            <div key={depName} className="flex items-center justify-between text-xs">
+              <span className="text-[var(--color-text-secondary)] capitalize">{depName}</span>
+              <span
+                className={
+                  dep.status === 'ok'
+                    ? 'text-[var(--color-positive)]'
+                    : dep.status === 'degraded'
+                      ? 'text-[var(--color-warning)]'
+                      : 'text-[var(--color-text-muted)]'
+                }
+              >
+                {dep.status}
+              </span>
+            </div>
+          ))}
+        </StatusCard>
+      ))}
     </div>
   );
 }

@@ -1,9 +1,12 @@
 import { fetchJson } from './fetchJson';
+import { fetchDetailedHealthBody, fetchHealthBody } from './health';
+import type { DetailedHealth } from './health';
 
 const BASE = import.meta.env.VITE_TSUMI_API_URL ?? '/tsumi-api';
 
 export interface TsumiHealth {
-  status: 'ok' | 'error' | 'unavailable';
+  status: 'ok' | 'degraded' | 'error' | 'unavailable';
+  checks?: { db: 'ok' | 'down' };
 }
 
 export interface TsumiSummary {
@@ -55,7 +58,14 @@ async function safeFetch<T>(url: string, fallback: T): Promise<T> {
 }
 
 export async function fetchTsumiHealth(): Promise<TsumiHealth> {
-  return safeFetch(`${BASE}/health`, { status: 'unavailable' as const });
+  return fetchHealthBody(`${BASE}/health`, { status: 'unavailable' as const });
+}
+
+export async function fetchTsumiHealthDetailed(): Promise<DetailedHealth> {
+  return fetchDetailedHealthBody(`${BASE}/health/detailed`, {
+    status: 'unavailable' as const,
+    dependencies: {},
+  });
 }
 
 export async function fetchTsumiSummary(): Promise<TsumiSummary> {

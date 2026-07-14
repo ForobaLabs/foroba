@@ -1,9 +1,12 @@
 import { fetchJson } from './fetchJson';
+import { fetchDetailedHealthBody, fetchHealthBody } from './health';
+import type { DetailedHealth } from './health';
 
 const BASE = import.meta.env.VITE_PAZURU_API_URL ?? '/pazuru-api';
 
 export interface PazuruHealth {
-  status: 'ok' | 'error' | 'unavailable';
+  status: 'ok' | 'degraded' | 'error' | 'unavailable';
+  checks?: { db: 'ok' | 'down' };
 }
 
 export interface PazuruSummary {
@@ -32,7 +35,14 @@ async function safeFetch<T>(url: string, fallback: T): Promise<T> {
 }
 
 export async function fetchPazuruHealth(): Promise<PazuruHealth> {
-  return safeFetch(`${BASE}/health`, { status: 'unavailable' as const });
+  return fetchHealthBody(`${BASE}/health`, { status: 'unavailable' as const });
+}
+
+export async function fetchPazuruHealthDetailed(): Promise<DetailedHealth> {
+  return fetchDetailedHealthBody(`${BASE}/health/detailed`, {
+    status: 'unavailable' as const,
+    dependencies: {},
+  });
 }
 
 export async function fetchPazuruSummary(): Promise<PazuruSummary> {
