@@ -3,7 +3,8 @@ import { fetchJson } from './fetchJson';
 const BASE = import.meta.env.VITE_TSUMI_API_URL ?? '/tsumi-api';
 
 export interface TsumiHealth {
-  status: 'ok' | 'error' | 'unavailable';
+  status: 'ok' | 'degraded' | 'error' | 'unavailable';
+  checks?: { db: 'ok' | 'down' };
 }
 
 export interface TsumiSummary {
@@ -54,8 +55,20 @@ async function safeFetch<T>(url: string, fallback: T): Promise<T> {
   }
 }
 
+// Health endpoints return a valid JSON body even at 503 (backend-reported
+// "degraded"), unlike other endpoints where a non-2xx means no usable body.
+// Only fall back on a genuine network-level failure (thrown fetch).
+async function fetchHealthBody<T>(url: string, fallback: T): Promise<T> {
+  try {
+    const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
+    return (await res.json()) as T;
+  } catch {
+    return fallback;
+  }
+}
+
 export async function fetchTsumiHealth(): Promise<TsumiHealth> {
-  return safeFetch(`${BASE}/health`, { status: 'unavailable' as const });
+  return fetchHealthBody(`${BASE}/health`, { status: 'unavailable' as const });
 }
 
 export async function fetchTsumiSummary(): Promise<TsumiSummary> {
