@@ -2,8 +2,10 @@ import json
 import subprocess
 from unittest.mock import MagicMock
 
+import httpx
 import pandas as pd
 
+from config import settings
 import sandbox_docker
 
 
@@ -65,3 +67,60 @@ def test_run_sandbox_handles_missing_docker_binary(monkeypatch):
     result = sandbox_docker.run_sandbox("code", {})
     assert result["ok"] is False
     assert "error" in result
+
+
+def test_is_docker_running_true_when_runner_url_set(monkeypatch):
+    monkeypatch.setattr(settings, "sandbox_runner_url", "http://sandbox-runner:8090")
+    assert sandbox_docker.is_docker_running() is True
+    monkeypatch.setattr(settings, "sandbox_runner_url", None)
+
+
+def test_run_sandbox_dispatch_local_when_unset(monkeypatch):
+    monkeypatch.setattr(settings, "sandbox_runner_url", None)
+    called = {}
+
+    def _fake_run_sandbox(code, dataframes):
+        called["ran"] = (code, dataframes)
+        return {"ok": True, "text": "local"}
+
+    monkeypatch.setattr(sandbox_docker, "run_sandbox", _fake_run_sandbox)
+    result = sandbox_docker.run_sandbox_dispatch("code", {})
+    assert result == {"ok": True, "text": "local"}
+    assert called["ran"] == ("code", {})
+
+
+def test_run_sandbox_dispatch_remote_when_set(monkeypatch):
+    monkeypatch.setattr(settings, "sandbox_runner_url", "http://sandbox-runner:8090")
+    captured = {}
+
+    class FakeResponse:
+        def raise_for_status(self):
+            pass
+
+        def json(self):
+            return {"ok": True, "text": "remote"}
+
+    def _fake_post(url, json, timeout):
+        captured["url"] = url
+        captured["json"] = json
+        return FakeResponse()
+
+    monkeypatch.setattr(sandbox_docker.httpx, "post", _fake_post)
+    result = sandbox_docker.run_sandbox_dispatch("code", {"df": pd.DataFrame({"a": [1]})})
+    assert result == {"ok": True, "text": "remote"}
+    assert captured["url"] == "http://sandbox-runner:8090/run"
+    assert "df" in captured["json"]["dataframes"]
+    monkeypatch.setattr(settings, "sandbox_runner_url", None)
+
+
+def test_run_sandbox_dispatch_remote_http_error(monkeypatch):
+    monkeypatch.setattr(settings, "sandbox_runner_url", "http://sandbox-runner:8090")
+
+    def _fake_post(url, json, timeout):
+        raise httpx.ConnectError("connection refused")
+
+    monkeypatch.setattr(sandbox_docker.httpx, "post", _fake_post)
+    result = sandbox_docker.run_sandbox_dispatch("code", {})
+    assert result["ok"] is False
+    assert "error" in result
+    monkeypatch.setattr(settings, "sandbox_runner_url", None)

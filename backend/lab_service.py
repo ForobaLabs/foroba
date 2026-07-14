@@ -138,7 +138,7 @@ async def _attempt_turn(
     except (DisallowedImportError, SyntaxError) as exc:
         return {"ok": False, "code": code, "explanation": explanation, "error": str(exc)}
 
-    result = await asyncio.to_thread(sandbox_docker.run_sandbox, code, dataframes)
+    result = await asyncio.to_thread(sandbox_docker.run_sandbox_dispatch, code, dataframes)
     result["code"] = code
     result["explanation"] = explanation
     return result

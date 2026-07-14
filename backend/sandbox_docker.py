@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 import asyncio
+import base64
+import io
 import json
 import platform
 import shutil
@@ -10,6 +12,7 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
+import httpx
 import pandas as pd
 
 from config import settings
@@ -21,7 +24,14 @@ CONTAINER_RUN_TIMEOUT_SECONDS = 15
 
 
 def is_docker_running() -> bool:
-    """Return True if the Docker daemon responds to `docker info`."""
+    """Return True if the Docker daemon responds to `docker info`.
+
+    Always True when SANDBOX_RUNNER_URL is set: in that mode this container has no Docker
+    CLI/daemon at all — sandbox execution is delegated entirely to the sandbox-runner sidecar,
+    which manages its own Docker readiness (foroba#120).
+    """
+    if settings.sandbox_runner_url:
+        return True
     try:
         subprocess.run(
             ["docker", "info"], capture_output=True,
@@ -87,3 +97,31 @@ def run_sandbox(code: str, dataframes: dict[str, pd.DataFrame]) -> dict[str, Any
             return {"ok": False, "error": str(exc), "traceback": str(exc)}
     finally:
         shutil.rmtree(workspace, ignore_errors=True)
+
+
+def run_sandbox_dispatch(code: str, dataframes: dict[str, pd.DataFrame]) -> dict[str, Any]:
+    """Entry point used by lab_service.py. Routes to the sandbox-runner sidecar when
+    SANDBOX_RUNNER_URL is configured (containerized deployment), otherwise falls back to
+    the direct local Docker CLI path (bare-process local dev, unchanged since SP23)."""
+    if settings.sandbox_runner_url:
+        return _run_sandbox_remote(code, dataframes)
+    return run_sandbox(code, dataframes)
+
+
+def _run_sandbox_remote(code: str, dataframes: dict[str, pd.DataFrame]) -> dict[str, Any]:
+    """POST code + dataframes (base64 parquet) to the sandbox-runner sidecar over HTTP."""
+    encoded: dict[str, str] = {}
+    for name, df in dataframes.items():
+        buf = io.BytesIO()
+        df.to_parquet(buf)
+        encoded[name] = base64.b64encode(buf.getvalue()).decode("ascii")
+    try:
+        resp = httpx.post(
+            f"{settings.sandbox_runner_url}/run",
+            json={"code": code, "dataframes": encoded},
+            timeout=CONTAINER_RUN_TIMEOUT_SECONDS + 5,
+        )
+        resp.raise_for_status()
+        return resp.json()
+    except httpx.HTTPError as exc:
+        return {"ok": False, "error": str(exc), "traceback": str(exc)}
