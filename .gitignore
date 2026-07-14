@@ -35,3 +35,7 @@ __pycache__/
 *.njsproj
 *.sln
 *.sw?
+
+# Runtime DB (generated via Alembic migrations + startup seed, not tracked)
+backend/*.db
+backend/*.db-journal

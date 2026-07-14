@@ -1,0 +1,46 @@
+import type { FaqItem } from '@foroba/ui';
+
+export const FOROBA_FAQ: FaqItem[] = [
+  {
+    question: 'What is Foroba?',
+    answer:
+      'Foroba is the shared hub for your personal finance suite. It brings together your bank accounts (via Pazuru), your investment portfolio (via Tsumi), market data, and your AI assistant Jeli in a single place.',
+    tags: ['overview', 'about'],
+  },
+  {
+    question: 'How do tiers and audience modes work?',
+    answer:
+      'Every feature has two independent settings: audience (Base or Expert, controlling how much detail is shown) and tier (Free or Premium, controlling access). You can switch audience mode in Settings, and upgrade your tier from any locked feature.',
+    tags: ['tiers', 'premium', 'audience', 'expert'],
+  },
+  {
+    question: 'Why is a feature showing a lock icon?',
+    answer:
+      'A locked feature requires a Premium tier or Expert audience mode. Hover or click the lock to see which one applies, and use the upgrade button to unlock it.',
+    tags: ['locked', 'premium', 'upgrade'],
+  },
+  {
+    question: 'How does Jeli, the AI assistant, work?',
+    answer:
+      'Jeli runs entirely locally via Ollama — no data ever leaves your machine. It can answer questions about your accounts, spending, and portfolio. If Jeli appears offline, the local AI model may not be running yet.',
+    tags: ['jeli', 'ai', 'assistant', 'privacy'],
+  },
+  {
+    question: 'Is my financial data shared with any external service?',
+    answer:
+      'No. Foroba, Pazuru, and Tsumi are all local-first and self-hosted. Bank sync uses Enable Banking under PSD2; market data comes from public, license-clean sources. Nothing is sent to third-party AI providers.',
+    tags: ['privacy', 'security', 'data'],
+  },
+  {
+    question: 'How do I switch between light and dark mode?',
+    answer:
+      'Use the theme toggle in Settings or in the sidebar footer. You can choose Light, Dark, or follow your system preference.',
+    tags: ['theme', 'dark mode', 'settings'],
+  },
+  {
+    question: 'What is the Household section for?',
+    answer:
+      'Household lets you link family members to track shared goals and combined net worth across linked accounts, while keeping each person\'s individual data private by default.',
+    tags: ['household', 'family'],
+  },
+];
