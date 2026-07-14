@@ -1,4 +1,6 @@
 import { fetchJson } from './fetchJson';
+import { fetchDetailedHealthBody, fetchHealthBody } from './health';
+import type { DetailedHealth } from './health';
 
 const BASE = import.meta.env.VITE_PAZURU_API_URL ?? '/pazuru-api';
 
@@ -32,20 +34,15 @@ async function safeFetch<T>(url: string, fallback: T): Promise<T> {
   }
 }
 
-// Health endpoints return a valid JSON body even at 503 (backend-reported
-// "degraded"), unlike other endpoints where a non-2xx means no usable body.
-// Only fall back on a genuine network-level failure (thrown fetch).
-async function fetchHealthBody<T>(url: string, fallback: T): Promise<T> {
-  try {
-    const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
-    return (await res.json()) as T;
-  } catch {
-    return fallback;
-  }
-}
-
 export async function fetchPazuruHealth(): Promise<PazuruHealth> {
   return fetchHealthBody(`${BASE}/health`, { status: 'unavailable' as const });
+}
+
+export async function fetchPazuruHealthDetailed(): Promise<DetailedHealth> {
+  return fetchDetailedHealthBody(`${BASE}/health/detailed`, {
+    status: 'unavailable' as const,
+    dependencies: {},
+  });
 }
 
 export async function fetchPazuruSummary(): Promise<PazuruSummary> {

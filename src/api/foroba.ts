@@ -1,27 +1,27 @@
 import type { NetWorthSnapshot } from '@foroba/ui';
+import { fetchDetailedHealthBody, fetchHealthBody } from './health';
+import type { DetailedHealth } from './health';
 import { fetchPazuruSummary } from './pazuru';
 import { fetchTsumiSummary } from './tsumi';
+
+export type { DependencyStatus, DetailedHealth } from './health';
 
 export interface ForobaHealth {
   status: 'ok' | 'degraded' | 'unavailable';
   checks?: { db: 'ok' | 'down' };
 }
 
-// Health endpoints return a valid JSON body even at 503 (backend-reported
-// "degraded"). Only fall back on a genuine network-level failure.
-async function fetchHealthBody<T>(url: string, fallback: T): Promise<T> {
-  try {
-    const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
-    return (await res.json()) as T;
-  } catch {
-    return fallback;
-  }
-}
-
 const FOROBA_BASE = '/foroba-api';
 
 export async function fetchForobaHealth(): Promise<ForobaHealth> {
   return fetchHealthBody(`${FOROBA_BASE}/health`, { status: 'unavailable' as const });
+}
+
+export async function fetchForobaHealthDetailed(): Promise<DetailedHealth> {
+  return fetchDetailedHealthBody(`${FOROBA_BASE}/health/detailed`, {
+    status: 'unavailable' as const,
+    dependencies: {},
+  });
 }
 
 export type NetWorthSource = 'pazuru' | 'tsumi';
