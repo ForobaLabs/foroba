@@ -23,6 +23,7 @@ from starlette.requests import Request as StarletteRequest
 from starlette.responses import Response
 
 from config import settings
+from observability import init_error_tracking
 from auth import keys
 from auth.dependencies import require_admin
 
@@ -46,6 +47,7 @@ import markets_service
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+init_error_tracking(settings.glitchtip_dsn)
 
 app = FastAPI(
     title="Foroba Jeli API",

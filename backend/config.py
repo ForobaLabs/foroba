@@ -23,5 +23,8 @@ class Settings(BaseSettings):
     onboarding_mifid_enabled: bool = False
     auth_2fa_enabled: bool = False
 
+    # --- Observability (TI-B item 2, foroba#153) ---
+    glitchtip_dsn: str = ""
+
 
 settings = Settings()
