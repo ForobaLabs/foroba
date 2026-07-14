@@ -17,6 +17,8 @@ CREATE TABLE IF NOT EXISTS users (
     totp_enabled INTEGER NOT NULL DEFAULT 0,
     is_admin INTEGER NOT NULL DEFAULT 0,
     household_id TEXT,
+    failed_login_attempts INTEGER NOT NULL DEFAULT 0,
+    locked_until TEXT,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 

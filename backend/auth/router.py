@@ -4,7 +4,7 @@ from __future__ import annotations
 import sqlite3
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from pydantic import BaseModel
 
 from config import settings
@@ -16,6 +16,7 @@ from auth.models import (
     HouseholdJoinRequest, LoginRequest, RegisterRequest, ShareToggleRequest, UserPublic,
 )
 from auth.security import create_token, hash_password, needs_rehash, verify_password
+from rate_limit import limiter
 from twofa.totp import verify_code
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -37,7 +38,8 @@ def _set_session_cookie(response: Response, user: dict) -> None:
 
 
 @router.post("/register", response_model=UserPublic, status_code=201)
-def register(req: RegisterRequest, response: Response,
+@limiter.limit("5/minute")
+def register(request: Request, req: RegisterRequest, response: Response,
              conn: sqlite3.Connection = Depends(get_conn)) -> dict:
     if repo.get_user_by_email(conn, req.email):
         raise HTTPException(status.HTTP_409_CONFLICT, "Email already registered")
@@ -48,10 +50,15 @@ def register(req: RegisterRequest, response: Response,
 
 
 @router.post("/login", response_model=None)
-def login(req: LoginRequest, response: Response,
+@limiter.limit("10/minute")
+def login(request: Request, req: LoginRequest, response: Response,
           conn: sqlite3.Connection = Depends(get_conn)) -> dict:
     user = repo.get_user_by_email(conn, req.email)
+    if user is not None and repo.is_locked_out(user):
+        raise HTTPException(status.HTTP_423_LOCKED, "Account temporarily locked. Try again later.")
     if user is None or not verify_password(req.password, user["password_hash"]):
+        if user is not None:
+            repo.register_failed_login(conn, user["id"])
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid credentials")
     if needs_rehash(user["password_hash"]):
         new_hash = hash_password(req.password)
@@ -59,6 +66,7 @@ def login(req: LoginRequest, response: Response,
         conn.commit()
     if settings.auth_2fa_enabled and user.get("totp_enabled"):
         return {"mfa_required": True, "email": user["email"]}
+    repo.reset_failed_login(conn, user["id"])
     _set_session_cookie(response, user)
     return UserPublic(**user).model_dump()
 
@@ -69,13 +77,18 @@ class Login2FARequest(BaseModel):
 
 
 @router.post("/login/2fa", response_model=None)
-def login_2fa(req: Login2FARequest, response: Response,
+@limiter.limit("10/minute")
+def login_2fa(request: Request, req: Login2FARequest, response: Response,
               conn: sqlite3.Connection = Depends(get_conn)) -> dict:
     user = repo.get_user_by_email(conn, req.email)
+    if user is not None and repo.is_locked_out(user):
+        raise HTTPException(status.HTTP_423_LOCKED, "Account temporarily locked. Try again later.")
     if user is None or not user.get("totp_enabled") or not user.get("totp_secret"):
         raise HTTPException(400, "2FA not set up")
     if not verify_code(user["totp_secret"], req.code):
+        repo.register_failed_login(conn, user["id"])
         raise HTTPException(401, "Invalid code")
+    repo.reset_failed_login(conn, user["id"])
     _set_session_cookie(response, user)
     return UserPublic(**user).model_dump()
 

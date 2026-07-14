@@ -5,12 +5,13 @@ from __future__ import annotations
 
 import sqlite3
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 
 from auth.dependencies import get_current_user
 from auth.conn import get_conn
 from auth import repository as repo
+from rate_limit import limiter
 from twofa.totp import generate_secret, provisioning_uri, qr_data_url, verify_code
 
 router = APIRouter(prefix="/auth/2fa", tags=["2fa"])
@@ -21,7 +22,8 @@ class CodeRequest(BaseModel):
 
 
 @router.post("/enroll")
-def enroll(user: dict = Depends(get_current_user),
+@limiter.limit("20/minute")
+def enroll(request: Request, user: dict = Depends(get_current_user),
            conn: sqlite3.Connection = Depends(get_conn)) -> dict:
     secret = generate_secret()
     repo.set_totp_secret(conn, user["id"], secret)
@@ -30,7 +32,8 @@ def enroll(user: dict = Depends(get_current_user),
 
 
 @router.post("/verify")
-def verify(req: CodeRequest, user: dict = Depends(get_current_user),
+@limiter.limit("10/minute")
+def verify(request: Request, req: CodeRequest, user: dict = Depends(get_current_user),
            conn: sqlite3.Connection = Depends(get_conn)) -> dict:
     fresh = repo.get_user_by_id(conn, user["id"])
     if not fresh["totp_secret"] or not verify_code(fresh["totp_secret"], req.code):
@@ -40,7 +43,8 @@ def verify(req: CodeRequest, user: dict = Depends(get_current_user),
 
 
 @router.post("/disable")
-def disable(user: dict = Depends(get_current_user),
+@limiter.limit("20/minute")
+def disable(request: Request, user: dict = Depends(get_current_user),
             conn: sqlite3.Connection = Depends(get_conn)) -> dict:
     repo.disable_totp(conn, user["id"])
     return {"enabled": False}

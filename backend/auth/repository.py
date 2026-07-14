@@ -2,10 +2,54 @@
 from __future__ import annotations
 
 import sqlite3
+from datetime import datetime, timedelta, timezone
+
+LOCKOUT_MAX_ATTEMPTS = 5
+LOCKOUT_DURATION_MINUTES = 15
 
 
 def _row_to_dict(row: sqlite3.Row | None) -> dict | None:
     return dict(row) if row is not None else None
+
+
+def is_locked_out(user: dict) -> bool:
+    """True if the account is currently within its lockout window."""
+    locked_until = user.get("locked_until")
+    if not locked_until:
+        return False
+    try:
+        until = datetime.fromisoformat(locked_until)
+    except ValueError:
+        return False
+    if until.tzinfo is None:
+        until = until.replace(tzinfo=timezone.utc)
+    return datetime.now(timezone.utc) < until
+
+
+def register_failed_login(conn: sqlite3.Connection, user_id: int) -> dict:
+    """Increment the failed-attempt counter; lock the account if the threshold is hit."""
+    conn.execute(
+        "UPDATE users SET failed_login_attempts = failed_login_attempts + 1 WHERE id = ?",
+        (user_id,),
+    )
+    row = conn.execute(
+        "SELECT failed_login_attempts FROM users WHERE id = ?", (user_id,)
+    ).fetchone()
+    if row["failed_login_attempts"] >= LOCKOUT_MAX_ATTEMPTS:
+        locked_until = (
+            datetime.now(timezone.utc) + timedelta(minutes=LOCKOUT_DURATION_MINUTES)
+        ).isoformat()
+        conn.execute("UPDATE users SET locked_until = ? WHERE id = ?", (locked_until, user_id))
+    conn.commit()
+    return get_user_by_id(conn, user_id)
+
+
+def reset_failed_login(conn: sqlite3.Connection, user_id: int) -> None:
+    conn.execute(
+        "UPDATE users SET failed_login_attempts = 0, locked_until = NULL WHERE id = ?",
+        (user_id,),
+    )
+    conn.commit()
 
 
 def create_user(conn: sqlite3.Connection, *, email: str, name: str,

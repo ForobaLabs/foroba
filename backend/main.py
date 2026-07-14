@@ -15,8 +15,7 @@ from fastapi import Cookie, Depends, FastAPI, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel, Field
-from slowapi import Limiter, _rate_limit_exceeded_handler
-from slowapi.util import get_remote_address
+from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request as StarletteRequest
@@ -26,13 +25,13 @@ from config import settings
 from observability import init_error_tracking
 from auth import keys
 from auth.dependencies import require_admin
+from rate_limit import limiter
 
 RATE_LIMIT_DEFAULT = os.getenv("RATE_LIMIT_DEFAULT", "60/minute")
 ALLOWED_ORIGINS = os.getenv(
     "ALLOWED_ORIGINS",
     "http://localhost:5175,http://localhost:5173,http://localhost:5174,http://localhost:5178",
 ).split(",")
-limiter = Limiter(key_func=get_remote_address)
 from db import seed_demo_household as _seed_household, seed_mock_users as _seed
 from auth.router import router as auth_router, get_conn
 from auth.dependencies import get_current_user
