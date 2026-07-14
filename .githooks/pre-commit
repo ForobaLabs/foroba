@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+# Pre-commit hardening hook (installed via core.hooksPath = .githooks)
+# foroba#154 / TI-B item 5: catch secrets, large files, and forgotten
+# uncommitted work before it ships or gets lost across sessions.
+set -euo pipefail
+
+staged=$(git diff --cached --name-only --diff-filter=ACM)
+block=0
+
+# 1. Block obvious secret files from being committed
+secret_pattern='(^|/)\.env($|\.[^.]*$)|\.pem$|id_rsa|id_ed25519|credentials\.json$|\.p12$|\.pfx$'
+if echo "$staged" | grep -E -i "$secret_pattern" | grep -v -E '\.env\.example$|\.env\.sample$' > /tmp/.precommit_secrets 2>/dev/null; then
+  if [ -s /tmp/.precommit_secrets ]; then
+    echo "BLOCKED: staged file(s) look like secrets/credentials:" >&2
+    cat /tmp/.precommit_secrets >&2
+    echo "Remove from staging (git restore --staged <file>) or add to .gitignore if this is a template." >&2
+    block=1
+  fi
+fi
+rm -f /tmp/.precommit_secrets
+
+# 2. Block large files (>5MB) — avoid bloating repo with binaries/dumps
+while IFS= read -r f; do
+  [ -z "$f" ] && continue
+  [ -f "$f" ] || continue
+  size=$(wc -c < "$f" | tr -d ' ')
+  if [ "$size" -gt 5242880 ]; then
+    echo "BLOCKED: $f is $(( size / 1048576 ))MB (>5MB limit). Use Git LFS or exclude via .gitignore." >&2
+    block=1
+  fi
+done <<< "$staged"
+
+if [ "$block" -eq 1 ]; then
+  exit 1
+fi
+
+# 3. Non-blocking nudge: warn about OTHER untracked source files not part of
+# this commit, so work-in-progress doesn't silently sit uncommitted for weeks
+# (the exact incident that motivated this hook — foroba#154).
+untracked=$(git status --porcelain | grep '^??' | awk '{print $2}' | grep -E '\.(ts|tsx|js|jsx|py|go|rs|css)$' || true)
+if [ -n "$untracked" ]; then
+  echo "NOTE: untracked source files exist and are NOT part of this commit:" >&2
+  echo "$untracked" | sed 's/^/  /' >&2
+  echo "If this is finished work, stage it too — don't let it sit uncommitted." >&2
+fi
+
+exit 0
