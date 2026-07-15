@@ -43,6 +43,7 @@ from twofa.router import router as twofa_router
 from settings_store import init_settings
 from jeli_service import build_system_prompt, gather_context, stream_chat
 import markets_service
+import networth_service
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -186,6 +187,20 @@ async def markets_overview(
     Read-only superapp surface. Degrades gracefully if Tsumi is offline.
     """
     return await markets_service.fetch_overview(asset_class, cookie=suite_session)
+
+
+@app.get("/networth/summary")
+async def networth_summary(
+    days: int = 365,
+    _: dict = Depends(get_current_user),
+    suite_session: str | None = Cookie(default=None),
+) -> dict:
+    """Aggregate bank net worth (Pazuru) + investment portfolio (Tsumi) into
+    one unified total (foroba#157). Requires auth — this is per-user financial
+    data, unlike the public-ish /markets/* surface. Degrades gracefully if
+    either upstream is offline: failed sections are null and `degraded` is
+    true; never returns 500."""
+    return await networth_service.fetch_networth(days, cookie=suite_session)
 
 
 @app.post("/chat")
