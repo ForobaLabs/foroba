@@ -88,13 +88,7 @@ export function DashboardPage() {
           <p className="mb-3 text-sm font-medium text-[var(--color-text-secondary)]">
             Net worth over time
           </p>
-          <NetWorthChart
-            data={
-              snapshot
-                ? [{ date: snapshot.date, totalEur: snapshot.totalEur }]
-                : []
-            }
-          />
+          <NetWorthChart data={data?.history ?? []} />
         </CardContent>
       </Card>
 
