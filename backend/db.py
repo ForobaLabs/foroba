@@ -185,11 +185,22 @@ def run_migrations(db_path: str) -> None:
 def connect(db_path: str) -> sqlite3.Connection:
     Path(db_path).parent.mkdir(parents=True, exist_ok=True)
     if db_path == ":memory:":
-        conn = sqlite3.connect(db_path, check_same_thread=False)
+        conn = sqlite3.connect(db_path, check_same_thread=False, timeout=10)
         conn.row_factory = sqlite3.Row
+        conn.execute("PRAGMA busy_timeout = 10000")
         init_schema(conn)
         return conn
     run_migrations(db_path)
-    conn = sqlite3.connect(db_path, check_same_thread=False)
+    conn = sqlite3.connect(db_path, check_same_thread=False, timeout=10)
     conn.row_factory = sqlite3.Row
+    # This connection is shared (singleton) across all threadpool workers
+    # handling concurrent requests (see auth/conn.py). The default SQLite
+    # rollback-journal mode locks the whole DB file per writer, and Python's
+    # sqlite3 default busy timeout (5s) was left implicit. Under concurrent
+    # writes (e.g. many logins updating failed_login_attempts) this produced
+    # "database is locked" 500s. WAL lets readers run concurrently with the
+    # single writer, and an explicit busy_timeout makes writers queue instead
+    # of failing immediately when they do contend.
+    conn.execute("PRAGMA journal_mode = WAL")
+    conn.execute("PRAGMA busy_timeout = 10000")
     return conn

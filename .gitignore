@@ -39,3 +39,8 @@ __pycache__/
 # Runtime DB (generated via Alembic migrations + startup seed, not tracked)
 backend/*.db
 backend/*.db-journal
+backend/*.db-wal
+backend/*.db-shm
+
+# Locust load-test raw CSV output (foroba#156) — regenerate on demand, don't track
+backend/loadtest/results/
