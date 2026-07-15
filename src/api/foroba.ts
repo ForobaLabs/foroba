@@ -1,4 +1,4 @@
-import type { NetWorthSnapshot } from '@foroba/ui';
+import type { AppNotification, NetWorthSnapshot } from '@foroba/ui';
 import { fetchJson } from './fetchJson';
 import { fetchDetailedHealthBody, fetchHealthBody } from './health';
 import type { DetailedHealth } from './health';
@@ -88,4 +88,28 @@ export async function fetchNetWorth(days = 365): Promise<NetWorthResult> {
     history: res.history.map((p) => ({ date: p.date, totalEur: p.total_eur })),
     degradedSources,
   };
+}
+
+interface NotificationsApiResponse {
+  items: AppNotification[];
+  degraded: boolean;
+}
+
+/**
+ * Active (non-dismissed) alerts for the current user (foroba#158): low
+ * balance, goal reached, recurring payment increased, unusual transaction.
+ * Server-side deterministic checks over Pazuru data, see notification_service.py.
+ */
+export async function fetchNotifications(): Promise<NotificationsApiResponse> {
+  return fetchJson<NotificationsApiResponse>('/foroba-api/notifications', {
+    credentials: 'include',
+    timeoutMs: 8000,
+  });
+}
+
+export async function dismissNotification(key: string): Promise<void> {
+  await fetchJson<{ dismissed: boolean }>(
+    `/foroba-api/notifications/${encodeURIComponent(key)}/dismiss`,
+    { method: 'POST', credentials: 'include', timeoutMs: 8000 },
+  );
 }

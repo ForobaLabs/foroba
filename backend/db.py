@@ -50,6 +50,29 @@ CREATE TABLE IF NOT EXISTS sandbox_user_context (
     context_text TEXT NOT NULL DEFAULT '',
     updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
+
+-- A (user_id, notif_key) pair the user has dismissed from the notifications
+-- bell (foroba#158). notif_key is a stable, alert-instance-specific string
+-- (e.g. "goal_reached:42") built by notification_service.py — dismissing
+-- permanently suppresses that specific alert instance from resurfacing.
+CREATE TABLE IF NOT EXISTS notification_dismissals (
+    user_id INTEGER NOT NULL,
+    notif_key TEXT NOT NULL,
+    dismissed_at TEXT NOT NULL DEFAULT (datetime('now')),
+    PRIMARY KEY (user_id, notif_key)
+);
+
+-- Last-seen amount for a Pazuru RecurringPattern, per user. Pazuru's
+-- RecurringPattern only stores current state (no history), so Foroba tracks
+-- its own baseline to detect a "recurring payment increased" alert
+-- (notification_service.py) across successive checks.
+CREATE TABLE IF NOT EXISTS recurring_amount_baselines (
+    user_id INTEGER NOT NULL,
+    pattern_id INTEGER NOT NULL,
+    last_amount_cents INTEGER NOT NULL,
+    updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+    PRIMARY KEY (user_id, pattern_id)
+);
 """
 
 
@@ -166,6 +189,44 @@ def update_sandbox_user_context(conn: sqlite3.Connection, user_id: str, context_
         "VALUES (?, ?, datetime('now')) "
         "ON CONFLICT(user_id) DO UPDATE SET context_text = excluded.context_text, updated_at = excluded.updated_at",
         (user_id, context_text),
+    )
+    conn.commit()
+
+
+def get_dismissed_notification_keys(conn: sqlite3.Connection, user_id: int) -> set[str]:
+    rows = conn.execute(
+        "SELECT notif_key FROM notification_dismissals WHERE user_id = ?", (user_id,)
+    ).fetchall()
+    return {r["notif_key"] for r in rows}
+
+
+def dismiss_notification(conn: sqlite3.Connection, user_id: int, notif_key: str) -> None:
+    conn.execute(
+        "INSERT OR IGNORE INTO notification_dismissals (user_id, notif_key) VALUES (?, ?)",
+        (user_id, notif_key),
+    )
+    conn.commit()
+
+
+def get_recurring_baseline(conn: sqlite3.Connection, user_id: int, pattern_id: int) -> int | None:
+    row = conn.execute(
+        "SELECT last_amount_cents FROM recurring_amount_baselines "
+        "WHERE user_id = ? AND pattern_id = ?",
+        (user_id, pattern_id),
+    ).fetchone()
+    return row["last_amount_cents"] if row else None
+
+
+def set_recurring_baseline(
+    conn: sqlite3.Connection, user_id: int, pattern_id: int, amount_cents: int
+) -> None:
+    conn.execute(
+        "INSERT INTO recurring_amount_baselines "
+        "(user_id, pattern_id, last_amount_cents, updated_at) "
+        "VALUES (?, ?, ?, datetime('now')) "
+        "ON CONFLICT(user_id, pattern_id) DO UPDATE SET "
+        "last_amount_cents = excluded.last_amount_cents, updated_at = excluded.updated_at",
+        (user_id, pattern_id, amount_cents),
     )
     conn.commit()
 

@@ -13,6 +13,10 @@ DEFAULT_SETTINGS: dict[str, str] = {
     "premium_gating_enabled": "false",
     "onboarding_mifid_enabled": "false",
     "lab_service_enabled": "true",
+    # Balance threshold (cents) below which the "low balance" notification
+    # fires (foroba#158, notification_service.py). Not a toggle but reuses
+    # this same key/value store rather than adding a new table.
+    "low_balance_threshold_cents": "10000",
 }
 
 

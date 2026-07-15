@@ -1,9 +1,10 @@
-import { AppShell, Footer, Sidebar, Spinner, Topbar, useTheme, useUserProfile } from '@foroba/ui';
+import { AppShell, Footer, NotificationBell, Sidebar, Spinner, Topbar, useTheme, useUserProfile } from '@foroba/ui';
 import { useEffect, useState } from 'react';
 import { Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { getNavItems } from './components/AppNavItems';
 import { JeliPanel } from './components/JeliPanel';
 import { useAuth } from './auth/AuthProvider';
+import { useNotifications } from './hooks/useNotifications';
 import i18n from './i18n';
 
 export function App() {
@@ -13,6 +14,7 @@ export function App() {
   const { user, loading } = useAuth();
   const [jeliOpen, setJeliOpen] = useState(false);
   const { profile } = useUserProfile();
+  const { notifications, dismiss } = useNotifications();
 
   useEffect(() => {
     i18n.changeLanguage(profile.language);
@@ -67,6 +69,8 @@ export function App() {
             ]}
             right={
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <NotificationBell notifications={notifications} onDismiss={dismiss} />
+
                 {/* Profile avatar — links to /profile */}
                 <button
                   onClick={() => navigate('/profile')}

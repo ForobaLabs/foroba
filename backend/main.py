@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import logging
 import os
+import sqlite3
 from typing import Annotated
 
 import asyncio
@@ -32,6 +33,7 @@ ALLOWED_ORIGINS = os.getenv(
     "ALLOWED_ORIGINS",
     "http://localhost:5175,http://localhost:5173,http://localhost:5174,http://localhost:5178",
 ).split(",")
+import db
 from db import seed_demo_household as _seed_household, seed_mock_users as _seed
 from auth.router import router as auth_router, get_conn
 from auth.dependencies import get_current_user
@@ -44,6 +46,7 @@ from settings_store import init_settings
 from jeli_service import build_system_prompt, gather_context, stream_chat
 import markets_service
 import networth_service
+import notification_service
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -201,6 +204,32 @@ async def networth_summary(
     either upstream is offline: failed sections are null and `degraded` is
     true; never returns 500."""
     return await networth_service.fetch_networth(days, cookie=suite_session)
+
+
+@app.get("/notifications")
+async def list_notifications(
+    user: dict = Depends(get_current_user),
+    conn: sqlite3.Connection = Depends(get_conn),
+    suite_session: str | None = Cookie(default=None),
+) -> dict:
+    """Active (non-dismissed) alerts for the current user (foroba#158):
+    low balance, goal reached, recurring payment increased, unusual
+    transaction. Deterministic checks over Pazuru data — never LLM-based.
+    Degrades gracefully if Pazuru is offline (empty items, degraded=true)."""
+    return await notification_service.generate_notifications(
+        conn, user["id"], cookie=suite_session
+    )
+
+
+@app.post("/notifications/{notif_key}/dismiss")
+async def dismiss_notification(
+    notif_key: str,
+    user: dict = Depends(get_current_user),
+    conn: sqlite3.Connection = Depends(get_conn),
+) -> dict:
+    """Permanently suppress one alert instance from resurfacing."""
+    db.dismiss_notification(conn, user["id"], notif_key)
+    return {"dismissed": True}
 
 
 @app.post("/chat")
