@@ -42,6 +42,7 @@ from onboarding.router import router as onboarding_router
 from admin_router import router as admin_router
 from lab_router import router as lab_router
 from twofa.router import router as twofa_router
+from whatif_router import router as whatif_router
 from settings_store import init_settings
 from jeli_service import build_system_prompt, gather_context, stream_chat
 import markets_service
@@ -89,6 +90,7 @@ app.include_router(onboarding_router)
 app.include_router(admin_router)
 app.include_router(lab_router)
 app.include_router(twofa_router)
+app.include_router(whatif_router)
 
 
 @app.on_event("startup")
