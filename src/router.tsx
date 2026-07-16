@@ -22,6 +22,7 @@ const MarketsPage       = lazy(() => import('./pages/MarketsPage').then(m => ({ 
 const MarketDetailPage  = lazy(() => import('./pages/MarketDetailPage').then(m => ({ default: m.MarketDetailPage })));
 const JeliLabPage       = lazy(() => import('./pages/JeliLabPage').then(m => ({ default: m.JeliLabPage })));
 const StatusPage        = lazy(() => import('./pages/StatusPage').then(m => ({ default: m.StatusPage })));
+const WhatIfPage        = lazy(() => import('./pages/WhatIfPage').then(m => ({ default: m.WhatIfPage })));
 
 const Loading = () => (
   <div className="flex h-full items-center justify-center py-20">
@@ -53,6 +54,7 @@ export const router = createBrowserRouter([
       { path: 'profile',   element: <Suspense fallback={<Loading />}><ProfilePage /></Suspense> },
       { path: 'household', element: <Suspense fallback={<Loading />}><HouseholdPage /></Suspense> },
       { path: 'goals',     element: <Suspense fallback={<Loading />}><GoalsPage /></Suspense> },
+      { path: 'whatif',    element: <Suspense fallback={<Loading />}><WhatIfPage /></Suspense> },
       { path: 'admin',     element: <Suspense fallback={<Loading />}><AdminPage /></Suspense> },
       { path: 'help',      element: <HelpPage faqItems={FOROBA_FAQ} gitlabIssueUrl="https://gitlab.com/bambac961/foroba/-/issues" /> },
       { path: 'legal',    element: <LegalPage /> },
