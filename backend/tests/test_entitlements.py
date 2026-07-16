@@ -19,6 +19,8 @@ def test_registry_has_expected_keys():
     ({"audience": "base", "tier": "free"}, "markets.comparator", False, False),
     ({"audience": "expert", "tier": "premium"}, "markets.simulations", True, True),
     ({"audience": "base", "tier": "free"}, "markets.simulations", False, False),
+    ({"audience": "expert", "tier": "premium"}, "household.whatif_simulator", True, True),
+    ({"audience": "base", "tier": "free"}, "household.whatif_simulator", False, False),
 ])
 def test_evaluate(user, key, visible, unlocked):
     res = evaluate(key, user, gating_enabled=True)
