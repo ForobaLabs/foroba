@@ -73,6 +73,21 @@ CREATE TABLE IF NOT EXISTS recurring_amount_baselines (
     updated_at TEXT NOT NULL DEFAULT (datetime('now')),
     PRIMARY KEY (user_id, pattern_id)
 );
+
+-- Named, saveable what-if scenario parameters (foroba#162, TI-D item 1). Only
+-- parameters are stored — projections are always recomputed live against
+-- current data. Visible to the whole household (household_id) when the
+-- creator has one, otherwise private to created_by_user_id.
+CREATE TABLE IF NOT EXISTS whatif_scenarios (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    created_by_user_id INTEGER NOT NULL,
+    household_id TEXT,
+    name TEXT NOT NULL,
+    horizon_months INTEGER NOT NULL,
+    params_json TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
 """
 
 
