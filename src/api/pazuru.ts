@@ -135,3 +135,36 @@ export async function fetchPazuruAccountTransactions(
     category: t.category,
   }));
 }
+
+export interface PazuruGoal {
+  id: number;
+  name: string;
+  targetCents: number;
+  savedCents: number;
+  monthlyContributionCents: number;
+  deadline: string | null;
+}
+
+interface RawPazuruGoal {
+  id: number;
+  name: string;
+  target_cents: number;
+  saved_cents: number;
+  monthly_contribution_cents: number;
+  deadline: string | null;
+}
+
+export async function fetchPazuruGoals(): Promise<PazuruGoal[]> {
+  const data = await fetchJson<RawPazuruGoal[]>(`${BASE}/api/goals`, {
+    credentials: 'include',
+    timeoutMs: 5000,
+  });
+  return data.map((g) => ({
+    id: g.id,
+    name: g.name,
+    targetCents: g.target_cents,
+    savedCents: g.saved_cents,
+    monthlyContributionCents: g.monthly_contribution_cents,
+    deadline: g.deadline,
+  }));
+}
