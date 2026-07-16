@@ -100,3 +100,124 @@ def _monthly_net_delta_cents(bank_history: list[dict[str, Any]]) -> int:
     if len(bank_history) < 31:
         return 0
     return int(bank_history[-1]["balance_cents"] - bank_history[-31]["balance_cents"])
+
+
+async def _get_json(
+    client: httpx.AsyncClient, url: str, params: dict[str, Any] | None, cookie: str | None,
+) -> Any | None:
+    cookies = {"suite_session": cookie} if cookie else None
+    try:
+        resp = await client.get(url, params=params or {}, cookies=cookies, timeout=_TIMEOUT)
+        resp.raise_for_status()
+        return resp.json()
+    except Exception as exc:  # noqa: BLE001 — system boundary: Pazuru/Tsumi may be offline
+        logger.warning("whatif section unavailable (%s): %s", url, exc)
+        return None
+
+
+async def _post_json(
+    client: httpx.AsyncClient, url: str, body: dict[str, Any], cookie: str | None,
+) -> Any | None:
+    cookies = {"suite_session": cookie} if cookie else None
+    try:
+        resp = await client.post(url, json=body, cookies=cookies, timeout=_TIMEOUT)
+        resp.raise_for_status()
+        return resp.json()
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("whatif section unavailable (%s): %s", url, exc)
+        return None
+
+
+async def _goal_impacts(
+    client: httpx.AsyncClient, pazuru_base: str, cookie: str | None,
+    goals: list[dict[str, Any]], goal_contributions: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    extra_by_goal = {gc["goal_id"]: gc["extra_monthly_cents"] for gc in goal_contributions}
+    impacts: list[dict[str, Any]] = []
+    for g in goals:
+        extra = extra_by_goal.get(g["id"])
+        if extra is None:
+            continue
+        projection = await _post_json(
+            client, f"{pazuru_base}/api/goals/project",
+            {
+                "target_cents": g["target_cents"],
+                "saved_cents": g["saved_cents"],
+                "monthly_contribution_cents": g["monthly_contribution_cents"] + extra,
+                "deadline": g["deadline"],
+            },
+            cookie,
+        )
+        impacts.append(
+            {
+                "goal_id": g["id"],
+                "name": g["name"],
+                "original_projected_completion": g["projected_completion"],
+                "new_projection": projection,
+            }
+        )
+    return impacts
+
+
+async def simulate(
+    params: dict[str, Any], horizon_months: int, *, owner_cookie: str | None,
+) -> dict[str, Any]:
+    """Fetch current household state from Pazuru+Tsumi and compute the
+    projection for the given scenario parameters. Always returns a dict —
+    failed upstream sections degrade to 0/None with `degraded=True`, never
+    a hard error (same policy as networth_service.fetch_networth)."""
+    pazuru_base = settings.pazuru_api_url.rstrip("/")
+    tsumi_base = settings.tsumi_api_url.rstrip("/")
+
+    async with httpx.AsyncClient() as client:
+        net_worth, investments_summary, goals, what_if_baseline, what_if_adjusted = await asyncio.gather(
+            _get_json(client, f"{pazuru_base}/api/accounts/net-worth", {"days": 90}, owner_cookie),
+            _get_json(client, f"{tsumi_base}/api/portfolio/summary", {}, owner_cookie),
+            _get_json(client, f"{pazuru_base}/api/goals", {}, owner_cookie),
+            _post_json(client, f"{pazuru_base}/api/forecasts/what-if", {}, owner_cookie),
+            _post_json(
+                client, f"{pazuru_base}/api/forecasts/what-if",
+                {
+                    "eliminate_categories": params.get("eliminate_categories"),
+                    "reduce_merchant_pct": params.get("reduce_merchant_pct"),
+                },
+                owner_cookie,
+            ),
+        )
+
+        bank_summary = net_worth.get("summary") if isinstance(net_worth, dict) else None
+        bank_history = net_worth.get("history") if isinstance(net_worth, dict) else None
+        degraded = (
+            bank_summary is None or investments_summary is None or goals is None
+            or what_if_baseline is None or what_if_adjusted is None
+        )
+
+        bank_total_cents = bank_summary["total_cents"] if bank_summary else 0
+        investments_total_eur = investments_summary["total_eur"] if investments_summary else 0.0
+        monthly_net_delta_cents = _monthly_net_delta_cents(bank_history or [])
+        spend_cut_savings_cents = (
+            what_if_baseline["base_cents"] - what_if_adjusted["base_cents"]
+            if what_if_baseline and what_if_adjusted else 0
+        )
+
+        goal_impacts = await _goal_impacts(
+            client, pazuru_base, owner_cookie, goals or [], params.get("goal_contributions") or []
+        )
+
+    points = compute_projection(
+        horizon_months=horizon_months,
+        bank_total_cents=bank_total_cents,
+        investments_total_eur=investments_total_eur,
+        monthly_net_delta_cents=monthly_net_delta_cents,
+        spend_cut_savings_cents=spend_cut_savings_cents,
+        income_delta_cents=params.get("income_delta_cents", 0),
+        one_off_events=params.get("one_off_events") or [],
+        investment_growth_rate_pct=params.get("investment_growth_rate_pct", 5.0),
+    )
+
+    return {
+        "points": points,
+        "goal_impacts": goal_impacts,
+        "degraded": degraded,
+        "disclaimer": DISCLAIMER,
+    }
