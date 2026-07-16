@@ -246,6 +246,70 @@ def set_recurring_baseline(
     conn.commit()
 
 
+def _whatif_visibility_clause() -> str:
+    return "(household_id = ? OR (household_id IS NULL AND created_by_user_id = ?))"
+
+
+def create_whatif_scenario(
+    conn: sqlite3.Connection, *, created_by_user_id: int, household_id: str | None,
+    name: str, horizon_months: int, params_json: str,
+) -> sqlite3.Row:
+    cur = conn.execute(
+        "INSERT INTO whatif_scenarios "
+        "(created_by_user_id, household_id, name, horizon_months, params_json) "
+        "VALUES (?, ?, ?, ?, ?)",
+        (created_by_user_id, household_id, name, horizon_months, params_json),
+    )
+    conn.commit()
+    row = get_whatif_scenario(conn, cur.lastrowid, user_id=created_by_user_id, household_id=household_id)
+    assert row is not None
+    return row
+
+
+def list_whatif_scenarios(
+    conn: sqlite3.Connection, *, user_id: int, household_id: str | None
+) -> list[sqlite3.Row]:
+    return conn.execute(
+        f"SELECT * FROM whatif_scenarios WHERE {_whatif_visibility_clause()} "
+        "ORDER BY created_at DESC, id DESC",
+        (household_id, user_id),
+    ).fetchall()
+
+
+def get_whatif_scenario(
+    conn: sqlite3.Connection, scenario_id: int, *, user_id: int, household_id: str | None
+) -> sqlite3.Row | None:
+    return conn.execute(
+        f"SELECT * FROM whatif_scenarios WHERE id = ? AND {_whatif_visibility_clause()}",
+        (scenario_id, household_id, user_id),
+    ).fetchone()
+
+
+def update_whatif_scenario(
+    conn: sqlite3.Connection, scenario_id: int, *, user_id: int, household_id: str | None,
+    name: str, horizon_months: int, params_json: str,
+) -> sqlite3.Row | None:
+    if get_whatif_scenario(conn, scenario_id, user_id=user_id, household_id=household_id) is None:
+        return None
+    conn.execute(
+        "UPDATE whatif_scenarios SET name = ?, horizon_months = ?, params_json = ?, "
+        "updated_at = datetime('now') WHERE id = ?",
+        (name, horizon_months, params_json, scenario_id),
+    )
+    conn.commit()
+    return get_whatif_scenario(conn, scenario_id, user_id=user_id, household_id=household_id)
+
+
+def delete_whatif_scenario(
+    conn: sqlite3.Connection, scenario_id: int, *, user_id: int, household_id: str | None = None
+) -> bool:
+    if get_whatif_scenario(conn, scenario_id, user_id=user_id, household_id=household_id) is None:
+        return False
+    conn.execute("DELETE FROM whatif_scenarios WHERE id = ?", (scenario_id,))
+    conn.commit()
+    return True
+
+
 def run_migrations(db_path: str) -> None:
     """Apply all pending Alembic migrations to the SQLite file at db_path."""
     from alembic import command
