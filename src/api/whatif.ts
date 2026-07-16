@@ -96,15 +96,41 @@ export interface WhatIfScenario {
   updatedAt: string;
 }
 
+interface RawWhatIfParams {
+  horizon_months: number;
+  eliminate_categories?: string[] | null;
+  reduce_merchant_pct?: Record<string, number> | null;
+  income_delta_cents?: number;
+  goal_contributions?: Array<{ goal_id: number; extra_monthly_cents: number }>;
+  one_off_events?: Array<{ month_offset: number; amount_cents: number; label: string }>;
+  investment_growth_rate_pct?: number;
+}
+
+function paramsFromApi(raw: RawWhatIfParams): WhatIfParams {
+  return {
+    horizonMonths: raw.horizon_months,
+    eliminateCategories: raw.eliminate_categories ?? undefined,
+    reduceMerchantPct: raw.reduce_merchant_pct ?? undefined,
+    incomeDeltaCents: raw.income_delta_cents ?? 0,
+    goalContributions: (raw.goal_contributions ?? []).map((g) => ({
+      goalId: g.goal_id, extraMonthlyCents: g.extra_monthly_cents,
+    })),
+    oneOffEvents: (raw.one_off_events ?? []).map((e) => ({
+      monthOffset: e.month_offset, amountCents: e.amount_cents, label: e.label,
+    })),
+    investmentGrowthRatePct: raw.investment_growth_rate_pct ?? 5.0,
+  };
+}
+
 interface RawScenario {
-  id: number; name: string; horizon_months: number; params: Record<string, unknown>;
+  id: number; name: string; horizon_months: number; params: RawWhatIfParams;
   created_at: string; updated_at: string;
 }
 
 function scenarioFromApi(raw: RawScenario): WhatIfScenario {
   return {
     id: raw.id, name: raw.name, horizonMonths: raw.horizon_months,
-    params: raw.params as unknown as WhatIfParams, createdAt: raw.created_at, updatedAt: raw.updated_at,
+    params: paramsFromApi(raw.params), createdAt: raw.created_at, updatedAt: raw.updated_at,
   };
 }
 
