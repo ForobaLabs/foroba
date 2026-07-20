@@ -145,3 +145,26 @@ async def stream_chat(system_prompt: str, message: str) -> AsyncIterator[str]:
         # a graceful fallback rather than a crash.
         logger.warning("Ollama unavailable, degrading gracefully: %s", exc)
         return
+
+
+async def generate_narrative(system_prompt: str, message: str) -> str:
+    """Non-streaming Ollama call for background jobs (monthly report) that need
+    the complete text and must surface failures explicitly to the caller —
+    unlike stream_chat, which degrades silently to an empty stream for the
+    interactive chat widget."""
+    payload = {
+        "model": settings.ollama_model,
+        "messages": [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": message},
+        ],
+        "stream": False,
+    }
+    async with httpx.AsyncClient(timeout=httpx.Timeout(connect=10.0, read=300.0, write=30.0, pool=5.0)) as client:
+        resp = await client.post(f"{settings.ollama_base_url}/api/chat", json=payload)
+        resp.raise_for_status()
+        data = resp.json()
+        content = data.get("message", {}).get("content", "")
+        if not content:
+            raise ValueError("Ollama returned an empty response")
+        return content
