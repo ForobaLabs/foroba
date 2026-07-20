@@ -88,6 +88,23 @@ CREATE TABLE IF NOT EXISTS whatif_scenarios (
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
+
+-- Monthly AI-generated financial summary (foroba#159, TI-D item 2). Multiple rows
+-- per (user_id, year_month) are allowed on purpose (never overwritten) — capped by
+-- MONTHLY_REPORT_LIMIT quota check in monthly_report_service.py, not by this table.
+CREATE TABLE IF NOT EXISTS monthly_reports (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    year_month TEXT NOT NULL,
+    trigger TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'pending',
+    narrative_text TEXT,
+    context_snapshot_json TEXT,
+    error_message TEXT,
+    attempt_count INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
 """
 
 
@@ -344,3 +361,60 @@ def connect(db_path: str) -> sqlite3.Connection:
     conn.execute("PRAGMA journal_mode = WAL")
     conn.execute("PRAGMA busy_timeout = 10000")
     return conn
+
+
+def create_monthly_report(
+    conn: sqlite3.Connection, *, user_id: int, year_month: str, trigger: str,
+) -> sqlite3.Row:
+    cur = conn.execute(
+        "INSERT INTO monthly_reports (user_id, year_month, trigger, status) "
+        "VALUES (?, ?, ?, 'generating')",
+        (user_id, year_month, trigger),
+    )
+    conn.commit()
+    row = get_monthly_report(conn, cur.lastrowid, user_id=user_id)
+    assert row is not None
+    return row
+
+
+def get_monthly_report(conn: sqlite3.Connection, report_id: int, *, user_id: int) -> sqlite3.Row | None:
+    return conn.execute(
+        "SELECT * FROM monthly_reports WHERE id = ? AND user_id = ?", (report_id, user_id),
+    ).fetchone()
+
+
+def list_monthly_reports(
+    conn: sqlite3.Connection, *, user_id: int, year_month: str | None = None,
+) -> list[sqlite3.Row]:
+    if year_month:
+        return conn.execute(
+            "SELECT * FROM monthly_reports WHERE user_id = ? AND year_month = ? "
+            "ORDER BY created_at DESC, id DESC",
+            (user_id, year_month),
+        ).fetchall()
+    return conn.execute(
+        "SELECT * FROM monthly_reports WHERE user_id = ? ORDER BY created_at DESC, id DESC",
+        (user_id,),
+    ).fetchall()
+
+
+def count_monthly_reports_this_month(conn: sqlite3.Connection, *, user_id: int, year_month: str) -> int:
+    row = conn.execute(
+        "SELECT COUNT(*) AS n FROM monthly_reports WHERE user_id = ? AND year_month = ?",
+        (user_id, year_month),
+    ).fetchone()
+    return row["n"]
+
+
+def update_monthly_report_result(
+    conn: sqlite3.Connection, report_id: int, *, status: str,
+    narrative_text: str | None, context_snapshot_json: str | None,
+    error_message: str | None, attempt_count: int,
+) -> sqlite3.Row | None:
+    conn.execute(
+        "UPDATE monthly_reports SET status = ?, narrative_text = ?, context_snapshot_json = ?, "
+        "error_message = ?, attempt_count = ?, updated_at = datetime('now') WHERE id = ?",
+        (status, narrative_text, context_snapshot_json, error_message, attempt_count, report_id),
+    )
+    conn.commit()
+    return conn.execute("SELECT * FROM monthly_reports WHERE id = ?", (report_id,)).fetchone()
