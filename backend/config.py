@@ -27,5 +27,13 @@ class Settings(BaseSettings):
     # --- Observability (TI-B item 2, foroba#153) ---
     glitchtip_dsn: str = ""
 
+    # --- Email (TI-D item 2, foroba#159) — stub only, real SMTP is foroba#163 ---
+    smtp_enabled: bool = False
+    smtp_host: str = ""
+    smtp_port: int = 587
+    smtp_user: str = ""
+    smtp_password: str = ""
+    smtp_from: str = ""
+
 
 settings = Settings()
