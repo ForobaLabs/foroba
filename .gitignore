@@ -44,3 +44,7 @@ backend/*.db-shm
 
 # Locust load-test raw CSV output (foroba#156) — regenerate on demand, don't track
 backend/loadtest/results/
+
+# Local tool artifacts, not project source
+.claude/
+backend/.playwright-cli/
