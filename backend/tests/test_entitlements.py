@@ -7,6 +7,7 @@ def test_registry_has_expected_keys():
     assert "markets.backtesting" in REGISTRY
     assert REGISTRY["markets.backtesting"] == {"audience": "expert", "tier": "premium"}
     assert REGISTRY["markets.summary_rating"] == {"audience": "base", "tier": "free"}
+    assert REGISTRY["portfolio.manual_assets"] == {"audience": "base", "tier": "premium"}
 
 
 @pytest.mark.parametrize("user, key, visible, unlocked", [
@@ -21,6 +22,8 @@ def test_registry_has_expected_keys():
     ({"audience": "base", "tier": "free"}, "markets.simulations", False, False),
     ({"audience": "expert", "tier": "premium"}, "household.whatif_simulator", True, True),
     ({"audience": "base", "tier": "free"}, "household.whatif_simulator", False, False),
+    ({"audience": "base", "tier": "premium"}, "portfolio.manual_assets", True, True),
+    ({"audience": "base", "tier": "free"}, "portfolio.manual_assets", True, False),
 ])
 def test_evaluate(user, key, visible, unlocked):
     res = evaluate(key, user, gating_enabled=True)
