@@ -11,7 +11,11 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # backend/
 
 config = context.config
 if config.config_file_name is not None:
-    fileConfig(config.config_file_name)
+    # disable_existing_loggers=False — migrations run in-process on every real
+    # (non-":memory:") db.connect() call, incl. app startup; the fileConfig
+    # default of True silently disables every already-created app/module
+    # logger (e.g. GlitchTip-relevant ones from observability.py) app-wide.
+    fileConfig(config.config_file_name, disable_existing_loggers=False)
 
 # Do NOT overwrite sqlalchemy.url here: db.py::run_migrations(db_path) sets it
 # on the Config object it builds before calling command.upgrade(), and that
