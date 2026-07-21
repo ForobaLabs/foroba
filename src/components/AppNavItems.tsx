@@ -1,6 +1,8 @@
 import {
   BarChart3,
+  FileText,
   FlaskConical,
+  GitBranch,
   HelpCircle,
   Home,
   Info,
@@ -23,6 +25,8 @@ export const APP_NAV_ITEMS: NavItem[] = [
   { label: 'Markets', href: '/markets', icon: LineChart },
   { label: 'Jeli Lab', href: '/lab', icon: FlaskConical },
   { label: 'Goals', href: '/goals', icon: Target },
+  { label: 'What-If', href: '/whatif', icon: GitBranch },
+  { label: 'Monthly Report', href: '/reports/monthly', icon: FileText },
   { label: 'Profile', href: '/profile', icon: User },
   { label: 'Household', href: '/household', icon: Home },
   { label: 'Settings', href: '/settings', icon: Settings },
