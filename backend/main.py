@@ -205,15 +205,18 @@ async def markets_overview(
 @app.get("/networth/summary")
 async def networth_summary(
     days: int = 365,
+    include_manual_assets: bool = True,
     _: dict = Depends(get_current_user),
     suite_session: str | None = Cookie(default=None),
 ) -> dict:
-    """Aggregate bank net worth (Pazuru) + investment portfolio (Tsumi) into
-    one unified total (foroba#157). Requires auth — this is per-user financial
-    data, unlike the public-ish /markets/* surface. Degrades gracefully if
-    either upstream is offline: failed sections are null and `degraded` is
-    true; never returns 500."""
-    return await networth_service.fetch_networth(days, cookie=suite_session)
+    """Aggregate bank net worth (Pazuru) + investment portfolio (Tsumi), optionally
+    including manual assets (foroba#157, extended foroba#164), into one unified
+    total. Requires auth — this is per-user financial data, unlike the public-ish
+    /markets/* surface. Degrades gracefully if either upstream is offline: failed
+    sections are null and `degraded` is true; never returns 500."""
+    return await networth_service.fetch_networth(
+        days, cookie=suite_session, include_manual_assets=include_manual_assets,
+    )
 
 
 @app.get("/notifications")

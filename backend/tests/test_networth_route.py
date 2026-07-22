@@ -10,12 +10,15 @@ from main import app
 import networth_service as ns
 
 
-async def _fake_fetch_networth(days: int, *, cookie: str | None = None) -> dict[str, Any]:
+async def _fake_fetch_networth(
+    days: int, *, cookie: str | None = None, include_manual_assets: bool = True,
+) -> dict[str, Any]:
     return {
         "bank": {"total_cents": 10000, "currency": "EUR", "account_count": 1, "excluded_accounts": []},
         "investments": {"total_eur": 50.0, "pnl_eur": 5.0, "pnl_pct": 11.11, "position_count": 2},
         "total_eur": 150.0,
-        "history": [{"date": "2026-07-16", "bank_eur": 100.0, "investments_eur": 50.0, "total_eur": 150.0}],
+        "history": [{"date": "2026-07-16", "bank_eur": 100.0, "investments_eur": 50.0,
+                     "manual_assets_eur": 0.0, "total_eur": 150.0}],
         "degraded": False,
         "disclaimer": ns.DISCLAIMER,
         "_cookie_seen": cookie,
@@ -53,5 +56,23 @@ def test_networth_route_forwards_cookie(monkeypatch):
         resp = client.get("/networth/summary", cookies={"suite_session": "tok-99"})
         assert resp.status_code == 200
         assert resp.json()["_cookie_seen"] == "tok-99"
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+
+def test_networth_route_forwards_include_manual_assets_flag(monkeypatch):
+    captured = {}
+
+    async def _capturing_fetch(days, *, cookie=None, include_manual_assets=True):
+        captured["include_manual_assets"] = include_manual_assets
+        return await _fake_fetch_networth(days, cookie=cookie)
+
+    monkeypatch.setattr(ns, "fetch_networth", _capturing_fetch)
+    app.dependency_overrides[get_current_user] = lambda: {"id": 1, "email": "u1@test.local"}
+    try:
+        client = TestClient(app)
+        resp = client.get("/networth/summary?include_manual_assets=false")
+        assert resp.status_code == 200
+        assert captured["include_manual_assets"] is False
     finally:
         app.dependency_overrides.pop(get_current_user, None)
