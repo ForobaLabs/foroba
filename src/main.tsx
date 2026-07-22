@@ -6,6 +6,7 @@ import { RouterProvider } from 'react-router-dom';
 import i18n from './i18n';
 import { router } from './router';
 import { AuthProvider } from './auth/AuthProvider';
+import { CurrencyProvider } from './contexts/CurrencyContext';
 import './global.css';
 
 const queryClient = new QueryClient({
@@ -27,9 +28,11 @@ createRoot(rootEl).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <I18nextProvider i18n={i18n}>
-          <RouterProvider router={router} />
-        </I18nextProvider>
+        <CurrencyProvider>
+          <I18nextProvider i18n={i18n}>
+            <RouterProvider router={router} />
+          </I18nextProvider>
+        </CurrencyProvider>
       </AuthProvider>
     </QueryClientProvider>
   </StrictMode>
