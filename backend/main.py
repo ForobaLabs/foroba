@@ -45,6 +45,8 @@ from twofa.router import router as twofa_router
 from whatif_router import router as whatif_router
 from monthly_report_router import router as monthly_report_router
 from report_scheduler import start_report_scheduler
+from fx_router import router as fx_router
+from fx_scheduler import start_fx_scheduler
 from settings_store import init_settings
 from jeli_service import build_system_prompt, gather_context, stream_chat
 import markets_service
@@ -94,6 +96,7 @@ app.include_router(lab_router)
 app.include_router(twofa_router)
 app.include_router(whatif_router)
 app.include_router(monthly_report_router)
+app.include_router(fx_router)
 
 
 @app.on_event("startup")
@@ -104,6 +107,7 @@ def _startup() -> None:
         _seed_household(conn)
     init_settings(conn)
     start_report_scheduler()
+    start_fx_scheduler()
 
 
 class Personality(BaseModel):
