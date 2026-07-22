@@ -105,6 +105,17 @@ CREATE TABLE IF NOT EXISTS monthly_reports (
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
+
+-- Cached EUR-based FX rates (TI-D item 3 Plan 3, foroba#164). EUR itself is never
+-- stored — implicit rate 1.0, short-circuited in fx_service.py. Mirrors Pazuru's
+-- fx_rates (SQLAlchemy) and Tsumi's fx_rates (DuckDB) table shape.
+CREATE TABLE IF NOT EXISTS fx_rates (
+    currency TEXT NOT NULL,
+    rate_to_eur REAL NOT NULL,
+    rate_date TEXT NOT NULL,
+    fetched_at TEXT NOT NULL DEFAULT (datetime('now')),
+    PRIMARY KEY (currency, rate_date)
+);
 """
 
 
