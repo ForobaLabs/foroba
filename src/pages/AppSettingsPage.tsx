@@ -1,10 +1,27 @@
 import { SettingsPage } from '@foroba/ui';
 import { useUserProfile } from '@foroba/ui';
+import { useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { fetchFxRates } from '../api/foroba';
+import { updateDisplayCurrency } from '../auth/api';
 import { useAuth } from '../auth/AuthProvider';
 
 export function AppSettingsPage() {
   const { profile, updateProfile } = useUserProfile();
   const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const { data: fxRates } = useQuery({ queryKey: ['fxRates'], queryFn: fetchFxRates });
+  const [savingCurrency, setSavingCurrency] = useState(false);
+
+  const handleCurrencyChange = async (currency: string) => {
+    setSavingCurrency(true);
+    try {
+      await updateDisplayCurrency(currency);
+      await queryClient.invalidateQueries({ queryKey: ['session'] });
+    } finally {
+      setSavingCurrency(false);
+    }
+  };
 
   return (
     <>
@@ -117,6 +134,47 @@ export function AppSettingsPage() {
                 Set by MiFID profiling
               </span>
             )}
+          </div>
+
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+              padding: '14px 18px',
+              borderRadius: '10px',
+              backgroundColor: 'var(--color-bg-surface)',
+              border: '1px solid var(--color-border)',
+            }}
+          >
+            <span
+              style={{
+                fontSize: '13px',
+                fontWeight: 600,
+                color: 'var(--color-text-secondary)',
+                minWidth: '100px',
+              }}
+            >
+              Display currency
+            </span>
+            <select
+              value={user.display_currency}
+              disabled={savingCurrency || !fxRates}
+              onChange={(e) => handleCurrencyChange(e.target.value)}
+              style={{
+                padding: '4px 10px',
+                borderRadius: '6px',
+                border: '1px solid var(--color-border)',
+                backgroundColor: 'var(--color-bg-primary)',
+                color: 'var(--color-text-primary)',
+                fontSize: '13px',
+              }}
+            >
+              <option value="EUR">EUR</option>
+              {fxRates && Object.keys(fxRates.rates).sort().map((code) => (
+                <option key={code} value={code}>{code}</option>
+              ))}
+            </select>
           </div>
 
           <p
