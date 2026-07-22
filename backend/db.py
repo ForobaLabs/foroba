@@ -134,6 +134,12 @@ def init_schema(conn: sqlite3.Connection) -> None:
         conn.commit()
     except sqlite3.OperationalError:
         pass  # column already exists
+    # Idempotent migration: add display_currency column if it doesn't exist
+    try:
+        conn.execute("ALTER TABLE users ADD COLUMN display_currency TEXT NOT NULL DEFAULT 'EUR'")
+        conn.commit()
+    except sqlite3.OperationalError:
+        pass  # column already exists
 
 
 from auth.security import hash_password
