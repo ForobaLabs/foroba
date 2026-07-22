@@ -1,9 +1,11 @@
 import { Badge, Card, CardContent, ErrorState, KpiCard, PageContainer, SectionHeader, Skeleton, useUserProfile } from '@foroba/ui';
+import { useState } from 'react';
 import { AllocationPie } from '../components/AllocationPie';
 import { FinanceTipsCard } from '../components/FinanceTipsCard';
 import { NetWorthChart } from '../components/NetWorthChart';
 import { ServiceStatusBar } from '../components/ServiceStatusBar';
 import { StreaksWidget } from '../components/StreaksWidget';
+import { useCurrency } from '../contexts/CurrencyContext';
 import { useNetWorth } from '../hooks/useNetWorth';
 
 function greeting(name: string): string {
@@ -12,18 +14,16 @@ function greeting(name: string): string {
   return name ? `${salut}, ${name}` : salut;
 }
 
-function fmt(value: number) {
-  return value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
-
 const SOURCE_LABELS: Record<string, string> = {
   pazuru: 'Pazuru',
   tsumi: 'Tsumi',
 };
 
 export function DashboardPage() {
-  const { data, isLoading, isError, refetch } = useNetWorth();
+  const [includeManualAssets, setIncludeManualAssets] = useState(true);
+  const { data, isLoading, isError, refetch } = useNetWorth(includeManualAssets);
   const { profile } = useUserProfile();
+  const { formatMoney } = useCurrency();
 
   const snapshot = data?.snapshot;
   const degradedSources = data?.degradedSources ?? [];
@@ -55,12 +55,20 @@ export function DashboardPage() {
         ) : (
           <div>
             <p className="font-['JetBrains_Mono',monospace] text-4xl font-bold text-[var(--color-text-primary)]">
-              €&thinsp;{fmt(snapshot?.totalEur ?? 0)}
+              {formatMoney(snapshot?.totalEur ?? 0)}
             </p>
             <div className="mt-1 flex items-center gap-2">
               <Badge variant="default" className="text-xs">
                 {new Date().toLocaleDateString(undefined, { dateStyle: 'medium' })}
               </Badge>
+              <label className="flex items-center gap-1.5 text-xs text-[var(--color-text-secondary)]">
+                <input
+                  type="checkbox"
+                  checked={includeManualAssets}
+                  onChange={(e) => setIncludeManualAssets(e.target.checked)}
+                />
+                Include manual assets
+              </label>
             </div>
           </div>
         )}
@@ -70,13 +78,13 @@ export function DashboardPage() {
       <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
         <KpiCard
           label="Cash (Pazuru)"
-          value={snapshot ? `€ ${fmt(snapshot.cashEur)}` : '–'}
+          value={snapshot ? formatMoney(snapshot.cashEur) : '–'}
           loading={isLoading}
           subtitle="Bank accounts"
         />
         <KpiCard
           label="Portfolio (Tsumi)"
-          value={snapshot ? `€ ${fmt(snapshot.portfolioEur)}` : '–'}
+          value={snapshot ? formatMoney(snapshot.portfolioEur) : '–'}
           loading={isLoading}
           subtitle="ETF + crypto"
         />

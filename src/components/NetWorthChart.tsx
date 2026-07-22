@@ -1,5 +1,6 @@
 import { useRechartsTheme } from '@foroba/ui/charts';
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { useCurrency } from '../contexts/CurrencyContext';
 
 interface DataPoint {
   date: string;
@@ -12,6 +13,7 @@ interface NetWorthChartProps {
 
 export function NetWorthChart({ data }: NetWorthChartProps) {
   const theme = useRechartsTheme();
+  const { formatMoney } = useCurrency();
 
   if (data.length === 0) {
     return (
@@ -42,12 +44,12 @@ export function NetWorthChart({ data }: NetWorthChartProps) {
           tick={theme.axis.tick}
           axisLine={theme.axis.axisLine}
           tickLine={theme.axis.tickLine}
-          tickFormatter={(v: number) => `€${(v / 1000).toFixed(0)}k`}
+          tickFormatter={(v: number) => formatMoney(v)}
         />
         <Tooltip
           contentStyle={theme.tooltip.contentStyle}
           cursor={theme.tooltip.cursor}
-          formatter={(v) => [`€${(v as number).toLocaleString('en-US', { minimumFractionDigits: 2 })}`, 'Net Worth']}
+          formatter={(v) => [formatMoney(v as number), 'Net Worth']}
         />
         <Area
           type="monotone"

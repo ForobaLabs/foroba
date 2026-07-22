@@ -1,5 +1,6 @@
 import { useRechartsTheme } from '@foroba/ui/charts';
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts';
+import { useCurrency } from '../contexts/CurrencyContext';
 
 interface AllocationPieProps {
   cashEur: number;
@@ -8,6 +9,7 @@ interface AllocationPieProps {
 
 export function AllocationPie({ cashEur, portfolioEur }: AllocationPieProps) {
   const theme = useRechartsTheme();
+  const { formatMoney } = useCurrency();
   const total = cashEur + portfolioEur;
 
   if (total === 0) {
@@ -34,7 +36,7 @@ export function AllocationPie({ cashEur, portfolioEur }: AllocationPieProps) {
           </Pie>
           <Tooltip
             contentStyle={theme.tooltip.contentStyle}
-            formatter={(v) => `€${(v as number).toLocaleString('en-US', { minimumFractionDigits: 0 })}`}
+            formatter={(v) => formatMoney(v as number)}
           />
         </PieChart>
       </ResponsiveContainer>
