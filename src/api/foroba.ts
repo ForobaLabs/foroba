@@ -23,6 +23,23 @@ export async function fetchForobaHealthDetailed(): Promise<DetailedHealth> {
   });
 }
 
+export interface FxRatesResponse {
+  base: string;
+  date: string;
+  rates: Record<string, number>;
+}
+
+/**
+ * Latest EUR-based FX rates, refreshed server-side at most once per day
+ * (fx_scheduler.py). Used by CurrencyContext for client-side display conversion.
+ */
+export async function fetchFxRates(): Promise<FxRatesResponse> {
+  return fetchJson<FxRatesResponse>(`${FOROBA_BASE}/fx/rates`, {
+    credentials: 'include',
+    timeoutMs: 8000,
+  });
+}
+
 export type NetWorthSource = 'pazuru' | 'tsumi';
 
 export interface NetWorthHistoryPoint {
@@ -33,7 +50,7 @@ export interface NetWorthHistoryPoint {
 export interface NetWorthResult {
   /** Best-effort aggregated snapshot (latest point). Failed sources contribute 0. */
   snapshot: NetWorthSnapshot;
-  /** Daily bank+investments history — real series, not a single point (foroba#157). */
+  /** Daily bank+investments+manual-assets history — real series, not a single point (foroba#157/#164). */
   history: NetWorthHistoryPoint[];
   /** Sources that failed to load for this fetch. Empty = fully healthy. */
   degradedSources: NetWorthSource[];
@@ -43,7 +60,10 @@ interface NetWorthApiResponse {
   bank: { total_cents: number; currency: string; account_count: number } | null;
   investments: { total_eur: number; pnl_eur: number; pnl_pct: number; position_count: number } | null;
   total_eur: number;
-  history: Array<{ date: string; bank_eur: number; investments_eur: number; total_eur: number }>;
+  history: Array<{
+    date: string; bank_eur: number; investments_eur: number;
+    manual_assets_eur: number; total_eur: number;
+  }>;
   degraded: boolean;
   disclaimer: string;
 }
@@ -57,9 +77,9 @@ interface NetWorthApiResponse {
  * this function just maps that response onto the UI's `NetWorthResult`
  * shape and translates `bank`/`investments` nulls into `degradedSources`.
  */
-export async function fetchNetWorth(days = 365): Promise<NetWorthResult> {
+export async function fetchNetWorth(days = 365, includeManualAssets = true): Promise<NetWorthResult> {
   const res = await fetchJson<NetWorthApiResponse>(
-    `/foroba-api/networth/summary?days=${days}`,
+    `/foroba-api/networth/summary?days=${days}&include_manual_assets=${includeManualAssets}`,
     { credentials: 'include', timeoutMs: 8000 },
   );
 
