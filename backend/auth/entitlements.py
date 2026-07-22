@@ -39,6 +39,7 @@ REGISTRY: dict[str, dict[str, str]] = {
     "household.whatif_simulator": {"audience": "expert", "tier": "premium"},
     "banking.monthly_ai_report":  {"audience": "base",   "tier": "premium"},
     "portfolio.manual_assets":    {"audience": "base",   "tier": "premium"},
+    "banking.pdf_statement_import": {"audience": "base", "tier": "premium"},
 }
 
 
