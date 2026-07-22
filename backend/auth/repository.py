@@ -83,6 +83,14 @@ def set_audience(conn: sqlite3.Connection, user_id: int, audience: str,
     conn.commit()
 
 
+def set_display_currency(conn: sqlite3.Connection, user_id: int, currency: str) -> None:
+    conn.execute(
+        "UPDATE users SET display_currency = ? WHERE id = ?",
+        (currency, user_id),
+    )
+    conn.commit()
+
+
 def list_all_users(conn: sqlite3.Connection) -> list[dict]:
     """Return all users as dicts (includes password_hash/totp_secret).
 

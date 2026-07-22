@@ -13,7 +13,8 @@ from auth import keys
 from auth import repository as repo
 from auth.dependencies import get_current_user
 from auth.models import (
-    HouseholdJoinRequest, LoginRequest, RegisterRequest, ShareToggleRequest, UserPublic,
+    DisplayCurrencyRequest, HouseholdJoinRequest, LoginRequest, RegisterRequest,
+    ShareToggleRequest, UserPublic,
 )
 from auth.security import create_token, hash_password, needs_rehash, verify_password
 from rate_limit import limiter
@@ -142,6 +143,12 @@ def leave_household(user: dict = Depends(get_current_user),
 def set_share_preference(req: ShareToggleRequest, user: dict = Depends(get_current_user),
                          conn: sqlite3.Connection = Depends(get_conn)) -> None:
     repo.set_share_preference(conn, user["id"], req.resource_type, req.shared)
+
+
+@router.put("/me/currency", status_code=204)
+def set_display_currency(req: DisplayCurrencyRequest, user: dict = Depends(get_current_user),
+                         conn: sqlite3.Connection = Depends(get_conn)) -> None:
+    repo.set_display_currency(conn, user["id"], req.display_currency.upper())
 
 
 @router.get("/visible-owners")

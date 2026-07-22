@@ -24,6 +24,7 @@ class UserPublic(BaseModel):
     audience_locked: bool
     is_admin: bool
     totp_enabled: bool
+    display_currency: str
 
 
 class HouseholdJoinRequest(BaseModel):
@@ -33,3 +34,7 @@ class HouseholdJoinRequest(BaseModel):
 class ShareToggleRequest(BaseModel):
     resource_type: str = Field(min_length=1, max_length=40)
     shared: bool
+
+
+class DisplayCurrencyRequest(BaseModel):
+    display_currency: str = Field(min_length=3, max_length=3)

@@ -23,6 +23,7 @@ _DEV_USER: dict = {
     "is_admin": False,
     "totp_enabled": False,
     "household_id": None,
+    "display_currency": "EUR",
 }
 
 

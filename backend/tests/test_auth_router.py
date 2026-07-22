@@ -40,3 +40,16 @@ def test_login_wrong_password_401(client):
 
 def test_me_without_cookie_401(client):
     assert client.get("/auth/me").status_code == 401
+
+
+def test_update_display_currency(client):
+    register = client.post("/auth/register", json={
+        "email": "curr@y.com", "name": "Curr User", "password": "password123"})
+    assert register.status_code == 201
+
+    resp = client.put("/auth/me/currency", json={"display_currency": "USD"})
+    assert resp.status_code == 204
+
+    me = client.get("/auth/me")
+    assert me.status_code == 200
+    assert me.json()["display_currency"] == "USD"
