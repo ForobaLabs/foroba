@@ -39,3 +39,7 @@ def test_gating_disabled_unlocks_everything():
 def test_unknown_key_raises():
     with pytest.raises(KeyError):
         evaluate("nope", {"audience": "base", "tier": "free"}, gating_enabled=True)
+
+
+def test_registry_has_public_api_key():
+    assert REGISTRY["platform.public_api"] == {"audience": "base", "tier": "premium"}

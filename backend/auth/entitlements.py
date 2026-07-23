@@ -40,6 +40,7 @@ REGISTRY: dict[str, dict[str, str]] = {
     "banking.monthly_ai_report":  {"audience": "base",   "tier": "premium"},
     "portfolio.manual_assets":    {"audience": "base",   "tier": "premium"},
     "banking.pdf_statement_import": {"audience": "base", "tier": "premium"},
+    "platform.public_api":        {"audience": "base",   "tier": "premium"},
 }
 
 

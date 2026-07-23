@@ -116,6 +116,46 @@ CREATE TABLE IF NOT EXISTS fx_rates (
     fetched_at TEXT NOT NULL DEFAULT (datetime('now')),
     PRIMARY KEY (currency, rate_date)
 );
+
+-- Personal API keys for the public read API (foroba#165, TI-D item 5, Plan A).
+-- key_prefix is looked up directly (indexed, unique) so verification never scans
+-- the whole table; secret_hash is argon2id (auth/security.py hash_password).
+CREATE TABLE IF NOT EXISTS api_keys (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    label TEXT NOT NULL,
+    key_prefix TEXT NOT NULL UNIQUE,
+    secret_hash TEXT NOT NULL,
+    is_active INTEGER NOT NULL DEFAULT 1,
+    last_used_at TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- Registered webhook targets (foroba#165, TI-D item 5, Plan A). signing_secret is
+-- stored plaintext — it is needed on every delivery to compute the outgoing HMAC,
+-- unlike a login credential it is never used to authenticate an inbound request.
+CREATE TABLE IF NOT EXISTS webhooks (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    target_url TEXT NOT NULL,
+    signing_secret TEXT NOT NULL,
+    is_active INTEGER NOT NULL DEFAULT 1,
+    consecutive_failures INTEGER NOT NULL DEFAULT 0,
+    disabled_at TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- Dedup ledger + retry-state tracker for webhook_dispatch_job.py (foroba#165). An
+-- event (webhook_id, event_key) never fires twice successfully to the same webhook.
+CREATE TABLE IF NOT EXISTS webhook_deliveries (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    webhook_id INTEGER NOT NULL,
+    event_key TEXT NOT NULL,
+    delivered_at TEXT,
+    attempt_count INTEGER NOT NULL DEFAULT 0,
+    last_status TEXT,
+    UNIQUE(webhook_id, event_key)
+);
 """
 
 
@@ -435,3 +475,149 @@ def update_monthly_report_result(
     )
     conn.commit()
     return conn.execute("SELECT * FROM monthly_reports WHERE id = ?", (report_id,)).fetchone()
+
+
+def create_api_key(
+    conn: sqlite3.Connection, *, user_id: int, label: str, key_prefix: str, secret_hash: str,
+) -> sqlite3.Row:
+    cur = conn.execute(
+        "INSERT INTO api_keys (user_id, label, key_prefix, secret_hash) VALUES (?, ?, ?, ?)",
+        (user_id, label, key_prefix, secret_hash),
+    )
+    conn.commit()
+    row = get_api_key_by_id(conn, cur.lastrowid, user_id=user_id)
+    assert row is not None
+    return row
+
+
+def get_api_key_by_id(conn: sqlite3.Connection, key_id: int, *, user_id: int) -> sqlite3.Row | None:
+    return conn.execute(
+        "SELECT * FROM api_keys WHERE id = ? AND user_id = ?", (key_id, user_id),
+    ).fetchone()
+
+
+def get_api_key_by_prefix(conn: sqlite3.Connection, key_prefix: str) -> sqlite3.Row | None:
+    return conn.execute("SELECT * FROM api_keys WHERE key_prefix = ?", (key_prefix,)).fetchone()
+
+
+def list_api_keys(conn: sqlite3.Connection, *, user_id: int) -> list[sqlite3.Row]:
+    return conn.execute(
+        "SELECT * FROM api_keys WHERE user_id = ? ORDER BY created_at DESC, id DESC", (user_id,),
+    ).fetchall()
+
+
+def revoke_api_key(conn: sqlite3.Connection, key_id: int, *, user_id: int) -> bool:
+    cur = conn.execute(
+        "UPDATE api_keys SET is_active = 0 WHERE id = ? AND user_id = ?", (key_id, user_id),
+    )
+    conn.commit()
+    return cur.rowcount > 0
+
+
+def touch_api_key_last_used(conn: sqlite3.Connection, key_id: int) -> None:
+    conn.execute("UPDATE api_keys SET last_used_at = datetime('now') WHERE id = ?", (key_id,))
+    conn.commit()
+
+
+def create_webhook(
+    conn: sqlite3.Connection, *, user_id: int, target_url: str, signing_secret: str,
+) -> sqlite3.Row:
+    cur = conn.execute(
+        "INSERT INTO webhooks (user_id, target_url, signing_secret) VALUES (?, ?, ?)",
+        (user_id, target_url, signing_secret),
+    )
+    conn.commit()
+    row = get_webhook(conn, cur.lastrowid, user_id=user_id)
+    assert row is not None
+    return row
+
+
+def get_webhook(conn: sqlite3.Connection, webhook_id: int, *, user_id: int) -> sqlite3.Row | None:
+    return conn.execute(
+        "SELECT * FROM webhooks WHERE id = ? AND user_id = ?", (webhook_id, user_id),
+    ).fetchone()
+
+
+def list_webhooks(conn: sqlite3.Connection, *, user_id: int) -> list[sqlite3.Row]:
+    return conn.execute(
+        "SELECT * FROM webhooks WHERE user_id = ? ORDER BY created_at DESC, id DESC", (user_id,),
+    ).fetchall()
+
+
+def list_active_webhooks(conn: sqlite3.Connection) -> list[sqlite3.Row]:
+    """All active webhooks across all users — used by the dispatch job."""
+    return conn.execute("SELECT * FROM webhooks WHERE is_active = 1").fetchall()
+
+
+def delete_webhook(conn: sqlite3.Connection, webhook_id: int, *, user_id: int) -> bool:
+    cur = conn.execute(
+        "DELETE FROM webhooks WHERE id = ? AND user_id = ?", (webhook_id, user_id),
+    )
+    conn.commit()
+    return cur.rowcount > 0
+
+
+def reactivate_webhook(conn: sqlite3.Connection, webhook_id: int, *, user_id: int) -> sqlite3.Row | None:
+    conn.execute(
+        "UPDATE webhooks SET is_active = 1, consecutive_failures = 0, disabled_at = NULL "
+        "WHERE id = ? AND user_id = ?",
+        (webhook_id, user_id),
+    )
+    conn.commit()
+    return get_webhook(conn, webhook_id, user_id=user_id)
+
+
+def register_webhook_failure(conn: sqlite3.Connection, webhook_id: int) -> sqlite3.Row:
+    """Increment consecutive_failures; auto-disable at the 10-failure threshold."""
+    conn.execute(
+        "UPDATE webhooks SET consecutive_failures = consecutive_failures + 1 WHERE id = ?",
+        (webhook_id,),
+    )
+    row = conn.execute("SELECT * FROM webhooks WHERE id = ?", (webhook_id,)).fetchone()
+    if row["consecutive_failures"] >= 10:
+        conn.execute(
+            "UPDATE webhooks SET is_active = 0, disabled_at = datetime('now') WHERE id = ?",
+            (webhook_id,),
+        )
+    conn.commit()
+    return conn.execute("SELECT * FROM webhooks WHERE id = ?", (webhook_id,)).fetchone()
+
+
+def reset_webhook_failures(conn: sqlite3.Connection, webhook_id: int) -> None:
+    conn.execute("UPDATE webhooks SET consecutive_failures = 0 WHERE id = ?", (webhook_id,))
+    conn.commit()
+
+
+def get_webhook_delivery(conn: sqlite3.Connection, webhook_id: int, event_key: str) -> sqlite3.Row | None:
+    return conn.execute(
+        "SELECT * FROM webhook_deliveries WHERE webhook_id = ? AND event_key = ?",
+        (webhook_id, event_key),
+    ).fetchone()
+
+
+def upsert_webhook_delivery_success(
+    conn: sqlite3.Connection, webhook_id: int, event_key: str, attempt_count: int,
+) -> None:
+    conn.execute(
+        "INSERT INTO webhook_deliveries (webhook_id, event_key, delivered_at, attempt_count, last_status) "
+        "VALUES (?, ?, datetime('now'), ?, 'success') "
+        "ON CONFLICT(webhook_id, event_key) DO UPDATE SET "
+        "delivered_at = excluded.delivered_at, attempt_count = excluded.attempt_count, "
+        "last_status = excluded.last_status",
+        (webhook_id, event_key, attempt_count),
+    )
+    conn.commit()
+
+
+def upsert_webhook_delivery_attempt(
+    conn: sqlite3.Connection, webhook_id: int, event_key: str, *, attempt_count: int, status: str,
+) -> None:
+    """status is 'pending' (will retry next tick) or 'failed' (exhausted retries)."""
+    conn.execute(
+        "INSERT INTO webhook_deliveries (webhook_id, event_key, attempt_count, last_status) "
+        "VALUES (?, ?, ?, ?) "
+        "ON CONFLICT(webhook_id, event_key) DO UPDATE SET "
+        "attempt_count = excluded.attempt_count, last_status = excluded.last_status",
+        (webhook_id, event_key, attempt_count, status),
+    )
+    conn.commit()

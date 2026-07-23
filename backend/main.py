@@ -47,6 +47,10 @@ from monthly_report_router import router as monthly_report_router
 from report_scheduler import start_report_scheduler
 from fx_router import router as fx_router
 from fx_scheduler import start_fx_scheduler
+from auth.api_keys_router import router as api_keys_router
+from auth.webhooks_router import router as webhooks_router
+from public_api_router import router as public_api_router
+from webhook_dispatch_job import start_webhook_dispatch_scheduler
 from settings_store import init_settings
 from jeli_service import build_system_prompt, gather_context, stream_chat
 import markets_service
@@ -97,6 +101,9 @@ app.include_router(twofa_router)
 app.include_router(whatif_router)
 app.include_router(monthly_report_router)
 app.include_router(fx_router)
+app.include_router(api_keys_router)
+app.include_router(webhooks_router)
+app.include_router(public_api_router)
 
 
 @app.on_event("startup")
@@ -108,6 +115,7 @@ def _startup() -> None:
     init_settings(conn)
     start_report_scheduler()
     start_fx_scheduler()
+    start_webhook_dispatch_scheduler()
 
 
 class Personality(BaseModel):
