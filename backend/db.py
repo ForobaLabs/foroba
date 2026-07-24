@@ -4,6 +4,8 @@ from __future__ import annotations
 import sqlite3
 from pathlib import Path
 
+from auth.security import hash_password
+
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -180,9 +182,13 @@ def init_schema(conn: sqlite3.Connection) -> None:
         conn.commit()
     except sqlite3.OperationalError:
         pass  # column already exists
+    # Idempotent migration: add show_debts column if it doesn't exist
+    try:
+        conn.execute("ALTER TABLE users ADD COLUMN show_debts INTEGER NOT NULL DEFAULT 0")
+        conn.commit()
+    except sqlite3.OperationalError:
+        pass  # column already exists
 
-
-from auth.security import hash_password
 
 # (email, name, plaintext password, tier, audience, is_admin)
 MOCK_USERS = [
@@ -222,10 +228,14 @@ _DEMO_HOUSEHOLD_EMAILS = ("demo@foroba.app", "pro@foroba.app")
 
 def seed_demo_household(conn: sqlite3.Connection) -> None:
     for email in _DEMO_HOUSEHOLD_EMAILS:
-        row = conn.execute("SELECT id, household_id FROM users WHERE email = ?", (email,)).fetchone()
+        row = conn.execute(
+            "SELECT id, household_id FROM users WHERE email = ?", (email,)
+        ).fetchone()
         if row is None or row["household_id"]:
             continue
-        conn.execute("UPDATE users SET household_id = ? WHERE id = ?", (_DEMO_HOUSEHOLD_ID, row["id"]))
+        conn.execute(
+            "UPDATE users SET household_id = ? WHERE id = ?", (_DEMO_HOUSEHOLD_ID, row["id"])
+        )
     conn.commit()
 
 
@@ -240,11 +250,13 @@ def save_sandbox_turn(
 ) -> None:
     """Persist a user question + assistant answer as two conversation rows."""
     conn.execute(
-        "INSERT INTO sandbox_conversations (user_id, session_id, role, content) VALUES (?, ?, 'user', ?)",
+        "INSERT INTO sandbox_conversations (user_id, session_id, role, content) "
+        "VALUES (?, ?, 'user', ?)",
         (user_id, session_id, question),
     )
     conn.execute(
-        "INSERT INTO sandbox_conversations (user_id, session_id, role, content, code, artifacts_json) "
+        "INSERT INTO sandbox_conversations "
+        "(user_id, session_id, role, content, code, artifacts_json) "
         "VALUES (?, ?, 'assistant', ?, ?, ?)",
         (user_id, session_id, answer, code, artifacts_json),
     )
@@ -276,7 +288,8 @@ def update_sandbox_user_context(conn: sqlite3.Connection, user_id: str, context_
     conn.execute(
         "INSERT INTO sandbox_user_context (user_id, context_text, updated_at) "
         "VALUES (?, ?, datetime('now')) "
-        "ON CONFLICT(user_id) DO UPDATE SET context_text = excluded.context_text, updated_at = excluded.updated_at",
+        "ON CONFLICT(user_id) DO UPDATE SET "
+        "context_text = excluded.context_text, updated_at = excluded.updated_at",
         (user_id, context_text),
     )
     conn.commit()
@@ -335,7 +348,9 @@ def create_whatif_scenario(
         (created_by_user_id, household_id, name, horizon_months, params_json),
     )
     conn.commit()
-    row = get_whatif_scenario(conn, cur.lastrowid, user_id=created_by_user_id, household_id=household_id)
+    row = get_whatif_scenario(
+        conn, cur.lastrowid, user_id=created_by_user_id, household_id=household_id
+    )
     assert row is not None
     return row
 
@@ -435,7 +450,9 @@ def create_monthly_report(
     return row
 
 
-def get_monthly_report(conn: sqlite3.Connection, report_id: int, *, user_id: int) -> sqlite3.Row | None:
+def get_monthly_report(
+    conn: sqlite3.Connection, report_id: int, *, user_id: int
+) -> sqlite3.Row | None:
     return conn.execute(
         "SELECT * FROM monthly_reports WHERE id = ? AND user_id = ?", (report_id, user_id),
     ).fetchone()
@@ -456,7 +473,9 @@ def list_monthly_reports(
     ).fetchall()
 
 
-def count_monthly_reports_this_month(conn: sqlite3.Connection, *, user_id: int, year_month: str) -> int:
+def count_monthly_reports_this_month(
+    conn: sqlite3.Connection, *, user_id: int, year_month: str
+) -> int:
     row = conn.execute(
         "SELECT COUNT(*) AS n FROM monthly_reports WHERE user_id = ? AND year_month = ?",
         (user_id, year_month),
@@ -558,7 +577,9 @@ def delete_webhook(conn: sqlite3.Connection, webhook_id: int, *, user_id: int) -
     return cur.rowcount > 0
 
 
-def reactivate_webhook(conn: sqlite3.Connection, webhook_id: int, *, user_id: int) -> sqlite3.Row | None:
+def reactivate_webhook(
+    conn: sqlite3.Connection, webhook_id: int, *, user_id: int
+) -> sqlite3.Row | None:
     conn.execute(
         "UPDATE webhooks SET is_active = 1, consecutive_failures = 0, disabled_at = NULL "
         "WHERE id = ? AND user_id = ?",
@@ -589,7 +610,9 @@ def reset_webhook_failures(conn: sqlite3.Connection, webhook_id: int) -> None:
     conn.commit()
 
 
-def get_webhook_delivery(conn: sqlite3.Connection, webhook_id: int, event_key: str) -> sqlite3.Row | None:
+def get_webhook_delivery(
+    conn: sqlite3.Connection, webhook_id: int, event_key: str
+) -> sqlite3.Row | None:
     return conn.execute(
         "SELECT * FROM webhook_deliveries WHERE webhook_id = ? AND event_key = ?",
         (webhook_id, event_key),
@@ -600,7 +623,8 @@ def upsert_webhook_delivery_success(
     conn: sqlite3.Connection, webhook_id: int, event_key: str, attempt_count: int,
 ) -> None:
     conn.execute(
-        "INSERT INTO webhook_deliveries (webhook_id, event_key, delivered_at, attempt_count, last_status) "
+        "INSERT INTO webhook_deliveries "
+        "(webhook_id, event_key, delivered_at, attempt_count, last_status) "
         "VALUES (?, ?, datetime('now'), ?, 'success') "
         "ON CONFLICT(webhook_id, event_key) DO UPDATE SET "
         "delivered_at = excluded.delivered_at, attempt_count = excluded.attempt_count, "

@@ -91,6 +91,13 @@ def set_display_currency(conn: sqlite3.Connection, user_id: int, currency: str) 
     conn.commit()
 
 
+def set_show_debts(conn: sqlite3.Connection, user_id: int, show_debts: bool) -> None:
+    conn.execute(
+        "UPDATE users SET show_debts = ? WHERE id = ?", (1 if show_debts else 0, user_id)
+    )
+    conn.commit()
+
+
 def list_all_users(conn: sqlite3.Connection) -> list[dict]:
     """Return all users as dicts (includes password_hash/totp_secret).
 

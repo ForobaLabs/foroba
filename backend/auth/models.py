@@ -25,6 +25,7 @@ class UserPublic(BaseModel):
     is_admin: bool
     totp_enabled: bool
     display_currency: str
+    show_debts: bool
 
 
 class HouseholdJoinRequest(BaseModel):
@@ -38,3 +39,7 @@ class ShareToggleRequest(BaseModel):
 
 class DisplayCurrencyRequest(BaseModel):
     display_currency: str = Field(min_length=3, max_length=3)
+
+
+class ShowDebtsRequest(BaseModel):
+    show_debts: bool

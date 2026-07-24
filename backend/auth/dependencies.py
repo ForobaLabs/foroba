@@ -24,6 +24,7 @@ _DEV_USER: dict = {
     "totp_enabled": False,
     "household_id": None,
     "display_currency": "EUR",
+    "show_debts": False,
 }
 
 
@@ -39,7 +40,7 @@ def get_current_user(
         _, public_key, _ = keys.get_keypair(settings)
         claims = decode_token(suite_session, public_key)
     except jwt.PyJWTError:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid session")
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid session") from None
     user = repo.get_user_by_id(conn, int(claims["sub"]))
     if user is None:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Unknown user")
