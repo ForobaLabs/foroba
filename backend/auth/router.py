@@ -17,6 +17,7 @@ from auth.models import (
     LoginRequest,
     RegisterRequest,
     ShareToggleRequest,
+    ShowDebtsRequest,
     UserPublic,
 )
 from auth.security import create_token, hash_password, needs_rehash, verify_password
@@ -153,6 +154,12 @@ def set_share_preference(req: ShareToggleRequest, user: dict = Depends(get_curre
 def set_display_currency(req: DisplayCurrencyRequest, user: dict = Depends(get_current_user),
                          conn: sqlite3.Connection = Depends(get_conn)) -> None:
     repo.set_display_currency(conn, user["id"], req.display_currency.upper())
+
+
+@router.put("/me/show-debts", status_code=204)
+def update_show_debts(req: ShowDebtsRequest, user: dict = Depends(get_current_user),
+                      conn: sqlite3.Connection = Depends(get_conn)) -> None:
+    repo.set_show_debts(conn, user["id"], req.show_debts)
 
 
 @router.get("/visible-owners")
