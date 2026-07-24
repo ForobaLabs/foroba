@@ -1,13 +1,25 @@
 """Pydantic request/response models for auth endpoints."""
 from __future__ import annotations
 
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, model_validator
 
 
 class RegisterRequest(BaseModel):
     email: EmailStr
+    email_confirm: EmailStr
     name: str = Field(min_length=1, max_length=80)
     password: str = Field(min_length=8, max_length=128)
+    password_confirm: str
+    birth_year: int | None = Field(default=None, ge=1900, le=2100)
+    country: str | None = Field(default=None, min_length=2, max_length=2)
+
+    @model_validator(mode="after")
+    def _check_confirmations(self) -> RegisterRequest:
+        if self.email.lower() != self.email_confirm.lower():
+            raise ValueError("Email and confirmation do not match")
+        if self.password != self.password_confirm:
+            raise ValueError("Password and confirmation do not match")
+        return self
 
 
 class LoginRequest(BaseModel):
@@ -26,6 +38,9 @@ class UserPublic(BaseModel):
     totp_enabled: bool
     display_currency: str
     show_debts: bool
+    birth_year: int | None = None
+    country: str | None = None
+    onboarding_completed_at: str | None = None
 
 
 class HouseholdJoinRequest(BaseModel):

@@ -54,14 +54,25 @@ def reset_failed_login(conn: sqlite3.Connection, user_id: int) -> None:
 
 def create_user(conn: sqlite3.Connection, *, email: str, name: str,
                 password_hash: str, tier: str = "free",
-                audience: str = "base") -> dict:
+                audience: str = "base", birth_year: int | None = None,
+                country: str | None = None) -> dict:
     cur = conn.execute(
-        "INSERT INTO users (email, name, password_hash, tier, audience) "
-        "VALUES (?, ?, ?, ?, ?)",
-        (email, name, password_hash, tier, audience),
+        "INSERT INTO users (email, name, password_hash, tier, audience, birth_year, country) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?)",
+        (email, name, password_hash, tier, audience, birth_year,
+         country.upper() if country else None),
     )
     conn.commit()
     return get_user_by_id(conn, cur.lastrowid)
+
+
+def complete_onboarding(conn: sqlite3.Connection, user_id: int) -> None:
+    conn.execute(
+        "UPDATE users SET onboarding_completed_at = datetime('now') "
+        "WHERE id = ? AND onboarding_completed_at IS NULL",
+        (user_id,),
+    )
+    conn.commit()
 
 
 def get_user_by_email(conn: sqlite3.Connection, email: str) -> dict | None:

@@ -9,6 +9,9 @@ export interface SessionUser {
   is_admin: boolean;
   display_currency: string;
   show_debts: boolean;
+  birth_year: number | null;
+  country: string | null;
+  onboarding_completed_at: string | null;
 }
 
 const opts: RequestInit = { credentials: "include" };
@@ -31,19 +34,43 @@ export async function login(email: string, password: string): Promise<SessionUse
   return r.json();
 }
 
-export async function register(
-  email: string,
-  name: string,
-  password: string,
-): Promise<SessionUser> {
+export interface RegisterInput {
+  email: string;
+  emailConfirm: string;
+  name: string;
+  password: string;
+  passwordConfirm: string;
+  birthYear?: number;
+  country?: string;
+}
+
+export async function register(input: RegisterInput): Promise<SessionUser> {
   const r = await fetch("/jeli/auth/register", {
     ...opts,
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, name, password }),
+    body: JSON.stringify({
+      email: input.email,
+      email_confirm: input.emailConfirm,
+      name: input.name,
+      password: input.password,
+      password_confirm: input.passwordConfirm,
+      birth_year: input.birthYear ?? null,
+      country: input.country ?? null,
+    }),
   });
-  if (!r.ok) throw new Error("registration failed");
+  if (!r.ok) {
+    const body = await r.json().catch(() => null);
+    const detail = Array.isArray(body?.detail)
+      ? body.detail[0]?.msg
+      : body?.detail;
+    throw new Error(detail ?? "Registration failed. Email may already be in use.");
+  }
   return r.json();
+}
+
+export async function completeOnboarding(): Promise<void> {
+  await fetch("/jeli/auth/onboarding/complete", { ...opts, method: "POST" });
 }
 
 export async function logout(): Promise<void> {

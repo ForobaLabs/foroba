@@ -50,9 +50,16 @@ def register(request: Request, req: RegisterRequest, response: Response,
     if repo.get_user_by_email(conn, req.email):
         raise HTTPException(status.HTTP_409_CONFLICT, "Email already registered")
     user = repo.create_user(conn, email=req.email, name=req.name,
-                            password_hash=hash_password(req.password))
+                            password_hash=hash_password(req.password),
+                            birth_year=req.birth_year, country=req.country)
     _set_session_cookie(response, user)
     return user
+
+
+@router.post("/onboarding/complete", status_code=204)
+def complete_onboarding(user: dict = Depends(get_current_user),
+                        conn: sqlite3.Connection = Depends(get_conn)) -> None:
+    repo.complete_onboarding(conn, user["id"])
 
 
 @router.post("/login", response_model=None)

@@ -188,6 +188,18 @@ def init_schema(conn: sqlite3.Connection) -> None:
         conn.commit()
     except sqlite3.OperationalError:
         pass  # column already exists
+    # Idempotent migration: add birth_year/country (optional profile fields) +
+    # onboarding_completed_at (new-user guided setup tracking) if they don't exist
+    try:
+        conn.execute("ALTER TABLE users ADD COLUMN birth_year INTEGER")
+        conn.execute("ALTER TABLE users ADD COLUMN country TEXT")
+        conn.execute("ALTER TABLE users ADD COLUMN onboarding_completed_at TEXT")
+        # Backfill existing users as "already onboarded" so they never see the
+        # new guided setup flow — only genuinely new registrations get NULL.
+        conn.execute("UPDATE users SET onboarding_completed_at = datetime('now')")
+        conn.commit()
+    except sqlite3.OperationalError:
+        pass  # columns already exist
 
 
 # (email, name, plaintext password, tier, audience, is_admin)
