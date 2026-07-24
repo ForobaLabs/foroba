@@ -4,11 +4,12 @@ from __future__ import annotations
 import sqlite3
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
+from fastapi import APIRouter, Depends, File, HTTPException, Request, Response, UploadFile, status
 from pydantic import BaseModel
 
 from auth import keys
 from auth import repository as repo
+from auth.avatar_storage import save_avatar
 from auth.conn import get_conn  # re-exported for tests that import it from here
 from auth.dependencies import get_current_user
 from auth.models import (
@@ -174,6 +175,15 @@ def update_show_debts(req: ShowDebtsRequest, user: dict = Depends(get_current_us
 def update_name(req: NameUpdateRequest, user: dict = Depends(get_current_user),
                 conn: sqlite3.Connection = Depends(get_conn)) -> None:
     repo.set_name(conn, user["id"], req.first_name, req.last_name)
+
+
+@router.post("/me/avatar")
+async def upload_avatar(file: UploadFile = File(...), user: dict = Depends(get_current_user),
+                        conn: sqlite3.Connection = Depends(get_conn)) -> dict:
+    content = await file.read()
+    avatar_url = save_avatar(user["id"], file, content)
+    repo.set_avatar_url(conn, user["id"], avatar_url)
+    return {"avatar_url": avatar_url}
 
 
 @router.get("/visible-owners")

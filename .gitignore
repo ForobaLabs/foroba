@@ -42,6 +42,9 @@ backend/*.db-journal
 backend/*.db-wal
 backend/*.db-shm
 
+# Uploaded avatar images (runtime data, not tracked)
+backend/static/avatars/
+
 # Locust load-test raw CSV output (foroba#156) — regenerate on demand, don't track
 backend/loadtest/results/
 
