@@ -16,4 +16,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 }
 
+// Hook co-located with its Provider is a standard pattern; splitting into a separate
+// file for Fast Refresh purity isn't worth the indirection for a single-line accessor.
+// eslint-disable-next-line react-refresh/only-export-components
 export const useAuth = () => useContext(Ctx);

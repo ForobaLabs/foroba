@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Badge, Button, Card, CardContent, ErrorState, LockedFeature, PageContainer, SectionHeader,
@@ -40,13 +40,13 @@ function ApiKeysPanel() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  const refresh = useCallback(() => {
+    listApiKeys().then(setKeys).catch(() => setError(t('developer.loadError', 'Failed to load API keys')));
+  }, [t]);
+
   useEffect(() => {
     refresh();
-  }, []);
-
-  function refresh() {
-    listApiKeys().then(setKeys).catch(() => setError(t('developer.loadError', 'Failed to load API keys')));
-  }
+  }, [refresh]);
 
   async function create() {
     if (!label) return;
@@ -145,13 +145,13 @@ function WebhooksPanel() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  const refresh = useCallback(() => {
+    listWebhooks().then(setWebhooks).catch(() => setError(t('developer.loadWebhooksError', 'Failed to load webhooks')));
+  }, [t]);
+
   useEffect(() => {
     refresh();
-  }, []);
-
-  function refresh() {
-    listWebhooks().then(setWebhooks).catch(() => setError(t('developer.loadWebhooksError', 'Failed to load webhooks')));
-  }
+  }, [refresh]);
 
   async function create() {
     if (!targetUrl) return;

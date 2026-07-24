@@ -7,29 +7,29 @@ describe('whatif api client', () => {
   });
 
   it('posts params to /foroba-api/whatif/simulate', async () => {
-    (fetch as any).mockResolvedValue({
+    vi.mocked(fetch).mockResolvedValue({
       ok: true,
       json: async () => ({ points: [], goal_impacts: [], degraded: false, disclaimer: 'x' }),
-    });
+    } as Response);
     await simulateWhatIf({ horizonMonths: 12 });
-    const [url, init] = (fetch as any).mock.calls[0];
+    const [url, init] = vi.mocked(fetch).mock.calls[0];
     expect(url).toBe('/foroba-api/whatif/simulate');
-    expect(init.method).toBe('POST');
+    expect((init as RequestInit).method).toBe('POST');
   });
 
   it('lists scenarios from GET /foroba-api/whatif/scenarios', async () => {
-    (fetch as any).mockResolvedValue({ ok: true, json: async () => [] });
+    vi.mocked(fetch).mockResolvedValue({ ok: true, json: async () => [] } as Response);
     await listWhatIfScenarios();
-    expect((fetch as any).mock.calls[0][0]).toBe('/foroba-api/whatif/scenarios');
+    expect(vi.mocked(fetch).mock.calls[0][0]).toBe('/foroba-api/whatif/scenarios');
   });
 
   it('creates a scenario via POST', async () => {
-    (fetch as any).mockResolvedValue({
+    vi.mocked(fetch).mockResolvedValue({
       ok: true,
       json: async () => ({ id: 1, name: 'x', horizonMonths: 12, params: {}, createdAt: '', updatedAt: '' }),
-    });
+    } as Response);
     await createWhatIfScenario({ name: 'x', horizonMonths: 12, params: { horizonMonths: 12 } });
-    const [, init] = (fetch as any).mock.calls[0];
-    expect(init.method).toBe('POST');
+    const [, init] = vi.mocked(fetch).mock.calls[0];
+    expect((init as RequestInit).method).toBe('POST');
   });
 });

@@ -15,7 +15,9 @@ function loadPersonality(): JeliPersonality {
   try {
     const saved = localStorage.getItem('foroba.jeli.personality');
     if (saved) return JSON.parse(saved) as JeliPersonality;
-  } catch {}
+  } catch {
+    // Corrupt/invalid stored value — fall through to defaults below.
+  }
   return { tone: 5, expertise: 5 };
 }
 

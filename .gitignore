@@ -47,4 +47,5 @@ backend/loadtest/results/
 
 # Local tool artifacts, not project source
 .claude/
+.playwright-cli/
 backend/.playwright-cli/

@@ -38,13 +38,9 @@ function MonthlyReportBody() {
   const { t } = useTranslation();
   const [items, setItems] = useState<MonthlyReport[]>([]);
   const [quota, setQuota] = useState({ used: 0, limit: 6 });
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
-
-  useEffect(() => {
-    refresh();
-  }, []);
 
   async function refresh() {
     setLoading(true);
@@ -59,6 +55,31 @@ function MonthlyReportBody() {
       setLoading(false);
     }
   }
+
+  // The initial load is self-contained (cancellation-guarded, same pattern as
+  // AdminPage's status panel) rather than calling the `refresh` above directly:
+  // an effect calling an outer, state-setting function trips
+  // react-hooks/set-state-in-effect. `refresh` above stays available as a plain
+  // (non-memoized) function for the explicit generate()/retry() actions below,
+  // which are user-triggered, not effect-triggered.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const list = await listMonthlyReports();
+        if (cancelled) return;
+        setItems(list.items);
+        setQuota(list.quota);
+      } catch {
+        if (!cancelled) setError(t('monthlyReport.loadError', 'Failed to load reports'));
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [t]);
 
   async function generate() {
     setGenerating(true);
