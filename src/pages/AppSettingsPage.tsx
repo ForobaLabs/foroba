@@ -1,5 +1,6 @@
-import { SettingsPage, Switch } from '@foroba/ui';
+import { SettingsPage, Switch, useTheme } from '@foroba/ui';
 import { useUserProfile } from '@foroba/ui';
+import type { UserProfile } from '@foroba/ui';
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { fetchFxRates } from '../api/foroba';
@@ -8,7 +9,13 @@ import { useAuth } from '../auth/AuthProvider';
 
 export function AppSettingsPage() {
   const { profile, updateProfile } = useUserProfile();
+  const { setTheme } = useTheme();
   const { user } = useAuth();
+
+  const handleUpdateProfile = (updates: Partial<UserProfile>) => {
+    updateProfile(updates);
+    if (updates.theme) setTheme(updates.theme);
+  };
   const queryClient = useQueryClient();
   const { data: fxRates } = useQuery({ queryKey: ['fxRates'], queryFn: fetchFxRates });
   const [savingCurrency, setSavingCurrency] = useState(false);
@@ -233,7 +240,7 @@ export function AppSettingsPage() {
 
       <SettingsPage
         profile={profile}
-        onUpdateProfile={updateProfile}
+        onUpdateProfile={handleUpdateProfile}
         onExportData={() => {
           const data = {
             profile,
