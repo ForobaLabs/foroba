@@ -4,6 +4,8 @@ from __future__ import annotations
 import sqlite3
 from datetime import UTC, datetime, timedelta
 
+from db import _split_full_name
+
 LOCKOUT_MAX_ATTEMPTS = 5
 LOCKOUT_DURATION_MINUTES = 15
 
@@ -56,11 +58,12 @@ def create_user(conn: sqlite3.Connection, *, email: str, name: str,
                 password_hash: str, tier: str = "free",
                 audience: str = "base", birth_year: int | None = None,
                 country: str | None = None) -> dict:
+    first_name, last_name = _split_full_name(name)
     cur = conn.execute(
-        "INSERT INTO users (email, name, password_hash, tier, audience, birth_year, country) "
-        "VALUES (?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO users (email, name, password_hash, tier, audience, birth_year, country, "
+        "first_name, last_name) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
         (email, name, password_hash, tier, audience, birth_year,
-         country.upper() if country else None),
+         country.upper() if country else None, first_name, last_name),
     )
     conn.commit()
     return get_user_by_id(conn, cur.lastrowid)
@@ -106,6 +109,20 @@ def set_show_debts(conn: sqlite3.Connection, user_id: int, show_debts: bool) -> 
     conn.execute(
         "UPDATE users SET show_debts = ? WHERE id = ?", (1 if show_debts else 0, user_id)
     )
+    conn.commit()
+
+
+def set_name(conn: sqlite3.Connection, user_id: int, first_name: str, last_name: str) -> None:
+    full_name = f"{first_name} {last_name}".strip()
+    conn.execute(
+        "UPDATE users SET first_name = ?, last_name = ?, name = ? WHERE id = ?",
+        (first_name, last_name, full_name, user_id),
+    )
+    conn.commit()
+
+
+def set_avatar_url(conn: sqlite3.Connection, user_id: int, avatar_url: str) -> None:
+    conn.execute("UPDATE users SET avatar_url = ? WHERE id = ?", (avatar_url, user_id))
     conn.commit()
 
 

@@ -161,6 +161,13 @@ CREATE TABLE IF NOT EXISTS webhook_deliveries (
 """
 
 
+def _split_full_name(name: str) -> tuple[str, str]:
+    parts = (name or "").strip().split(" ", 1)
+    first = parts[0]
+    last = parts[1] if len(parts) > 1 else ""
+    return first, last
+
+
 def init_schema(conn: sqlite3.Connection) -> None:
     conn.executescript(SCHEMA)
     conn.commit()
@@ -197,6 +204,23 @@ def init_schema(conn: sqlite3.Connection) -> None:
         # Backfill existing users as "already onboarded" so they never see the
         # new guided setup flow — only genuinely new registrations get NULL.
         conn.execute("UPDATE users SET onboarding_completed_at = datetime('now')")
+        conn.commit()
+    except sqlite3.OperationalError:
+        pass  # columns already exist
+    # Idempotent migration: add first_name/last_name/avatar_url (suite identity,
+    # shared Topbar UserMenu) if they don't exist, backfilling from `name`.
+    try:
+        conn.execute("ALTER TABLE users ADD COLUMN first_name TEXT")
+        conn.execute("ALTER TABLE users ADD COLUMN last_name TEXT")
+        conn.execute("ALTER TABLE users ADD COLUMN avatar_url TEXT")
+        conn.commit()
+        rows = conn.execute("SELECT id, name FROM users").fetchall()
+        for row in rows:
+            first, last = _split_full_name(row["name"])
+            conn.execute(
+                "UPDATE users SET first_name = ?, last_name = ? WHERE id = ?",
+                (first, last, row["id"]),
+            )
         conn.commit()
     except sqlite3.OperationalError:
         pass  # columns already exist
