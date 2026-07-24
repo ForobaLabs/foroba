@@ -8,6 +8,7 @@ export interface SessionUser {
   totp_enabled: boolean;
   is_admin: boolean;
   display_currency: string;
+  show_debts: boolean;
 }
 
 const opts: RequestInit = { credentials: "include" };
@@ -109,4 +110,14 @@ export async function updateDisplayCurrency(currency: string): Promise<void> {
     body: JSON.stringify({ display_currency: currency }),
   });
   if (!r.ok) throw new Error("failed to update display currency");
+}
+
+export async function updateShowDebts(showDebts: boolean): Promise<void> {
+  const r = await fetch("/jeli/auth/me/show-debts", {
+    ...opts,
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ show_debts: showDebts }),
+  });
+  if (!r.ok) throw new Error("failed to update show_debts");
 }

@@ -5,6 +5,7 @@ import { FinanceTipsCard } from '../components/FinanceTipsCard';
 import { NetWorthChart } from '../components/NetWorthChart';
 import { ServiceStatusBar } from '../components/ServiceStatusBar';
 import { StreaksWidget } from '../components/StreaksWidget';
+import { useAuth } from '../auth/AuthProvider';
 import { useCurrency } from '../contexts/CurrencyContext';
 import { useNetWorth } from '../hooks/useNetWorth';
 
@@ -21,7 +22,8 @@ const SOURCE_LABELS: Record<string, string> = {
 
 export function DashboardPage() {
   const [includeManualAssets, setIncludeManualAssets] = useState(true);
-  const { data, isLoading, isError, refetch } = useNetWorth(includeManualAssets);
+  const { user } = useAuth();
+  const { data, isLoading, isError, refetch } = useNetWorth(includeManualAssets, user?.show_debts ?? false);
   const { profile } = useUserProfile();
   const { formatMoney } = useCurrency();
 
@@ -88,6 +90,14 @@ export function DashboardPage() {
           loading={isLoading}
           subtitle="ETF + crypto"
         />
+        {user?.show_debts && snapshot?.debtsEur !== undefined && (
+          <KpiCard
+            label="Debts (Pazuru)"
+            value={`-${formatMoney(snapshot.debtsEur)}`}
+            loading={isLoading}
+            subtitle="Manual debts"
+          />
+        )}
       </div>
 
       {/* Chart */}

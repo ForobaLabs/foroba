@@ -1,9 +1,9 @@
-import { SettingsPage } from '@foroba/ui';
+import { SettingsPage, Switch } from '@foroba/ui';
 import { useUserProfile } from '@foroba/ui';
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { fetchFxRates } from '../api/foroba';
-import { updateDisplayCurrency } from '../auth/api';
+import { updateDisplayCurrency, updateShowDebts } from '../auth/api';
 import { useAuth } from '../auth/AuthProvider';
 
 export function AppSettingsPage() {
@@ -12,6 +12,7 @@ export function AppSettingsPage() {
   const queryClient = useQueryClient();
   const { data: fxRates } = useQuery({ queryKey: ['fxRates'], queryFn: fetchFxRates });
   const [savingCurrency, setSavingCurrency] = useState(false);
+  const [savingShowDebts, setSavingShowDebts] = useState(false);
 
   const handleCurrencyChange = async (currency: string) => {
     setSavingCurrency(true);
@@ -20,6 +21,16 @@ export function AppSettingsPage() {
       await queryClient.invalidateQueries({ queryKey: ['session'] });
     } finally {
       setSavingCurrency(false);
+    }
+  };
+
+  const handleShowDebtsChange = async (next: boolean) => {
+    setSavingShowDebts(true);
+    try {
+      await updateShowDebts(next);
+      await queryClient.invalidateQueries({ queryKey: ['session'] });
+    } finally {
+      setSavingShowDebts(false);
     }
   };
 
@@ -175,6 +186,34 @@ export function AppSettingsPage() {
                 <option key={code} value={code}>{code}</option>
               ))}
             </select>
+          </div>
+
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+              padding: '14px 18px',
+              borderRadius: '10px',
+              backgroundColor: 'var(--color-bg-surface)',
+              border: '1px solid var(--color-border)',
+            }}
+          >
+            <span
+              style={{
+                fontSize: '13px',
+                fontWeight: 600,
+                color: 'var(--color-text-secondary)',
+                minWidth: '100px',
+              }}
+            >
+              Show debts
+            </span>
+            <Switch
+              checked={user.show_debts}
+              disabled={savingShowDebts}
+              onCheckedChange={handleShowDebtsChange}
+            />
           </div>
 
           <p

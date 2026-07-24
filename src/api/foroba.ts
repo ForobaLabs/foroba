@@ -66,6 +66,7 @@ interface NetWorthApiResponse {
   }>;
   degraded: boolean;
   disclaimer: string;
+  debts_eur?: number;
 }
 
 /**
@@ -77,9 +78,13 @@ interface NetWorthApiResponse {
  * this function just maps that response onto the UI's `NetWorthResult`
  * shape and translates `bank`/`investments` nulls into `degradedSources`.
  */
-export async function fetchNetWorth(days = 365, includeManualAssets = true): Promise<NetWorthResult> {
+export async function fetchNetWorth(
+  days = 365,
+  includeManualAssets = true,
+  includeDebts = false,
+): Promise<NetWorthResult> {
   const res = await fetchJson<NetWorthApiResponse>(
-    `/foroba-api/networth/summary?days=${days}&include_manual_assets=${includeManualAssets}`,
+    `/foroba-api/networth/summary?days=${days}&include_manual_assets=${includeManualAssets}&include_debts=${includeDebts}`,
     { credentials: 'include', timeoutMs: 8000 },
   );
 
@@ -102,6 +107,7 @@ export async function fetchNetWorth(days = 365, includeManualAssets = true): Pro
       totalEur: res.total_eur,
       cashEur,
       portfolioEur,
+      debtsEur: res.debts_eur,
       delta1d,
       delta1dPct,
     },
