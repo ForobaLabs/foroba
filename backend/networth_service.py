@@ -34,7 +34,10 @@ from config import settings
 
 logger = logging.getLogger(__name__)
 
-DISCLAIMER = "Bank + investment totals in EUR. Amounts are converted to your display currency for viewing only."
+DISCLAIMER = (
+    "Bank + investment totals in EUR. Amounts are converted to your display "
+    "currency for viewing only."
+)
 _TIMEOUT = 4.0
 
 
@@ -99,10 +102,12 @@ def _merge_history(
 
 async def fetch_networth(
     days: int = 365, *, cookie: str | None = None, include_manual_assets: bool = True,
+    include_debts: bool = False,
 ) -> dict[str, Any]:
     """Aggregate Pazuru bank net worth + Tsumi portfolio value (already including
     manual assets, tsumi#177) + (optionally) Tsumi's manual-asset daily history
-    into one view.
+    + (optionally) Pazuru's manual-debt total (pazuru#99, TI-D item 3 Plan 1
+    debts module) into one view.
 
     Always returns a dict; failed sections are None and set degraded=True.
     """
@@ -122,10 +127,18 @@ async def fetch_networth(
                     {"days": days}, cookie,
                 )
             )
+        if include_debts:
+            fetches.append(
+                _get_json(client, f"{pazuru_base}/api/debts/net-worth", {}, cookie)
+            )
         results = await asyncio.gather(*fetches)
 
     bank, investments_summary, investments_history = results[0], results[1], results[2]
-    manual_assets_history = results[3] if include_manual_assets else []
+    idx = 3
+    manual_assets_history = results[idx] if include_manual_assets else []
+    if include_manual_assets:
+        idx += 1
+    debts_summary = results[idx] if include_debts else None
 
     bank_summary = bank.get("summary") if isinstance(bank, dict) else None
     bank_history = bank.get("history") if isinstance(bank, dict) else None
@@ -135,12 +148,20 @@ async def fetch_networth(
     # Tsumi's total_eur already includes manual_assets_eur (tsumi#177,
     # portfolio_service.py) — do not add it again here.
     investments_total_eur = investments_summary["total_eur"] if investments_summary else 0.0
+    total_eur = round(bank_total_eur + investments_total_eur, 2)
 
-    return {
+    result: dict[str, Any] = {
         "bank": bank_summary,
         "investments": investments_summary,
-        "total_eur": round(bank_total_eur + investments_total_eur, 2),
-        "history": _merge_history(bank_history or [], investments_history or [], manual_assets_history or []),
+        "total_eur": total_eur,
+        "history": _merge_history(
+            bank_history or [], investments_history or [], manual_assets_history or []
+        ),
         "degraded": degraded,
         "disclaimer": DISCLAIMER,
     }
+    if include_debts and debts_summary is not None:
+        debts_eur = round(debts_summary["total_debt_cents"] / 100, 2)
+        result["debts_eur"] = debts_eur
+        result["total_eur"] = round(total_eur - debts_eur, 2)
+    return result

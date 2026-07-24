@@ -21,28 +21,19 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request as StarletteRequest
 from starlette.responses import Response
 
-from auth import keys
-from auth.dependencies import require_admin
-from config import settings
-from observability import init_error_tracking
-from rate_limit import limiter
-
-RATE_LIMIT_DEFAULT = os.getenv("RATE_LIMIT_DEFAULT", "60/minute")
-ALLOWED_ORIGINS = os.getenv(
-    "ALLOWED_ORIGINS",
-    "http://localhost:5175,http://localhost:5173,http://localhost:5174,http://localhost:5178",
-).split(",")
 import db
 import markets_service
 import networth_service
 import notification_service
 from admin_router import router as admin_router
+from auth import keys
 from auth.api_keys_router import router as api_keys_router
-from auth.dependencies import get_current_user
+from auth.dependencies import get_current_user, require_admin
 from auth.entitlements_router import router as entitlements_router
 from auth.router import get_conn
 from auth.router import router as auth_router
 from auth.webhooks_router import router as webhooks_router
+from config import settings
 from db import seed_demo_household as _seed_household
 from db import seed_mock_users as _seed
 from fx_router import router as fx_router
@@ -50,13 +41,21 @@ from fx_scheduler import start_fx_scheduler
 from jeli_service import build_system_prompt, gather_context, stream_chat
 from lab_router import router as lab_router
 from monthly_report_router import router as monthly_report_router
+from observability import init_error_tracking
 from onboarding.router import router as onboarding_router
 from public_api_router import router as public_api_router
+from rate_limit import limiter
 from report_scheduler import start_report_scheduler
 from settings_store import init_settings
 from twofa.router import router as twofa_router
 from webhook_dispatch_job import start_webhook_dispatch_scheduler
 from whatif_router import router as whatif_router
+
+RATE_LIMIT_DEFAULT = os.getenv("RATE_LIMIT_DEFAULT", "60/minute")
+ALLOWED_ORIGINS = os.getenv(
+    "ALLOWED_ORIGINS",
+    "http://localhost:5175,http://localhost:5173,http://localhost:5174,http://localhost:5178",
+).split(",")
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -215,16 +214,21 @@ async def markets_overview(
 async def networth_summary(
     days: int = 365,
     include_manual_assets: bool = True,
+    include_debts: bool = False,
     _: dict = Depends(get_current_user),
     suite_session: str | None = Cookie(default=None),
 ) -> dict:
     """Aggregate bank net worth (Pazuru) + investment portfolio (Tsumi), optionally
-    including manual assets (foroba#157, extended foroba#164), into one unified
-    total. Requires auth — this is per-user financial data, unlike the public-ish
-    /markets/* surface. Degrades gracefully if either upstream is offline: failed
-    sections are null and `degraded` is true; never returns 500."""
+    including manual assets (foroba#157, extended foroba#164) and manual debts
+    (TI-D item 3 Plan 1 debts module, pazuru#99), into one unified total. Requires
+    auth — this is per-user financial data, unlike the public-ish /markets/*
+    surface. Degrades gracefully if either upstream is offline: failed sections
+    are null and `degraded` is true; never returns 500."""
     return await networth_service.fetch_networth(
-        days, cookie=suite_session, include_manual_assets=include_manual_assets,
+        days,
+        cookie=suite_session,
+        include_manual_assets=include_manual_assets,
+        include_debts=include_debts,
     )
 
 

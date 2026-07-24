@@ -88,3 +88,49 @@ async def test_fetch_networth_excludes_manual_assets_when_flag_false(monkeypatch
 
     assert result["total_eur"] == 350.0
     assert not any("manual-assets" in u for u in call_urls)
+
+
+@pytest.mark.asyncio
+async def test_fetch_networth_subtracts_debts_when_include_debts_true(monkeypatch):
+    async def _fake_get_json(client, url, params, cookie):
+        if "accounts/net-worth" in url:
+            return {"summary": {"total_cents": 1_000_000, "currency": "EUR", "account_count": 1},
+                    "history": []}
+        if "portfolio/summary" in url:
+            return {"total_eur": 0.0, "manual_assets_eur": 0.0, "pnl_eur": 0.0,
+                    "pnl_pct": 0.0, "position_count": 0}
+        if "portfolio/history" in url:
+            return []
+        if "debts/net-worth" in url:
+            return {"total_debt_cents": 50_000, "currency": "EUR"}
+        raise AssertionError(f"unexpected URL {url}")
+
+    monkeypatch.setattr(ns, "_get_json", _fake_get_json)
+    result = await ns.fetch_networth(days=30, include_manual_assets=False, include_debts=True)
+
+    assert result["debts_eur"] == 500.0
+    assert result["total_eur"] == 9_500.0
+
+
+@pytest.mark.asyncio
+async def test_fetch_networth_omits_debts_key_when_include_debts_false(monkeypatch):
+    call_urls = []
+
+    async def _fake_get_json(client, url, params, cookie):
+        call_urls.append(url)
+        if "accounts/net-worth" in url:
+            return {"summary": {"total_cents": 1_000_000, "currency": "EUR", "account_count": 1},
+                    "history": []}
+        if "portfolio/summary" in url:
+            return {"total_eur": 0.0, "manual_assets_eur": 0.0, "pnl_eur": 0.0,
+                    "pnl_pct": 0.0, "position_count": 0}
+        if "portfolio/history" in url:
+            return []
+        raise AssertionError(f"unexpected URL {url} when include_debts=False")
+
+    monkeypatch.setattr(ns, "_get_json", _fake_get_json)
+    result = await ns.fetch_networth(days=30, include_manual_assets=False, include_debts=False)
+
+    assert "debts_eur" not in result
+    assert result["total_eur"] == 10_000.0
+    assert not any("debts" in u for u in call_urls)
