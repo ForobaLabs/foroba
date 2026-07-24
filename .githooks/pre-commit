@@ -34,7 +34,33 @@ if [ "$block" -eq 1 ]; then
   exit 1
 fi
 
-# 3. Non-blocking nudge: warn about OTHER untracked source files not part of
+# 3. Scoped lint on staged files only (GL-0 process hardening)
+py_files=$(echo "$staged" | grep -E '^backend/.*\.py$' || true)
+if [ -n "$py_files" ]; then
+  rel=$(echo "$py_files" | sed 's#^backend/##')
+  if ! (cd backend && .venv/bin/ruff check $rel); then
+    echo "BLOCKED: ruff check failed on staged backend files." >&2
+    block=1
+  fi
+fi
+
+ts_files=$(echo "$staged" | grep -E '^src/.*\.tsx?$' || true)
+if [ -n "$ts_files" ]; then
+  if ! npx eslint $ts_files; then
+    echo "BLOCKED: eslint failed on staged frontend files." >&2
+    block=1
+  fi
+  if ! npx tsc --noEmit -p tsconfig.app.json; then
+    echo "BLOCKED: tsc --noEmit failed." >&2
+    block=1
+  fi
+fi
+
+if [ "$block" -eq 1 ]; then
+  exit 1
+fi
+
+# 4. Non-blocking nudge: warn about OTHER untracked source files not part of
 # this commit, so work-in-progress doesn't silently sit uncommitted for weeks
 # (the exact incident that motivated this hook — foroba#154).
 untracked=$(git status --porcelain | grep '^??' | awk '{print $2}' | grep -E '\.(ts|tsx|js|jsx|py|go|rs|css)$' || true)
