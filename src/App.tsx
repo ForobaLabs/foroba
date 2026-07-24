@@ -1,4 +1,4 @@
-import { AppShell, Footer, NotificationBell, Sidebar, Spinner, Topbar, useTheme, useUserProfile } from '@foroba/ui';
+import { AppShell, Footer, NotificationBell, Sidebar, Spinner, Topbar, UserMenu, useSuiteProfile, useTheme, useUserProfile } from '@foroba/ui';
 import { useEffect, useState } from 'react';
 import { Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { getNavItems } from './components/AppNavItems';
@@ -14,6 +14,7 @@ export function App() {
   const { user, loading } = useAuth();
   const [jeliOpen, setJeliOpen] = useState(false);
   const { profile } = useUserProfile();
+  const { profile: suiteProfile } = useSuiteProfile();
   const { notifications, dismiss } = useNotifications();
 
   useEffect(() => {
@@ -38,7 +39,6 @@ export function App() {
     return <Navigate to="/" replace />;
   }
 
-  const initials = profile.name ? profile.name.slice(0, 2).toUpperCase() : '?';
   const navItems = getNavItems(user);
 
   return (
@@ -71,27 +71,7 @@ export function App() {
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <NotificationBell notifications={notifications} onDismiss={dismiss} />
 
-                {/* Profile avatar — links to /profile */}
-                <button
-                  onClick={() => navigate('/profile')}
-                  title={profile.name || 'Profile'}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    width: '32px',
-                    height: '32px',
-                    borderRadius: '50%',
-                    background: 'var(--color-accent)',
-                    color: '#fff',
-                    fontSize: '12px',
-                    fontWeight: 700,
-                    border: 'none',
-                    cursor: 'pointer',
-                  }}
-                >
-                  {initials}
-                </button>
+                <UserMenu profile={suiteProfile} profileHref="/profile" />
 
                 <button
                   onClick={() => setJeliOpen((o) => !o)}
