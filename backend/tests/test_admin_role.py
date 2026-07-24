@@ -1,13 +1,12 @@
-import sqlite3
-import pytest
-from fastapi import FastAPI, Depends
+from fastapi import Depends, FastAPI
 from fastapi.testclient import TestClient
-from db import connect, seed_mock_users
+
+from auth import keys
 from auth.conn import get_conn
 from auth.dependencies import get_current_user, require_admin
 from auth.security import create_token
-from auth import keys
 from config import settings
+from db import connect, seed_mock_users
 
 
 def make_app(admin_only: bool = False):

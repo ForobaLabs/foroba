@@ -66,7 +66,7 @@ async def _run_generation(
             user["email"], f"Your {row['year_month']} financial report is ready", narrative[:500],
         )
         return updated
-    except Exception as exc:  # noqa: BLE001 — must never propagate; always record the reason
+    except Exception as exc:
         logger.exception(
             "Monthly report generation failed for user %s (%s)", user["id"], row["year_month"]
         )

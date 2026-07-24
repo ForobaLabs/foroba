@@ -110,7 +110,7 @@ async def _get_json(
         resp = await client.get(url, params=params or {}, cookies=cookies, timeout=_TIMEOUT)
         resp.raise_for_status()
         return resp.json()
-    except Exception as exc:  # noqa: BLE001 — system boundary: Pazuru/Tsumi may be offline
+    except Exception as exc:
         logger.warning("whatif section unavailable (%s): %s", url, exc)
         return None
 
@@ -123,7 +123,7 @@ async def _post_json(
         resp = await client.post(url, json=body, cookies=cookies, timeout=_TIMEOUT)
         resp.raise_for_status()
         return resp.json()
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         logger.warning("whatif section unavailable (%s): %s", url, exc)
         return None
 

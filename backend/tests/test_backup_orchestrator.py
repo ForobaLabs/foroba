@@ -40,7 +40,7 @@ class _FakeClient:
         self._get_routes = get_routes
         self._post_routes = post_routes or {}
 
-    async def __aenter__(self) -> "_FakeClient":
+    async def __aenter__(self) -> _FakeClient:
         return self
 
     async def __aexit__(self, *exc: Any) -> None:

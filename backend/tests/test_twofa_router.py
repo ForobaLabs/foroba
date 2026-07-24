@@ -5,9 +5,9 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from db import init_schema, seed_mock_users
 from auth.conn import get_conn
 from auth.dependencies import get_current_user
+from db import init_schema, seed_mock_users
 from twofa.router import router
 
 

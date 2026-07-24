@@ -4,8 +4,6 @@ from __future__ import annotations
 import asyncio
 from typing import Any
 
-import pytest
-
 import markets_service as ms
 
 
@@ -28,7 +26,7 @@ class _FakeClient:
     def __init__(self, routes: dict[str, Any]) -> None:
         self._routes = routes
 
-    async def __aenter__(self) -> "_FakeClient":
+    async def __aenter__(self) -> _FakeClient:
         return self
 
     async def __aexit__(self, *exc: Any) -> None:
@@ -144,7 +142,7 @@ class _DirectionRoutingClient:
     def __init__(self, routes: dict[str, Any]) -> None:
         self._routes = routes
 
-    async def __aenter__(self) -> "_DirectionRoutingClient":
+    async def __aenter__(self) -> _DirectionRoutingClient:
         return self
 
     async def __aexit__(self, *exc: Any) -> None:

@@ -5,9 +5,9 @@ from typing import Any
 
 from fastapi.testclient import TestClient
 
+import networth_service as ns
 from auth.dependencies import get_current_user
 from main import app
-import networth_service as ns
 
 
 async def _fake_fetch_networth(

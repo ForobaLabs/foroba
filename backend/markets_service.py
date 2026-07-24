@@ -48,7 +48,7 @@ async def _get_json(
         resp = await client.get(url, params=params, cookies=cookies, timeout=timeout)
         resp.raise_for_status()
         return resp.json()
-    except Exception as exc:  # noqa: BLE001 — system boundary: Tsumi may be offline
+    except Exception as exc:
         logger.warning("markets snapshot section unavailable (%s): %s", url, exc)
         return None
 

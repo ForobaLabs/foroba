@@ -7,11 +7,11 @@ import sqlite3
 import jwt
 from fastapi import Cookie, Depends, HTTPException, status
 
-from config import settings
 from auth import keys
 from auth import repository as repo
 from auth.conn import get_conn
 from auth.security import decode_token
+from config import settings
 
 _DEV_USER: dict = {
     "id": 0,

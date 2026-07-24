@@ -1,15 +1,14 @@
 import sqlite3
 
 import pyotp
-import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 import config
-from db import init_schema, seed_mock_users
-from auth.router import router as auth_router
-from auth.conn import get_conn
 from auth import repository as repo
+from auth.conn import get_conn
+from auth.router import router as auth_router
+from db import init_schema, seed_mock_users
 
 
 def _client(monkeypatch, flag: bool):

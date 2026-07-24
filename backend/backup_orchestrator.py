@@ -18,7 +18,7 @@ import json
 import os
 import tarfile
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import httpx
 from cryptography.fernet import Fernet, InvalidToken
@@ -84,7 +84,7 @@ async def export_suite(passphrase: str, cookie: str) -> bytes:
         tsumi_blob = await _fetch_export(client, settings.tsumi_api_url, cookie)
 
     manifest = json.dumps({
-        "exported_at": datetime.now(timezone.utc).isoformat(),
+        "exported_at": datetime.now(UTC).isoformat(),
         "apps": ["foroba", "pazuru", "tsumi"],
     }).encode()
 

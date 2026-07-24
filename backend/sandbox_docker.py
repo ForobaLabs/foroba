@@ -93,7 +93,7 @@ def run_sandbox(code: str, dataframes: dict[str, pd.DataFrame]) -> dict[str, Any
                 "error": "Sandbox execution timed out",
                 "traceback": "Sandbox execution timed out",
             }
-        except Exception as exc:  # noqa: BLE001 — malformed stdout, missing docker binary, etc.
+        except Exception as exc:
             return {"ok": False, "error": str(exc), "traceback": str(exc)}
     finally:
         shutil.rmtree(workspace, ignore_errors=True)

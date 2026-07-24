@@ -5,13 +5,13 @@ import sqlite3
 
 from fastapi.testclient import TestClient
 
+import db
+import monthly_report_service as mrs
 from auth.conn import get_conn
 from auth.dependencies import get_current_user
 from db import init_schema
-from settings_store import init_settings, set_value
-import db
-import monthly_report_service as mrs
 from main import app
+from settings_store import init_settings, set_value
 
 _PREMIUM_USER = {"id": 1, "email": "u1@test.local", "name": "U1", "tier": "premium",
                   "audience": "base", "household_id": None, "is_admin": False}

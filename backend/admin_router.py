@@ -11,9 +11,9 @@ from pydantic import BaseModel
 
 import backup_orchestrator
 import backup_service
-from auth.conn import get_conn
-from auth.dependencies import get_current_user, require_admin
 from auth import repository as repo
+from auth.conn import get_conn
+from auth.dependencies import require_admin
 from auth.models import UserPublic
 from settings_store import DEFAULT_SETTINGS, get_all, set_value
 

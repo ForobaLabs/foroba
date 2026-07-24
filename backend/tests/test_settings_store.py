@@ -1,6 +1,8 @@
 import sqlite3
+
 import pytest
-from settings_store import init_settings, get_all, set_value, DEFAULT_SETTINGS
+
+from settings_store import get_all, init_settings, set_value
 
 
 @pytest.fixture

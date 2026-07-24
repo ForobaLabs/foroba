@@ -29,7 +29,7 @@ async def _fetch_export(
             f"{prefix}_{name}": pd.read_parquet(io.BytesIO(base64.b64decode(b64)))
             for name, b64 in encoded.items()
         }
-    except Exception as exc:  # noqa: BLE001 — system boundary: sibling app may be offline
+    except Exception as exc:
         logger.warning("%s export unavailable: %s", prefix, exc)
         return {}
 

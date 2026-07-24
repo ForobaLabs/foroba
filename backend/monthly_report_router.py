@@ -9,10 +9,10 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 import db
+import monthly_report_service as mrs
 import pdf_service
 from auth.conn import get_conn
 from auth.entitlements_router import require_feature
-import monthly_report_service as mrs
 
 router = APIRouter(prefix="/reports/monthly", tags=["monthly-reports"])
 

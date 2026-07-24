@@ -9,7 +9,6 @@ there is no real suite_session cookie, causing `visible` to default to False and
 whole feature to render blank.
 """
 
-import pytest
 from fastapi import Depends, FastAPI
 from fastapi.testclient import TestClient
 

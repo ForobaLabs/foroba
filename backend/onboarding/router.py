@@ -6,9 +6,9 @@ import sqlite3
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 
-from auth.dependencies import get_current_user
-from auth.conn import get_conn
 from auth import repository as repo
+from auth.conn import get_conn
+from auth.dependencies import get_current_user
 from onboarding.mifid import QUESTIONNAIRE, score_mifid
 
 router = APIRouter(tags=["onboarding"])

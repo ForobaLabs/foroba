@@ -95,7 +95,7 @@ def _update_user_context(question: str, code: str, existing_context: str) -> str
         )
         response.raise_for_status()
         return response.json()["message"]["content"].strip()
-    except Exception:  # noqa: BLE001 - best-effort, must never break a turn
+    except Exception:
         return existing_context
 
 
@@ -120,7 +120,7 @@ async def _attempt_turn(
             _generate_code,
             question, dataframe_names, history, user_context, error_feedback, web_results,
         )
-    except Exception as exc:  # noqa: BLE001 — network errors, malformed JSON, Ollama down
+    except Exception as exc:
         return {"ok": False, "code": "", "error": str(exc)}
 
     code = generated.get("code", "")

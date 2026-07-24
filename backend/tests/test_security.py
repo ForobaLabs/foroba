@@ -1,11 +1,10 @@
-import time
 
 import jwt
 import pytest
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 
-from auth.security import hash_password, verify_password, needs_rehash, create_token, decode_token
+from auth.security import create_token, decode_token, hash_password, needs_rehash, verify_password
 
 
 def _keypair():

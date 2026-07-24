@@ -5,12 +5,12 @@ import sqlite3
 
 from fastapi.testclient import TestClient
 
+import whatif_service as ws
 from auth.conn import get_conn
 from auth.dependencies import get_current_user
 from db import init_schema
-from settings_store import init_settings, set_value
-import whatif_service as ws
 from main import app
+from settings_store import init_settings, set_value
 
 _PREMIUM_USER = {"id": 1, "email": "u1@test.local", "tier": "premium", "audience": "expert",
                   "household_id": None, "is_admin": False}

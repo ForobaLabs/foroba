@@ -386,8 +386,9 @@ def delete_whatif_scenario(
 
 def run_migrations(db_path: str) -> None:
     """Apply all pending Alembic migrations to the SQLite file at db_path."""
-    from alembic import command
     from alembic.config import Config
+
+    from alembic import command
 
     backend_dir = Path(__file__).resolve().parent
     cfg = Config(str(backend_dir / "alembic.ini"))

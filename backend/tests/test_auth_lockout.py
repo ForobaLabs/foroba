@@ -4,9 +4,9 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from db import init_schema
-from auth.router import router, get_conn
 from auth import repository as repo
+from auth.router import get_conn, router
+from db import init_schema
 
 
 @pytest.fixture

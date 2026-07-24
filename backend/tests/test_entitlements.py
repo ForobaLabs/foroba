@@ -1,6 +1,6 @@
 import pytest
 
-from auth.entitlements import REGISTRY, evaluate, FeatureAccess
+from auth.entitlements import REGISTRY, FeatureAccess, evaluate
 
 
 def test_registry_has_expected_keys():

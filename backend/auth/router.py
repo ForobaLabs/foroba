@@ -7,16 +7,20 @@ import uuid
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from pydantic import BaseModel
 
-from config import settings
-from auth.conn import get_conn  # re-exported for tests that import it from here
 from auth import keys
 from auth import repository as repo
+from auth.conn import get_conn  # re-exported for tests that import it from here
 from auth.dependencies import get_current_user
 from auth.models import (
-    DisplayCurrencyRequest, HouseholdJoinRequest, LoginRequest, RegisterRequest,
-    ShareToggleRequest, UserPublic,
+    DisplayCurrencyRequest,
+    HouseholdJoinRequest,
+    LoginRequest,
+    RegisterRequest,
+    ShareToggleRequest,
+    UserPublic,
 )
 from auth.security import create_token, hash_password, needs_rehash, verify_password
+from config import settings
 from rate_limit import limiter
 from twofa.totp import verify_code
 

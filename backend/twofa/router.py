@@ -8,9 +8,9 @@ import sqlite3
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 
-from auth.dependencies import get_current_user
-from auth.conn import get_conn
 from auth import repository as repo
+from auth.conn import get_conn
+from auth.dependencies import get_current_user
 from rate_limit import limiter
 from twofa.totp import generate_secret, provisioning_uri, qr_data_url, verify_code
 

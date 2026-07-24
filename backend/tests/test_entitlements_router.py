@@ -4,10 +4,10 @@ import pytest
 from fastapi import Depends, FastAPI
 from fastapi.testclient import TestClient
 
-from db import init_schema, seed_mock_users
-from auth.router import get_conn
 from auth.dependencies import get_current_user
-from auth.entitlements_router import router, require_feature
+from auth.entitlements_router import require_feature, router
+from auth.router import get_conn
+from db import init_schema, seed_mock_users
 from settings_store import init_settings, set_value
 
 

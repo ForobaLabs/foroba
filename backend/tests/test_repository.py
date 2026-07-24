@@ -2,8 +2,8 @@ import sqlite3
 
 import pytest
 
-from db import init_schema
 from auth import repository as repo
+from db import init_schema
 
 
 @pytest.fixture
@@ -37,7 +37,6 @@ def test_get_missing_returns_none(conn):
     assert repo.get_user_by_id(conn, 999) is None
 
 
-from auth import repository as repo
 
 
 def test_set_audience_locks(conn):

@@ -9,9 +9,9 @@ from fastapi import APIRouter, Cookie, Depends, HTTPException
 from pydantic import BaseModel
 
 import db
+import whatif_service
 from auth.conn import get_conn
 from auth.entitlements_router import require_feature
-import whatif_service
 
 router = APIRouter(prefix="/whatif", tags=["whatif"])
 

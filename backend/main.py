@@ -5,12 +5,11 @@ Start:
 """
 from __future__ import annotations
 
+import asyncio
 import logging
 import os
 import sqlite3
 from typing import Annotated
-
-import asyncio
 
 from fastapi import Cookie, Depends, FastAPI, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -22,10 +21,10 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request as StarletteRequest
 from starlette.responses import Response
 
-from config import settings
-from observability import init_error_tracking
 from auth import keys
 from auth.dependencies import require_admin
+from config import settings
+from observability import init_error_tracking
 from rate_limit import limiter
 
 RATE_LIMIT_DEFAULT = os.getenv("RATE_LIMIT_DEFAULT", "60/minute")
@@ -34,28 +33,30 @@ ALLOWED_ORIGINS = os.getenv(
     "http://localhost:5175,http://localhost:5173,http://localhost:5174,http://localhost:5178",
 ).split(",")
 import db
-from db import seed_demo_household as _seed_household, seed_mock_users as _seed
-from auth.router import router as auth_router, get_conn
-from auth.dependencies import get_current_user
-from auth.entitlements_router import router as entitlements_router
-from onboarding.router import router as onboarding_router
-from admin_router import router as admin_router
-from lab_router import router as lab_router
-from twofa.router import router as twofa_router
-from whatif_router import router as whatif_router
-from monthly_report_router import router as monthly_report_router
-from report_scheduler import start_report_scheduler
-from fx_router import router as fx_router
-from fx_scheduler import start_fx_scheduler
-from auth.api_keys_router import router as api_keys_router
-from auth.webhooks_router import router as webhooks_router
-from public_api_router import router as public_api_router
-from webhook_dispatch_job import start_webhook_dispatch_scheduler
-from settings_store import init_settings
-from jeli_service import build_system_prompt, gather_context, stream_chat
 import markets_service
 import networth_service
 import notification_service
+from admin_router import router as admin_router
+from auth.api_keys_router import router as api_keys_router
+from auth.dependencies import get_current_user
+from auth.entitlements_router import router as entitlements_router
+from auth.router import get_conn
+from auth.router import router as auth_router
+from auth.webhooks_router import router as webhooks_router
+from db import seed_demo_household as _seed_household
+from db import seed_mock_users as _seed
+from fx_router import router as fx_router
+from fx_scheduler import start_fx_scheduler
+from jeli_service import build_system_prompt, gather_context, stream_chat
+from lab_router import router as lab_router
+from monthly_report_router import router as monthly_report_router
+from onboarding.router import router as onboarding_router
+from public_api_router import router as public_api_router
+from report_scheduler import start_report_scheduler
+from settings_store import init_settings
+from twofa.router import router as twofa_router
+from webhook_dispatch_job import start_webhook_dispatch_scheduler
+from whatif_router import router as whatif_router
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

@@ -5,8 +5,8 @@ from unittest.mock import MagicMock
 import httpx
 import pandas as pd
 
-from config import settings
 import sandbox_docker
+from config import settings
 
 
 def test_is_docker_running_true(monkeypatch):

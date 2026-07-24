@@ -1,5 +1,6 @@
 import pyotp
-from twofa.totp import generate_secret, provisioning_uri, verify_code, qr_data_url
+
+from twofa.totp import generate_secret, provisioning_uri, qr_data_url, verify_code
 
 
 def test_generate_secret_is_base32_and_unique():

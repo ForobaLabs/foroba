@@ -19,7 +19,7 @@ import hashlib
 import hmac
 import json
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import httpx
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -71,7 +71,7 @@ async def _deliver_event(client, conn, webhook: dict, event: dict) -> None:
     body = json.dumps({
         "event": event["event"],
         "data": event["data"],
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
     }).encode()
 
     try:
@@ -88,7 +88,7 @@ async def _deliver_event(client, conn, webhook: dict, event: dict) -> None:
         db.upsert_webhook_delivery_success(conn, webhook["id"], event["event_key"], attempt_count)
         db.reset_webhook_failures(conn, webhook["id"])
         return
-    except Exception as exc:  # noqa: BLE001 — system boundary: arbitrary user-registered URL
+    except Exception as exc:
         logger.warning(
             "webhook delivery failed (webhook=%s, event=%s): %s", webhook["id"], event["event_key"], exc
         )

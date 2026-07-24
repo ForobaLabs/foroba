@@ -68,7 +68,7 @@ def refresh_latest_rates(conn: sqlite3.Connection) -> None:
     """
     try:
         rates = _fetch_rates(None)
-    except Exception as exc:  # noqa: BLE001 - external API, never crash the scheduler
+    except Exception as exc:
         logger.warning("FX rate refresh failed: %s", exc)
         return
 
@@ -102,7 +102,7 @@ def get_rate(
 
     try:
         rates = _fetch_rates(rate_date)
-    except Exception as exc:  # noqa: BLE001 - network/API failure, try cache fallback
+    except Exception as exc:
         logger.warning("FX rate fetch failed for %s on %s: %s", currency, lookup_date, exc)
         fallback = conn.execute(
             "SELECT rate_to_eur FROM fx_rates WHERE currency = ? ORDER BY rate_date DESC LIMIT 1",

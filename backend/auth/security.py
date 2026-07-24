@@ -1,7 +1,7 @@
 """Password hashing (argon2id) and JWT helpers for suite authentication."""
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import bcrypt as _bcrypt_lib
 import jwt
@@ -40,7 +40,7 @@ def create_token(
     user_id: int, private_key: str, ttl_minutes: int, *,
     tier: str = "free", audience: str = "base", is_admin: bool = False, kid: str | None = None,
 ) -> str:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     payload = {
         "sub": str(user_id),
         "iat": now,

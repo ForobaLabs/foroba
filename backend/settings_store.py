@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import sqlite3
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 _SCHEMA = (
     "CREATE TABLE IF NOT EXISTS runtime_settings "
@@ -49,4 +49,4 @@ def set_value(conn: sqlite3.Connection, key: str, value: str) -> None:
 
 
 def _now() -> str:
-    return datetime.now(timezone.utc).isoformat()
+    return datetime.now(UTC).isoformat()

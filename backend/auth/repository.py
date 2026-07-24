@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import sqlite3
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 LOCKOUT_MAX_ATTEMPTS = 5
 LOCKOUT_DURATION_MINUTES = 15
@@ -22,8 +22,8 @@ def is_locked_out(user: dict) -> bool:
     except ValueError:
         return False
     if until.tzinfo is None:
-        until = until.replace(tzinfo=timezone.utc)
-    return datetime.now(timezone.utc) < until
+        until = until.replace(tzinfo=UTC)
+    return datetime.now(UTC) < until
 
 
 def register_failed_login(conn: sqlite3.Connection, user_id: int) -> dict:
@@ -37,7 +37,7 @@ def register_failed_login(conn: sqlite3.Connection, user_id: int) -> dict:
     ).fetchone()
     if row["failed_login_attempts"] >= LOCKOUT_MAX_ATTEMPTS:
         locked_until = (
-            datetime.now(timezone.utc) + timedelta(minutes=LOCKOUT_DURATION_MINUTES)
+            datetime.now(UTC) + timedelta(minutes=LOCKOUT_DURATION_MINUTES)
         ).isoformat()
         conn.execute("UPDATE users SET locked_until = ? WHERE id = ?", (locked_until, user_id))
     conn.commit()
