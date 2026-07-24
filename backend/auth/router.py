@@ -15,6 +15,7 @@ from auth.models import (
     DisplayCurrencyRequest,
     HouseholdJoinRequest,
     LoginRequest,
+    NameUpdateRequest,
     RegisterRequest,
     ShareToggleRequest,
     ShowDebtsRequest,
@@ -167,6 +168,12 @@ def set_display_currency(req: DisplayCurrencyRequest, user: dict = Depends(get_c
 def update_show_debts(req: ShowDebtsRequest, user: dict = Depends(get_current_user),
                       conn: sqlite3.Connection = Depends(get_conn)) -> None:
     repo.set_show_debts(conn, user["id"], req.show_debts)
+
+
+@router.put("/me/name", status_code=204)
+def update_name(req: NameUpdateRequest, user: dict = Depends(get_current_user),
+                conn: sqlite3.Connection = Depends(get_conn)) -> None:
+    repo.set_name(conn, user["id"], req.first_name, req.last_name)
 
 
 @router.get("/visible-owners")

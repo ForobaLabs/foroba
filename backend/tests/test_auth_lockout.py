@@ -21,9 +21,10 @@ def client():
 
 
 def test_lockout_after_five_failed_attempts(client):
-    c, conn = client
+    c, _conn = client
     c.post("/auth/register", json={
-        "email": "lock@y.com", "name": "L", "password": "password123"})
+        "email": "lock@y.com", "email_confirm": "lock@y.com", "name": "L",
+        "password": "password123", "password_confirm": "password123"})
     c.cookies.clear()
 
     for _ in range(repo.LOCKOUT_MAX_ATTEMPTS):
@@ -37,7 +38,8 @@ def test_lockout_after_five_failed_attempts(client):
 def test_successful_login_resets_counter(client):
     c, conn = client
     c.post("/auth/register", json={
-        "email": "reset@y.com", "name": "R", "password": "password123"})
+        "email": "reset@y.com", "email_confirm": "reset@y.com", "name": "R",
+        "password": "password123", "password_confirm": "password123"})
     c.cookies.clear()
 
     c.post("/auth/login", json={"email": "reset@y.com", "password": "wrong"})

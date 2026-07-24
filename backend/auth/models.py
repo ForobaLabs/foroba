@@ -41,6 +41,9 @@ class UserPublic(BaseModel):
     birth_year: int | None = None
     country: str | None = None
     onboarding_completed_at: str | None = None
+    first_name: str | None = None
+    last_name: str | None = None
+    avatar_url: str | None = None
 
 
 class HouseholdJoinRequest(BaseModel):
@@ -58,3 +61,8 @@ class DisplayCurrencyRequest(BaseModel):
 
 class ShowDebtsRequest(BaseModel):
     show_debts: bool
+
+
+class NameUpdateRequest(BaseModel):
+    first_name: str = Field(min_length=1, max_length=80)
+    last_name: str = Field(min_length=0, max_length=80)
