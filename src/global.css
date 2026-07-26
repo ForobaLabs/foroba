@@ -2,6 +2,14 @@
 @import "tailwindcss";
 @source "../node_modules/@foroba/ui/dist";
 
+/* Base text/background colors — without this, any element that doesn't set an
+   explicit text-[var(--color-text-primary)] class falls back to the browser's
+   default black text color, which is invisible against the dark theme surfaces. */
+body {
+  color: var(--color-text-primary);
+  background-color: var(--color-bg-primary);
+}
+
 /* Safe-area insets for notched devices */
 body {
   padding-bottom: env(safe-area-inset-bottom, 0px);
