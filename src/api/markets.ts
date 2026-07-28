@@ -2,7 +2,7 @@ import { fetchJson } from './fetchJson';
 
 const BASE = '/foroba-api';
 
-export type AssetClass = 'crypto' | 'equity';
+export type AssetClass = 'crypto' | 'equity' | 'etf' | 'bond';
 
 export interface MarketRating {
   label: string;
@@ -32,12 +32,13 @@ export async function fetchMarketSnapshot(
   symbol: string,
   assetClass: AssetClass,
 ): Promise<MarketSnapshot> {
-  // Backend's screener scan leg can legitimately take up to 12s (sequential
-  // OHLCV fetches from Binance/Twelve Data — see markets_service._SCREENER_TIMEOUT),
-  // gathered in parallel with the other legs, so the client timeout must clear
-  // that worst case with margin or every load falsely reports Tsumi as down.
+  // Backend's screener scan leg can legitimately take up to 30s (sequential
+  // OHLCV fetches from Binance/Twelve Data/iTick, worst case equity's 16-symbol
+  // universe — see markets_service._SCREENER_TIMEOUT), gathered in parallel
+  // with the other legs, so the client timeout must clear that worst case
+  // with margin or every load falsely reports Tsumi as down.
   const url = `${BASE}/markets/snapshot?symbol=${encodeURIComponent(symbol)}&asset_class=${assetClass}`;
-  return fetchJson<MarketSnapshot>(url, { credentials: 'include', timeoutMs: 14000 });
+  return fetchJson<MarketSnapshot>(url, { credentials: 'include', timeoutMs: 36000 });
 }
 
 export interface MarketMover {
@@ -60,9 +61,11 @@ export interface MarketOverview {
 }
 
 export async function fetchMarketOverview(assetClass: AssetClass): Promise<MarketOverview> {
-  // Backend gathers gainers+losers scans in parallel (each up to 12s worst
-  // case) then fetches news sequentially after (up to 4s more) — see
-  // markets_service.fetch_overview. Same rationale as fetchMarketSnapshot above.
+  // Backend fetches the movers universe once (up to ~30s worst case for
+  // equity's 16-symbol universe) then fetches news sequentially after (up to
+  // 4s more) — see markets_service.fetch_overview. Client budget needs margin
+  // over the backend's own _SCREENER_TIMEOUT (30s) or every load falsely
+  // reports Tsumi as down.
   const url = `${BASE}/markets/overview?asset_class=${assetClass}`;
-  return fetchJson<MarketOverview>(url, { credentials: 'include', timeoutMs: 18000 });
+  return fetchJson<MarketOverview>(url, { credentials: 'include', timeoutMs: 36000 });
 }

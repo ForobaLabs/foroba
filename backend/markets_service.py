@@ -28,10 +28,12 @@ logger = logging.getLogger(__name__)
 
 DISCLAIMER = "Informational only — not financial advice."
 _TIMEOUT = 4.0
-# Screener scan fetches OHLCV for ~10 symbols sequentially from Binance/Twelve Data
-# upstream and routinely takes ~7-8s — needs a longer budget than the other,
-# single-symbol Tsumi endpoints.
-_SCREENER_TIMEOUT = 12.0
+# Screener scan fetches OHLCV for ~10-16 symbols sequentially from Binance/Twelve
+# Data/iTick upstream and routinely takes ~7-15s (equity's 16-symbol universe is
+# the worst case, measured up to ~14.6s, but upstream rate-limit contention can
+# push this higher) — needs a longer budget than the other, single-symbol Tsumi
+# endpoints, with generous margin over the measured worst case.
+_SCREENER_TIMEOUT = 30.0
 
 
 async def _get_json(
@@ -101,31 +103,29 @@ async def fetch_overview(asset_class: str, *, cookie: str | None = None) -> dict
     """
     base = settings.tsumi_api_url.rstrip("/")
     async with httpx.AsyncClient() as client:
-        gainers_scan, losers_scan = await asyncio.gather(
-            _get_json(
-                client,
-                f"{base}/api/screener/scan",
-                {"asset_class": asset_class, "screen": "top_movers", "direction": "gainers", "limit": 5},
-                cookie,
-                timeout=_SCREENER_TIMEOUT,
-            ),
-            _get_json(
-                client,
-                f"{base}/api/screener/scan",
-                {"asset_class": asset_class, "screen": "top_movers", "direction": "losers", "limit": 5},
-                cookie,
-                timeout=_SCREENER_TIMEOUT,
-            ),
+        # Single-fetch-pass movers endpoint: fetches the universe ONCE and
+        # derives both gainers and losers from the same rows, avoiding the
+        # double network fetch (and consequent Twelve Data rate-limit
+        # failures on equity) that two separate top_movers scans incurred.
+        movers = await _get_json(
+            client,
+            f"{base}/api/screener/movers",
+            {"asset_class": asset_class, "limit": 5},
+            cookie,
+            timeout=_SCREENER_TIMEOUT,
         )
-        gainers = gainers_scan.get("results") if isinstance(gainers_scan, dict) else None
-        losers = losers_scan.get("results") if isinstance(losers_scan, dict) else None
+        gainers = movers.get("gainers") if isinstance(movers, dict) else None
+        losers = movers.get("losers") if isinstance(movers, dict) else None
 
         news = None
         if gainers:
             top_symbol = gainers[0].get("symbol")
             if top_symbol:
                 news = await _get_json(
-                    client, f"{base}/api/news/headlines", {"symbol": top_symbol, "limit": 10}, cookie
+                    client,
+                    f"{base}/api/news/headlines",
+                    {"symbol": top_symbol, "limit": 10},
+                    cookie,
                 )
 
     degraded = gainers is None or losers is None or news is None

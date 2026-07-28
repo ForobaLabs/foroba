@@ -92,6 +92,8 @@ export function MarketsPage() {
         >
           <option value="crypto">Crypto</option>
           <option value="equity">Equity</option>
+          <option value="etf">ETF</option>
+          <option value="bond">Bond</option>
         </select>
       </div>
 
