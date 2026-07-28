@@ -14,6 +14,7 @@ import {
   deleteWhatIfScenario,
   type SimulationResult, type WhatIfScenario, type OneOffEvent, type GoalContribution,
 } from '../api/whatif';
+import { JeliInterpretButton } from '../components/JeliInterpretButton';
 
 const inputCls =
   'mt-1 block w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-primary)] px-3 py-2 text-sm text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]';
@@ -47,10 +48,18 @@ function WhatIfBuilder() {
   const [goalContributions, setGoalContributions] = useState<GoalContribution[]>([]);
   const [oneOffEvents, setOneOffEvents] = useState<OneOffEvent[]>([]);
   const [result, setResult] = useState<SimulationResult | null>(null);
+  const [baselineResult, setBaselineResult] = useState<SimulationResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [scenarioName, setScenarioName] = useState('');
   const [scenarios, setScenarios] = useState<WhatIfScenario[]>([]);
+
+  const baselineDeltaEur = (() => {
+    if (!result?.points.length || !baselineResult?.points.length) return null;
+    const scenarioTotal = result.points[result.points.length - 1].totalEur;
+    const baselineTotal = baselineResult.points[baselineResult.points.length - 1].totalEur;
+    return scenarioTotal - baselineTotal;
+  })();
 
   useEffect(() => {
     fetchPazuruGoals().then(setGoals).catch(() => setGoals([]));
@@ -78,12 +87,36 @@ function WhatIfBuilder() {
     setLoading(true);
     setError(null);
     try {
-      setResult(await simulateWhatIf(currentParams()));
+      // Sequential (not Promise.all) — firing both requests concurrently trips a
+      // backend session-lookup race on the shared connection (returns spurious 401s).
+      const scenario = await simulateWhatIf(currentParams());
+      const baseline = await simulateWhatIf({ horizonMonths });
+      setResult(scenario);
+      setBaselineResult(baseline);
     } catch {
       setError(t('whatif.error', 'Simulation failed'));
     } finally {
       setLoading(false);
     }
+  }
+
+  function buildJeliContext(): string {
+    const lastPoint = result?.points[result.points.length - 1];
+    const lines = [
+      `Horizon: ${horizonMonths} months`,
+      `Projected total net worth at end of horizon: €${lastPoint?.totalEur.toFixed(2) ?? 'n/a'}`,
+    ];
+    if (baselineDeltaEur !== null) {
+      lines.push(
+        `Delta vs. baseline (no changes): ${baselineDeltaEur >= 0 ? '+' : ''}€${baselineDeltaEur.toFixed(2)}`,
+      );
+    }
+    if (result?.goalImpacts.length) {
+      for (const gi of result.goalImpacts) {
+        lines.push(`Goal "${gi.name}": ${gi.newProjection?.projected_date ?? 'no projection'}`);
+      }
+    }
+    return lines.join('\n');
   }
 
   async function save() {
@@ -102,6 +135,8 @@ function WhatIfBuilder() {
     setGoalContributions(scenario.params.goalContributions ?? []);
     setOneOffEvents(scenario.params.oneOffEvents ?? []);
     setResult(scenario.projection);
+    setBaselineResult(null);
+    simulateWhatIf({ horizonMonths: scenario.horizonMonths }).then(setBaselineResult).catch(() => setBaselineResult(null));
   }
 
   async function remove(id: number) {
@@ -232,6 +267,21 @@ function WhatIfBuilder() {
               </p>
             )}
             <p className="text-xs text-[var(--color-text-secondary)]">{result.disclaimer}</p>
+            {baselineDeltaEur !== null && (
+              <div className="rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] p-3">
+                <p className="text-xs text-[var(--color-text-secondary)]">
+                  {t('whatif.baselineDelta', 'vs. baseline (no changes)')}
+                </p>
+                <p
+                  className={`text-lg font-semibold ${
+                    baselineDeltaEur >= 0 ? 'text-[var(--color-positive)]' : 'text-[var(--color-negative)]'
+                  }`}
+                >
+                  {baselineDeltaEur >= 0 ? '+' : ''}
+                  {baselineDeltaEur.toLocaleString(undefined, { style: 'currency', currency: 'EUR' })}
+                </p>
+              </div>
+            )}
             <ResponsiveContainer width="100%" height={320}>
               <AreaChart data={result.points} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
                 <CartesianGrid {...theme.grid} />
@@ -249,6 +299,7 @@ function WhatIfBuilder() {
                 {gi.name}: {gi.newProjection?.projected_date ?? t('whatif.noProjection', 'no projection')}
               </p>
             ))}
+            <JeliInterpretButton contextLabel="Foroba What-If Simulator" buildContext={buildJeliContext} />
           </CardContent>
         </Card>
       )}
