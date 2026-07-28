@@ -1,5 +1,6 @@
 import { Badge, Card, CardContent, ErrorState, KpiCard, PageContainer, SectionHeader, Skeleton, useUserProfile } from '@foroba/ui';
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { AllocationPie } from '../components/AllocationPie';
 import { FinanceTipsCard } from '../components/FinanceTipsCard';
 import { NetWorthChart } from '../components/NetWorthChart';
@@ -21,6 +22,7 @@ const SOURCE_LABELS: Record<string, string> = {
 };
 
 export function DashboardPage() {
+  const navigate = useNavigate();
   const [includeManualAssets, setIncludeManualAssets] = useState(true);
   const { user } = useAuth();
   const { data, isLoading, isError, refetch } = useNetWorth(includeManualAssets, user?.show_debts ?? false);
@@ -78,18 +80,38 @@ export function DashboardPage() {
 
       {/* Sub KPIs */}
       <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <KpiCard
-          label="Cash (Pazuru)"
-          value={snapshot ? formatMoney(snapshot.cashEur) : '–'}
-          loading={isLoading}
-          subtitle="Bank accounts"
-        />
-        <KpiCard
-          label="Portfolio (Tsumi)"
-          value={snapshot ? formatMoney(snapshot.portfolioEur) : '–'}
-          loading={isLoading}
-          subtitle="ETF + crypto"
-        />
+        <div
+          onClick={() => navigate('/accounts')}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') navigate('/accounts');
+          }}
+          style={{ cursor: 'pointer' }}
+        >
+          <KpiCard
+            label="Cash (Pazuru)"
+            value={snapshot ? formatMoney(snapshot.cashEur) : '–'}
+            loading={isLoading}
+            subtitle="Bank accounts"
+          />
+        </div>
+        <div
+          onClick={() => navigate('/portfolio')}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') navigate('/portfolio');
+          }}
+          style={{ cursor: 'pointer' }}
+        >
+          <KpiCard
+            label="Portfolio (Tsumi)"
+            value={snapshot ? formatMoney(snapshot.portfolioEur) : '–'}
+            loading={isLoading}
+            subtitle="ETF + crypto"
+          />
+        </div>
         {user?.show_debts && snapshot?.debtsEur !== undefined && (
           <KpiCard
             label="Debts (Pazuru)"
