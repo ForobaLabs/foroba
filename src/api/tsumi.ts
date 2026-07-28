@@ -117,6 +117,22 @@ interface RawAllocationGroup {
   pct: number;
 }
 
+export interface InvestmentConnection {
+  id: number;
+  provider: string;
+  source_type: string;
+  label: string;
+  sync_status: string;
+  sync_error: string | null;
+}
+
+export async function fetchInvestmentConnections(): Promise<InvestmentConnection[]> {
+  return fetchJson<InvestmentConnection[]>(`${BASE}/api/investment-connections`, {
+    credentials: 'include',
+    timeoutMs: 5000,
+  });
+}
+
 export async function fetchPortfolioAllocations(): Promise<PortfolioAllocations> {
   const data = await fetchJson<{
     by_asset_class: RawAllocationGroup[];

@@ -2,8 +2,11 @@ import { SettingsPage, Switch, useTheme } from '@foroba/ui';
 import { useUserProfile } from '@foroba/ui';
 import type { UserProfile } from '@foroba/ui';
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { fetchFxRates } from '../api/foroba';
+import { fetchPazuruAccounts } from '../api/pazuru';
+import { fetchInvestmentConnections } from '../api/tsumi';
 import { updateDisplayCurrency, updateShowDebts } from '../auth/api';
 import { useAuth } from '../auth/AuthProvider';
 
@@ -11,6 +14,15 @@ export function AppSettingsPage() {
   const { profile, updateProfile } = useUserProfile();
   const { setTheme } = useTheme();
   const { user } = useAuth();
+  const navigate = useNavigate();
+  const { data: pazuruAccounts } = useQuery({
+    queryKey: ['pazuru-accounts'],
+    queryFn: fetchPazuruAccounts,
+  });
+  const { data: tsumiConnections } = useQuery({
+    queryKey: ['investment-connections'],
+    queryFn: fetchInvestmentConnections,
+  });
 
   const handleUpdateProfile = (updates: Partial<UserProfile>) => {
     updateProfile(updates);
@@ -258,6 +270,74 @@ export function AppSettingsPage() {
           localStorage.clear();
           window.location.reload();
         }}
+        connectionSlots={[
+          ...(pazuruAccounts ?? []).map((acc) => (
+            <div
+              key={`pazuru-${acc.id}`}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '12px',
+                padding: '14px 18px',
+                borderRadius: '10px',
+                backgroundColor: 'var(--color-bg-surface)',
+                border: '1px solid var(--color-border)',
+              }}
+            >
+              <span style={{ fontSize: '13px', color: 'var(--color-text-primary)' }}>
+                {acc.displayName} ({acc.bankName})
+              </span>
+              <button
+                type="button"
+                onClick={() => navigate('/accounts')}
+                style={{
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  color: 'var(--color-accent)',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                }}
+              >
+                Manage in Pazuru
+              </button>
+            </div>
+          )),
+          ...(tsumiConnections ?? []).map((c) => (
+            <div
+              key={`tsumi-${c.id}`}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '12px',
+                padding: '14px 18px',
+                borderRadius: '10px',
+                backgroundColor: 'var(--color-bg-surface)',
+                border: '1px solid var(--color-border)',
+              }}
+            >
+              <span style={{ fontSize: '13px', color: 'var(--color-text-primary)' }}>
+                {c.label} ({c.provider}) — {c.sync_status}
+              </span>
+              <button
+                type="button"
+                onClick={() => navigate('/portfolio')}
+                style={{
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  color: 'var(--color-accent)',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                }}
+              >
+                Manage in Tsumi
+              </button>
+            </div>
+          )),
+        ]}
         appVersion={__APP_VERSION__}
       />
     </>
