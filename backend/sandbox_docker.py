@@ -58,7 +58,18 @@ async def ensure_docker_running(max_wait_seconds: int = DOCKER_START_MAX_WAIT_SE
 
 
 def run_sandbox(code: str, dataframes: dict[str, pd.DataFrame]) -> dict[str, Any]:
-    """Run `code` against `dataframes` in an isolated container. Returns the parsed JSON result."""
+    """Run `code` against `dataframes` in an isolated container. Returns the parsed JSON result.
+
+    Resource/network hardening (foroba#132): `--network none` (no network access at all),
+    `--memory=512m` + `--cpus=1` + `--pids-limit=64` + `--ulimit cpu=10` (bound memory/CPU/
+    fork-bomb exposure), `--read-only` + `--tmpfs /tmp` (no writable filesystem outside
+    /tmp), `--user sandboxuser` (non-root), plus `sandbox_guard.py`'s AST import whitelist
+    as a first-pass reject before the container even starts. This is defense-in-depth, not
+    a 100%-secure sandbox — a container escape or an unpatched Docker/kernel vulnerability
+    could still defeat these limits. Do not rely on this alone for untrusted/adversarial code
+    from outside the local trusted household; it is designed to contain AI-generated analysis
+    code, not to be a hardened multi-tenant execution service.
+    """
     workspace = tempfile.mkdtemp()
     try:
         workspace_path = Path(workspace)
