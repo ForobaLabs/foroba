@@ -1,5 +1,5 @@
 import { Button } from '@foroba/ui';
-import { OnboardingPage } from '@foroba/ui';
+import { OnboardingPage, useLanguage } from '@foroba/ui';
 import { useNavigate } from 'react-router-dom';
 import { completeOnboarding } from '../auth/api';
 
@@ -26,13 +26,14 @@ function ConnectSlot() {
 
 export function AppOnboardingPage() {
   const navigate = useNavigate();
+  const { setLanguage } = useLanguage();
 
   return (
     <OnboardingPage
       connectSlot={<ConnectSlot />}
       onComplete={(state) => {
         localStorage.setItem('foroba.onboarding.done', '1');
-        localStorage.setItem('foroba.language', state.language);
+        setLanguage(state.language);
         localStorage.setItem('foroba.theme', state.theme);
         void completeOnboarding();
         navigate('/');
