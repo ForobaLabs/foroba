@@ -10,7 +10,8 @@ class Settings(BaseSettings):
     tsumi_api_url: str = "http://localhost:8050"
     jeli_port: int = 8002
     sandbox_image: str = "foroba-sandbox:latest"
-    sandbox_runner_url: str | None = None  # set only in docker-compose.yml (TI-B item 4, foroba#120)
+    # set only in docker-compose.yml (TI-B item 4, foroba#120)
+    sandbox_runner_url: str | None = None
     searxng_url: str = "http://localhost:8080"
 
     # --- Auth (SP9 / C1, RS256 migration foroba#149) ---
@@ -27,7 +28,7 @@ class Settings(BaseSettings):
     # --- Observability (TI-B item 2, foroba#153) ---
     glitchtip_dsn: str = ""
 
-    # --- Email (TI-D item 2, foroba#159) — stub only, real SMTP is foroba#163 ---
+    # --- Email (TI-D item 2, foroba#159; real SMTP wiring, foroba#163) ---
     smtp_enabled: bool = False
     smtp_host: str = ""
     smtp_port: int = 587
