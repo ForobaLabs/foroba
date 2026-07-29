@@ -35,6 +35,7 @@ from auth.entitlements_router import router as entitlements_router
 from auth.router import get_conn
 from auth.router import router as auth_router
 from auth.webhooks_router import router as webhooks_router
+from backup_scheduler import start_backup_scheduler
 from config import settings
 from db import seed_demo_household as _seed_household
 from db import seed_mock_users as _seed
@@ -122,6 +123,7 @@ def _startup() -> None:
     start_report_scheduler()
     start_fx_scheduler()
     start_webhook_dispatch_scheduler()
+    start_backup_scheduler()
 
 
 class Personality(BaseModel):

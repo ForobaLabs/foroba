@@ -36,5 +36,12 @@ class Settings(BaseSettings):
     smtp_password: str = ""
     smtp_from: str = ""
 
+    # --- Offsite backup (TI-E, foroba#172) — Cloudflare R2, no-op when unconfigured ---
+    r2_account_id: str = ""
+    r2_access_key_id: str = ""
+    r2_secret_access_key: str = ""
+    r2_bucket: str = ""
+    backup_encryption_passphrase: str = ""
+
 
 settings = Settings()
