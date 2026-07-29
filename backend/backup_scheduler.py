@@ -1,6 +1,7 @@
 """APScheduler — daily offsite backup upload (TI-E, foroba#172).
 
-Runs every day at 04:00 local time. Mints an internal admin JWT (same
+Runs every day at 12:00 local time (noon, not 04:00 — the host machine is not
+guaranteed to be powered on overnight). Mints an internal admin JWT (same
 `create_token` call already used by `report_scheduler.py`) so
 `backup_orchestrator.export_suite()`'s existing httpx calls to Pazuru/Tsumi's
 `/admin/backup/export` authenticate normally, then uploads the resulting
@@ -62,11 +63,11 @@ def start_backup_scheduler() -> BackgroundScheduler:
     scheduler = BackgroundScheduler()
     scheduler.add_job(
         run_daily_backup,
-        trigger=CronTrigger(hour=4, minute=0),
+        trigger=CronTrigger(hour=12, minute=0),
         id="offsite_backup",
         replace_existing=True,
         misfire_grace_time=3600,
     )
     scheduler.start()
-    logger.info("Offsite backup scheduler started (runs daily at 04:00).")
+    logger.info("Offsite backup scheduler started (runs daily at 12:00).")
     return scheduler
