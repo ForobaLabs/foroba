@@ -39,6 +39,14 @@ async def lab_chat(
 ):
     user_id = str(user["id"])
 
+    if settings.deployment_mode == "hosted":
+        async def _hosted_disabled_stream():
+            yield json.dumps({
+                "type": "error",
+                "value": "Jeli Lab is not available in the hosted beta.",
+            }) + "\n"
+        return StreamingResponse(_hosted_disabled_stream(), media_type="application/x-ndjson")
+
     if get_all(conn).get("lab_service_enabled", "true") == "false":
         async def _disabled_stream():
             yield json.dumps({
@@ -88,7 +96,8 @@ async def lab_chat(
         if code is not None:
             save_sandbox_turn(
                 conn, user_id, body.session_id, body.message,
-                error_message or " ".join(answer_parts), code=code, artifacts_json=json.dumps(artifacts),
+                error_message or " ".join(answer_parts),
+                code=code, artifacts_json=json.dumps(artifacts),
             )
 
     return StreamingResponse(_stream(), media_type="application/x-ndjson")

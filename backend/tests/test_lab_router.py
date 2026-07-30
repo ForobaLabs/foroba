@@ -43,6 +43,33 @@ def test_lab_chat_streams_ndjson(monkeypatch):
     finally:
         app.dependency_overrides.clear()
 
+def test_lab_chat_hard_disabled_in_hosted_deployment_mode(monkeypatch):
+    conn = sqlite3.connect(":memory:", check_same_thread=False)
+    conn.row_factory = sqlite3.Row
+    init_schema(conn)
+    init_settings(conn)
+
+    import lab_router
+    monkeypatch.setattr(lab_router.settings, "deployment_mode", "hosted")
+    monkeypatch.setattr(lab_router, "gather_dataframes", _fake_gather_dataframes)
+    monkeypatch.setattr(lab_router, "run_lab_turn", _fake_run_lab_turn)
+
+    app.dependency_overrides[get_conn] = lambda: conn
+    app.dependency_overrides[get_current_user] = lambda: {"id": 1, "email": "u1@test.local"}
+
+    try:
+        client = TestClient(app)
+        response = client.post("/lab/chat", json={"message": "hi", "session_id": "s1"})
+
+        assert response.status_code == 200
+        lines = [json.loads(line) for line in response.text.strip().splitlines()]
+        assert len(lines) == 1
+        assert lines[0]["type"] == "error"
+        assert "hosted beta" in lines[0]["value"].lower()
+    finally:
+        app.dependency_overrides.clear()
+
+
 def test_lab_chat_disabled_returns_graceful_message(monkeypatch):
     conn = sqlite3.connect(":memory:", check_same_thread=False)
     conn.row_factory = sqlite3.Row

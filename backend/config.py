@@ -6,6 +6,15 @@ class Settings(BaseSettings):
 
     ollama_base_url: str = "http://localhost:11434"
     ollama_model: str = "phi3.5:latest"
+
+    # --- Deployment mode (GL-4.3, foroba#174) ---
+    # "hosted" = multi-tenant beta on the VPS: Jeli Lab (arbitrary code-gen sandbox)
+    # is hard-disabled regardless of the lab_service_enabled runtime toggle, since
+    # it's the highest-risk feature to expose to untrusted internet users.
+    # "selfhost" = local/self-hosted single-user install: Jeli Lab follows the
+    # normal lab_service_enabled runtime toggle.
+    deployment_mode: str = "selfhost"
+
     pazuru_api_url: str = "http://localhost:8000"
     tsumi_api_url: str = "http://localhost:8050"
     jeli_port: int = 8002
