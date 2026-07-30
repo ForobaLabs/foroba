@@ -47,6 +47,16 @@ export default defineConfig(({ mode }) => {
     optimizeDeps: {
       exclude: ['@foroba/ui', '@foroba/ui/i18n', '@foroba/ui/charts'],
     },
+    resolve: {
+      // @foroba/ui is consumed via a `file:` dependency and resolves its own
+      // node_modules copy of these singleton-context libraries separately from
+      // this app's copy (divergent versions: @tanstack/react-query ^5.101.0 here
+      // vs ^5.101.1 in foroba-ui). Without dedupe, two physical module instances
+      // get bundled, so foroba-ui's useEntitlement()/LockedFeature() reads a
+      // QueryClient context this app's <QueryClientProvider> never populated,
+      // throwing "No QueryClient set" at runtime (same root cause as tsumi#183).
+      dedupe: ['@tanstack/react-query', 'react', 'react-dom'],
+    },
     define: {
       __APP_VERSION__: JSON.stringify(process.env.npm_package_version ?? '0.1.0'),
     },
