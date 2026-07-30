@@ -17,6 +17,14 @@ COPY --from=foroba-ui-build /app/foroba-ui /app/foroba-ui
 COPY foroba/package.json foroba/pnpm-lock.yaml ./
 RUN npm install -g pnpm && pnpm install --frozen-lockfile
 COPY foroba/ .
+# Baked into the bundle at build time (Vite inlines import.meta.env.VITE_*) — used by
+# AccountsPage/PortfolioPage/AppOnboardingPage to link out to Pazuru/Tsumi's own
+# settings pages. Defaults are dev-only; production MUST override via build args
+# (see docker-compose.prod.yml) or these links point at localhost for real users.
+ARG VITE_PAZURU_APP_URL=http://localhost:5173
+ARG VITE_TSUMI_APP_URL=http://localhost:5178
+ENV VITE_PAZURU_APP_URL=$VITE_PAZURU_APP_URL
+ENV VITE_TSUMI_APP_URL=$VITE_TSUMI_APP_URL
 RUN pnpm build
 
 # ── Stage 3: Python backend ──────────────────────────────────────────────────
