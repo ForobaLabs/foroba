@@ -1,5 +1,6 @@
 import {
   Badge,
+  Button,
   Card,
   CardContent,
   EmptyState,
@@ -23,6 +24,16 @@ import {
   usePortfolioSummary,
   useTsumiHealth,
 } from '../hooks/useServiceHealth';
+
+const TSUMI_APP_URL = import.meta.env.VITE_TSUMI_APP_URL ?? 'http://localhost:5178';
+
+function ConnectInvestmentButton({ variant }: { variant?: 'outline' }) {
+  return (
+    <a href={`${TSUMI_APP_URL}/settings`}>
+      <Button variant={variant}>📈 Add a connection</Button>
+    </a>
+  );
+}
 
 function formatCurrency(amount: number, currency = 'EUR') {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(amount);
@@ -64,11 +75,13 @@ export function PortfolioPage() {
 
   return (
     <PageContainer>
-      <SectionHeader
-        title="Portfolio"
-        description="ETF & crypto positions powered by Tsumi"
-        className="mb-6"
-      />
+      <div className="flex items-start justify-between mb-6">
+        <SectionHeader
+          title="Portfolio"
+          description="ETF & crypto positions powered by Tsumi"
+        />
+        {online && <ConnectInvestmentButton variant="outline" />}
+      </div>
 
       {!online ? (
         <Card>
@@ -97,6 +110,7 @@ export function PortfolioPage() {
         <EmptyState
           title="No positions yet"
           message="Add a position in Tsumi to see your portfolio here."
+          action={<ConnectInvestmentButton />}
         />
       ) : (
         <>

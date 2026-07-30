@@ -1,5 +1,6 @@
 import {
   Badge,
+  Button,
   Card,
   CardContent,
   EmptyState,
@@ -20,6 +21,16 @@ const BANK_LABELS: Record<string, string> = {
   hype: 'Hype',
 };
 
+const PAZURU_APP_URL = import.meta.env.VITE_PAZURU_APP_URL ?? 'http://localhost:5173';
+
+function ConnectBankButton({ variant }: { variant?: 'outline' }) {
+  return (
+    <a href={`${PAZURU_APP_URL}/settings`}>
+      <Button variant={variant}>🏦 Connect a bank</Button>
+    </a>
+  );
+}
+
 export function AccountsPage() {
   const health = usePazuruHealth();
   const online = health.data?.status === 'ok';
@@ -34,7 +45,10 @@ export function AccountsPage() {
           description="Bank accounts & cashflow powered by Pazuru"
         />
         {online && (
-          <ExportButton onExport={(fmt) => { window.location.href = `/pazuru-api/export/transactions?format=${fmt}`; }} />
+          <div className="flex items-center gap-2">
+            <ConnectBankButton variant="outline" />
+            <ExportButton onExport={(fmt) => { window.location.href = `/pazuru-api/export/transactions?format=${fmt}`; }} />
+          </div>
         )}
       </div>
 
@@ -65,6 +79,7 @@ export function AccountsPage() {
         <EmptyState
           title="No accounts connected"
           message="Connect a bank in Pazuru to see your accounts here."
+          action={<ConnectBankButton />}
         />
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
