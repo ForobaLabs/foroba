@@ -9,6 +9,7 @@ import {
   KeyRound,
   LayoutDashboard,
   LineChart,
+  Lock,
   Scale,
   Settings,
   ShieldCheck,
@@ -34,6 +35,7 @@ export const APP_NAV_ITEMS: NavItem[] = [
   { label: 'Settings', href: '/settings', icon: Settings },
   { label: 'Help', href: '/help', icon: HelpCircle },
   { label: 'Legal', href: '/legal', icon: Scale },
+  { label: 'Security', href: '/security', icon: Lock },
   { label: 'About', href: '/about', icon: Info },
 ];
 

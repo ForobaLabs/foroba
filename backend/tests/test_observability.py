@@ -51,3 +51,36 @@ def test_init_error_tracking_noops_with_empty_dsn():
     init_error_tracking("")
 
     assert sentry_sdk.get_client().transport is None
+
+
+def test_scrub_event_strips_sensitive_keys_from_extra_and_contexts():
+    """GL-11.5: defense-in-depth scrubbing of event['extra']/event['contexts'],
+    in case a fake sensitive field is ever attached via set_extra/set_context."""
+    event = {
+        "extra": {
+            "external_id": "revolut-eur-001",
+            "raw_label": "PAYMENT TO SECRET CLINIC",
+            "safe_field": "keep-me",
+        },
+        "contexts": {
+            "custom": {
+                "iban": "IT60X0542811101000000123456",
+                "session_id_enc": "gAAAAA...",
+                "nested": {"content": "chat text", "code": "print(1)"},
+                "safe_nested_field": "keep-me-too",
+            }
+        },
+    }
+
+    result = scrub_event(event, {})
+
+    assert "external_id" not in result["extra"]
+    assert "raw_label" not in result["extra"]
+    assert result["extra"]["safe_field"] == "keep-me"
+
+    custom = result["contexts"]["custom"]
+    assert "iban" not in custom
+    assert "session_id_enc" not in custom
+    assert "content" not in custom["nested"]
+    assert "code" not in custom["nested"]
+    assert custom["safe_nested_field"] == "keep-me-too"

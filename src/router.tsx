@@ -1,4 +1,4 @@
-import { AboutPage, HelpPage, LegalPage } from '@foroba/ui';
+import { AboutPage, HelpPage, LegalPage, SecurityPage } from '@foroba/ui';
 import { lazy, Suspense } from 'react';
 import { createBrowserRouter } from 'react-router-dom';
 import { Spinner } from '@foroba/ui';
@@ -62,6 +62,7 @@ export const router = createBrowserRouter([
       { path: 'admin',     element: <Suspense fallback={<Loading />}><AdminPage /></Suspense> },
       { path: 'help',      element: <HelpPage faqItems={FOROBA_FAQ} gitlabIssueUrl="https://gitlab.com/bambac961/foroba/-/issues" /> },
       { path: 'legal',    element: <LegalPage /> },
+      { path: 'security', element: <SecurityPage /> },
       { path: 'about',    element: <AboutPage appName="Foroba" version={__APP_VERSION__} /> },
     ],
   },

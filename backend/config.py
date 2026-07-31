@@ -64,5 +64,11 @@ class Settings(BaseSettings):
     r2_bucket: str = ""
     backup_encryption_passphrase: str = ""
 
+    # --- Field-level encryption at rest (GL-11.3, foroba#192) ---
+    # Encrypts sandbox_conversations.content/code (Jeli Lab chat history).
+    # Generate once with:
+    #   python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+    field_encryption_key: str = ""
+
 
 settings = Settings()

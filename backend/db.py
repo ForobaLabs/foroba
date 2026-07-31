@@ -5,6 +5,7 @@ import sqlite3
 from pathlib import Path
 
 from auth.security import hash_password
+from chat_crypto import decrypt, encrypt
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS users (
@@ -291,17 +292,21 @@ def save_sandbox_turn(
     code: str | None = None,
     artifacts_json: str | None = None,
 ) -> None:
-    """Persist a user question + assistant answer as two conversation rows."""
+    """Persist a user question + assistant answer as two conversation rows.
+
+    `content`/`code` are Fernet-encrypted at rest (GL-11.3) — see chat_crypto.py.
+    """
     conn.execute(
         "INSERT INTO sandbox_conversations (user_id, session_id, role, content) "
         "VALUES (?, ?, 'user', ?)",
-        (user_id, session_id, question),
+        (user_id, session_id, encrypt(question)),
     )
+    encrypted_code = encrypt(code) if code is not None else None
     conn.execute(
         "INSERT INTO sandbox_conversations "
         "(user_id, session_id, role, content, code, artifacts_json) "
         "VALUES (?, ?, 'assistant', ?, ?, ?)",
-        (user_id, session_id, answer, code, artifacts_json),
+        (user_id, session_id, encrypt(answer), encrypted_code, artifacts_json),
     )
     conn.commit()
 
@@ -309,13 +314,22 @@ def save_sandbox_turn(
 def get_sandbox_history(
     conn: sqlite3.Connection, user_id: str, session_id: str, limit: int = 20
 ) -> list[dict]:
-    """Return the most recent `limit` conversation rows, in chronological order."""
+    """Return the most recent `limit` conversation rows, in chronological order.
+
+    `content`/`code` are decrypted transparently here (GL-11.3) — see chat_crypto.py.
+    """
     rows = conn.execute(
         "SELECT role, content, code FROM sandbox_conversations "
         "WHERE user_id = ? AND session_id = ? ORDER BY created_at DESC, id DESC LIMIT ?",
         (user_id, session_id, limit),
     ).fetchall()
-    result = [dict(row) for row in rows]
+    result = []
+    for row in rows:
+        d = dict(row)
+        d["content"] = decrypt(d["content"])
+        if d["code"] is not None:
+            d["code"] = decrypt(d["code"])
+        result.append(d)
     result.reverse()
     return result
 

@@ -41,3 +41,19 @@ def test_get_sandbox_history_returns_most_recent_turns_not_oldest():
     assert "question-6" in contents
     assert "answer-7" in contents
     assert "question-0" not in contents
+
+
+def test_sandbox_conversations_are_ciphertext_at_rest():
+    """GL-11.3: raw DB content must not contain the plaintext substring."""
+    conn = _conn()
+    save_sandbox_turn(conn, "u1", "s1", "my IBAN is secret", "here is some code", code="print(42)")
+    raw_rows = conn.execute(
+        "SELECT content, code FROM sandbox_conversations WHERE user_id = 'u1'"
+    ).fetchall()
+    for row in raw_rows:
+        assert "IBAN" not in (row["content"] or "")
+        assert "print(42)" not in (row["code"] or "")
+    # transparent decrypt still round-trips correctly
+    history = get_sandbox_history(conn, "u1", "s1")
+    assert any(h["content"] == "my IBAN is secret" for h in history)
+    assert any(h.get("code") == "print(42)" for h in history)
