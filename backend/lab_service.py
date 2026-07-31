@@ -15,6 +15,14 @@ from sandbox_guard import DisallowedImportError, check_imports
 
 MAX_ATTEMPTS = 3
 
+# Global concurrency cap on sandbox executions (foroba#189): guards against multiple
+# simultaneous hosted-beta users each spinning up a 512MB sandbox container and
+# exhausting the VPS's total RAM. Per-execution isolation (network none, read-only fs,
+# non-root, ephemeral container) is handled in sandbox_docker.py; this caps how many of
+# those isolated executions may run at once, server-wide.
+_sandbox_semaphore = asyncio.Semaphore(settings.lab_sandbox_concurrency_limit)
+SANDBOX_QUEUE_WAIT_SECONDS = 5
+
 CODEGEN_SYSTEM_PROMPT = (
     "You are Jeli Lab, a data analyst that writes Python code against pandas "
     "DataFrames already loaded in the execution environment. Available "
@@ -44,7 +52,10 @@ def _generate_code(
         dataframe_names=", ".join(dataframe_names)
     )}]
     if user_context:
-        messages.append({"role": "system", "content": f"What we know about this user: {user_context}"})
+        messages.append({
+            "role": "system",
+            "content": f"What we know about this user: {user_context}",
+        })
     if web_results:
         summary = "\n".join(f"- {r['title']}: {r['snippet']} ({r['url']})" for r in web_results)
         messages.append({"role": "system", "content": f"Recent web search results:\n{summary}"})
@@ -54,7 +65,9 @@ def _generate_code(
     if error_feedback:
         messages.append({
             "role": "user",
-            "content": f"The previous code failed with this error, please fix it:\n{error_feedback}",
+            "content": (
+                f"The previous code failed with this error, please fix it:\n{error_feedback}"
+            ),
         })
 
     response = httpx.post(
@@ -99,6 +112,27 @@ def _update_user_context(question: str, code: str, existing_context: str) -> str
         return existing_context
 
 
+async def _run_sandbox_limited(code: str, dataframes: dict[str, pd.DataFrame]) -> dict[str, Any]:
+    """Run the sandbox dispatch behind the global concurrency cap.
+
+    Fails fast (rather than queueing indefinitely) if the cap is already saturated for
+    SANDBOX_QUEUE_WAIT_SECONDS, to avoid piling up blocked NDJSON streams under load.
+    """
+    try:
+        await asyncio.wait_for(_sandbox_semaphore.acquire(), timeout=SANDBOX_QUEUE_WAIT_SECONDS)
+    except TimeoutError:
+        return {
+            "ok": False,
+            "busy": True,
+            "error": "Jeli Lab is busy handling other requests, please try again shortly.",
+            "traceback": "sandbox concurrency limit reached",
+        }
+    try:
+        return await asyncio.to_thread(sandbox_docker.run_sandbox_dispatch, code, dataframes)
+    finally:
+        _sandbox_semaphore.release()
+
+
 async def _attempt_turn(
     question: str,
     dataframe_names: list[str],
@@ -138,7 +172,7 @@ async def _attempt_turn(
     except (DisallowedImportError, SyntaxError) as exc:
         return {"ok": False, "code": code, "explanation": explanation, "error": str(exc)}
 
-    result = await asyncio.to_thread(sandbox_docker.run_sandbox_dispatch, code, dataframes)
+    result = await _run_sandbox_limited(code, dataframes)
     result["code"] = code
     result["explanation"] = explanation
     return result
@@ -156,7 +190,9 @@ async def _ensure_sandbox_ready() -> AsyncGenerator[dict[str, Any], None]:
     if not started:
         yield {
             "type": "error",
-            "value": "Couldn't start the local sandbox engine. Make sure Docker Desktop is installed.",
+            "value": (
+                "Couldn't start the local sandbox engine. Make sure Docker Desktop is installed."
+            ),
         }
 
 
@@ -189,7 +225,8 @@ async def run_lab_turn(
 
     for _attempt in range(MAX_ATTEMPTS):
         result = await _attempt_turn(
-            question, dataframe_names, dataframes, history, user_context, error_feedback, web_results,
+            question, dataframe_names, dataframes, history, user_context,
+            error_feedback, web_results,
         )
         code = result.get("code", "")
 
@@ -200,6 +237,12 @@ async def run_lab_turn(
                 _update_user_context, question, code, user_context,
             )
             yield {"type": "done", "code": code, "context": updated_context}
+            return
+
+        if result.get("busy"):
+            # Server-wide capacity issue, not a code problem — retrying codegen won't
+            # help, so surface it immediately instead of burning the remaining attempts.
+            yield {"type": "error", "value": result["error"], "code": code}
             return
 
         error_feedback = result.get("traceback") or result.get("error", "")

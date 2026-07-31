@@ -15,6 +15,18 @@ class Settings(BaseSettings):
     # normal lab_service_enabled runtime toggle.
     deployment_mode: str = "selfhost"
 
+    # --- Jeli Lab hosted re-enablement (foroba#189) ---
+    # Even in "hosted" mode, Jeli Lab stays hard-disabled unless this is explicitly set
+    # to true. Flip it only after confirming the VPS can sustain
+    # lab_sandbox_concurrency_limit concurrent 512MB sandbox containers. Per-request
+    # execution is already isolated (ephemeral container, --network none, --read-only,
+    # non-root, see sandbox_docker.run_sandbox); this flag + the concurrency cap below
+    # guard against multiple simultaneous hosted users exhausting VPS memory.
+    lab_hosted_enabled: bool = False
+    # Max sandbox containers allowed to run at once across ALL users (lab_service.py).
+    # Each container caps at 512MB; keep this low relative to total VPS RAM.
+    lab_sandbox_concurrency_limit: int = 3
+
     pazuru_api_url: str = "http://localhost:8000"
     tsumi_api_url: str = "http://localhost:8050"
     jeli_port: int = 8002

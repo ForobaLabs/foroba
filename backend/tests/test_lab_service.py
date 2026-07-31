@@ -1,3 +1,5 @@
+import asyncio
+
 import httpx
 import pytest
 
@@ -153,7 +155,9 @@ async def test_run_lab_turn_handles_non_string_code_from_llm(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_run_lab_turn_handles_markdown_fenced_code(monkeypatch):
-    """Regression: LLM wrapping code in ```python fences must not crash ast.parse with SyntaxError."""
+    """Regression: LLM wrapping code in ```python fences must not crash ast.parse.
+
+    Must raise SyntaxError caught internally, not propagate."""
     monkeypatch.setattr(sandbox_docker, "is_docker_running", lambda: True)
     monkeypatch.setattr(
         lab_service, "_generate_code",
@@ -187,3 +191,33 @@ async def test_run_lab_turn_passes_web_results_to_codegen(monkeypatch):
     ))
 
     assert captured["web_results"][0]["title"] == "T"
+
+
+@pytest.mark.asyncio
+async def test_run_lab_turn_reports_busy_when_sandbox_saturated(monkeypatch):
+    """foroba#189: when the global sandbox concurrency cap is saturated, fail fast with
+    a busy error instead of retrying codegen (retrying wouldn't help — it's a capacity
+    issue, not a code issue)."""
+    monkeypatch.setattr(sandbox_docker, "is_docker_running", lambda: True)
+    monkeypatch.setattr(lab_service, "SANDBOX_QUEUE_WAIT_SECONDS", 0.05)
+
+    generate_calls = {"n": 0}
+
+    def _generate(*a, **k):
+        generate_calls["n"] += 1
+        return {"explanation": "computing", "code": "result_text = 'hi'"}
+
+    monkeypatch.setattr(lab_service, "_generate_code", _generate)
+    monkeypatch.setattr(lab_service, "check_imports", lambda code: None)
+
+    # Swap in a size-1 semaphore and hold its only permit, so any acquire attempt
+    # during the test always times out (saturated).
+    test_semaphore = asyncio.Semaphore(1)
+    await test_semaphore.acquire()
+    monkeypatch.setattr(lab_service, "_sandbox_semaphore", test_semaphore)
+
+    events = await _collect(lab_service.run_lab_turn("q", {}, [], ""))
+
+    assert events[-1]["type"] == "error"
+    assert "busy" in events[-1]["value"].lower()
+    assert generate_calls["n"] == 1  # no retry burned on a capacity error

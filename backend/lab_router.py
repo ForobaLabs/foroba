@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import json
 
-from fastapi import APIRouter, Cookie, Depends
+from fastapi import APIRouter, Cookie, Depends, Request
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
@@ -18,6 +18,7 @@ from db import (
 )
 from lab_data_aggregator import gather_dataframes
 from lab_service import run_lab_turn
+from rate_limit import limiter
 from searxng_client import search_web
 from settings_store import get_all
 
@@ -31,7 +32,9 @@ class LabChatRequest(BaseModel):
 
 
 @router.post("/chat")
+@limiter.limit("10/minute")
 async def lab_chat(
+    request: Request,
     body: LabChatRequest,
     user: dict = Depends(get_current_user),
     conn=Depends(get_conn),
@@ -39,7 +42,10 @@ async def lab_chat(
 ):
     user_id = str(user["id"])
 
-    if settings.deployment_mode == "hosted":
+    # Even in hosted mode, Jeli Lab needs an explicit opt-in (lab_hosted_enabled) on top
+    # of deployment_mode=="hosted" — see config.py. The per-IP rate limit above and the
+    # global sandbox concurrency cap in lab_service.py are what make that opt-in safe.
+    if settings.deployment_mode == "hosted" and not settings.lab_hosted_enabled:
         async def _hosted_disabled_stream():
             yield json.dumps({
                 "type": "error",
