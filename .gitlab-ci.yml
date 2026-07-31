@@ -4,11 +4,21 @@ stages:
   - build
   - docker
 
+include:
+  - template: Jobs/SAST.gitlab-ci.yml
+  - template: Jobs/Secret-Detection.gitlab-ci.yml
+  - template: Jobs/SAST-IaC.gitlab-ci.yml
+
 default:
   image: node:22-alpine
   before_script:
+    # `@foroba/ui` is a monorepo-local `file:../foroba-ui` dependency — GitLab CI clones
+    # only this project, so the sibling checkout must be cloned + built here.
+    - apk add --no-cache git
     - corepack enable
     - corepack prepare pnpm@11.6.0 --activate
+    - git clone --depth 1 "https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.com/bambac961/foroba-ui.git" "$CI_PROJECT_DIR/../foroba-ui"
+    - (cd "$CI_PROJECT_DIR/../foroba-ui" && pnpm install --frozen-lockfile --ignore-scripts && pnpm build)
     - pnpm install --frozen-lockfile --ignore-scripts
 
 lint:
@@ -51,6 +61,10 @@ docker-build:
     IMAGE: $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA
     IMAGE_LATEST: $CI_REGISTRY_IMAGE:latest
   before_script:
+    # Dockerfile expects `foroba-ui/` as a sibling in the build context (see its header
+    # comment) — same reasoning as the `default` before_script above.
+    - apk add --no-cache git
+    - git clone --depth 1 "https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.com/bambac961/foroba-ui.git" "$CI_PROJECT_DIR/../foroba-ui"
     - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
   script:
     - docker build -f Dockerfile -t $IMAGE -t $IMAGE_LATEST ../
