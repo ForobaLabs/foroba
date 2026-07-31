@@ -70,5 +70,11 @@ class Settings(BaseSettings):
     #   python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
     field_encryption_key: str = ""
 
+    # --- Whole-file DB encryption at rest (GL-11.2, foroba#195) ---
+    # Separate trust boundary from field_encryption_key (per-column Fernet): this
+    # is the SQLCipher passphrase for the entire foroba_identity.db file.
+    # Empty = unencrypted (dev default).
+    db_encryption_key: str = ""
+
 
 settings = Settings()

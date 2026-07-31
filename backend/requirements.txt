@@ -25,3 +25,8 @@ apscheduler>=3.10.0
 reportlab>=4.2.0
 boto3>=1.35.0
 ruff
+# GL-11.2: whole-file DB encryption at rest (SQLCipher). Builds from source —
+# requires the system libsqlcipher dev headers at install time:
+#   macOS:  brew install sqlcipher
+#   Debian/Ubuntu (VPS): apt-get install libsqlcipher-dev
+sqlcipher3==0.5.4

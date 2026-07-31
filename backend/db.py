@@ -465,18 +465,73 @@ def run_migrations(db_path: str) -> None:
     backend_dir = Path(__file__).resolve().parent
     cfg = Config(str(backend_dir / "alembic.ini"))
     cfg.set_main_option("script_location", str(backend_dir / "alembic"))
-    cfg.set_main_option("sqlalchemy.url", f"sqlite:///{db_path}")
+    cfg.set_main_option("sqlalchemy.url", _alembic_url(db_path))
     command.upgrade(cfg, "head")
 
 
+def _alembic_url(db_path: str) -> str:
+    """Build the Alembic `sqlalchemy.url` for db_path.
+
+    GL-11.2: when db_encryption_key is set, db_path is a SQLCipher-encrypted
+    file and Alembic must connect via the sqlite+pysqlcipher dialect with the
+    passphrase instead of plain sqlite (which can't read the ciphertext header).
+    """
+    from config import settings
+
+    if settings.db_encryption_key:
+        from sqlalchemy.engine import URL
+
+        url = URL.create(
+            drivername="sqlite+pysqlcipher",
+            username="",  # forces URL to render ":password@" — omitted entirely if None
+            password=settings.db_encryption_key,
+            database=db_path,
+        )
+        return url.render_as_string(hide_password=False)
+    return f"sqlite:///{db_path}"
+
+
 def connect(db_path: str) -> sqlite3.Connection:
-    Path(db_path).parent.mkdir(parents=True, exist_ok=True)
+    """Open a connection to db_path, applying migrations first.
+
+    GL-11.2: when settings.db_encryption_key is set, this uses sqlcipher3's
+    DBAPI (sqlite3-compatible) instead of stdlib sqlite3, and issues
+    `PRAGMA key` immediately after connecting (before any other statement)
+    to decrypt the SQLCipher-encrypted file. Separate trust boundary from
+    the per-column Fernet field_encryption_key.
+
+    `:memory:` is always handled via stdlib sqlite3, regardless of
+    db_encryption_key: encryption-at-rest is meaningless for a transient,
+    process-local in-memory DB (nothing is ever persisted to disk), and
+    sqlcipher3's `:memory:` connections were observed to share state across
+    independent `connect(":memory:")` calls within the same process
+    (test suite hit "duplicate column" errors from init_schema() running
+    twice against what should have been two isolated in-memory DBs).
+    """
+    from config import settings
+
     if db_path == ":memory:":
         conn = sqlite3.connect(db_path, check_same_thread=False, timeout=10)
         conn.row_factory = sqlite3.Row
         conn.execute("PRAGMA busy_timeout = 10000")
         init_schema(conn)
         return conn
+
+    Path(db_path).parent.mkdir(parents=True, exist_ok=True)
+
+    if settings.db_encryption_key:
+        import sqlcipher3.dbapi2 as sqlcipher
+
+        escaped_key = settings.db_encryption_key.replace("'", "''")
+
+        run_migrations(db_path)
+        conn = sqlcipher.connect(db_path, check_same_thread=False, timeout=10)
+        conn.execute(f"PRAGMA key = '{escaped_key}'")
+        conn.row_factory = sqlcipher.Row
+        conn.execute("PRAGMA journal_mode = WAL")
+        conn.execute("PRAGMA busy_timeout = 10000")
+        return conn
+
     run_migrations(db_path)
     conn = sqlite3.connect(db_path, check_same_thread=False, timeout=10)
     conn.row_factory = sqlite3.Row
