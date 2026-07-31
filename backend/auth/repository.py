@@ -54,6 +54,19 @@ def reset_failed_login(conn: sqlite3.Connection, user_id: int) -> None:
     conn.commit()
 
 
+def set_account_disabled(conn: sqlite3.Connection, user_id: int, disabled: bool) -> None:
+    """Admin-only action (GL-10.1): block/unblock future logins for this user.
+
+    Does not invalidate any already-issued session JWT — an existing session stays
+    valid until its normal TTL expires (jwt_ttl_minutes, default 60m).
+    """
+    conn.execute(
+        "UPDATE users SET account_disabled = ? WHERE id = ?",
+        (1 if disabled else 0, user_id),
+    )
+    conn.commit()
+
+
 def create_user(conn: sqlite3.Connection, *, email: str, name: str,
                 password_hash: str, tier: str = "free",
                 audience: str = "base", birth_year: int | None = None,

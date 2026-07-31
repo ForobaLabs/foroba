@@ -35,6 +35,7 @@ class UserPublic(BaseModel):
     audience: str
     audience_locked: bool
     is_admin: bool
+    account_disabled: bool = False
     totp_enabled: bool
     display_currency: str
     show_debts: bool

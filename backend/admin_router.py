@@ -59,6 +59,26 @@ def admin_get_users(
     return repo.list_all_users(conn)
 
 
+class AccountDisabledPatch(BaseModel):
+    disabled: bool
+
+
+@router.patch("/admin/users/{user_id}/disabled", response_model=UserPublic)
+def admin_set_account_disabled(
+    user_id: int,
+    body: AccountDisabledPatch,
+    conn: sqlite3.Connection = Depends(get_conn),
+    admin: dict = Depends(require_admin),
+) -> dict:
+    if user_id == admin["id"]:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Cannot disable your own account")
+    target = repo.get_user_by_id(conn, user_id)
+    if target is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "User not found")
+    repo.set_account_disabled(conn, user_id, body.disabled)
+    return repo.get_user_by_id(conn, user_id)
+
+
 @router.get("/jeli/admin/settings")
 def public_get_settings(conn: sqlite3.Connection = Depends(get_conn)) -> dict[str, str]:
     """Unauthenticated read — for Pazuru/Tsumi SettingsCache polling."""
@@ -77,7 +97,7 @@ async def admin_import_backup(file: UploadFile, _: dict = Depends(require_admin)
     try:
         return backup_service.import_archive(data)
     except (ValueError, OSError) as exc:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc))
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc)) from exc
 
 
 @router.post("/admin/backup/export-suite")
@@ -101,4 +121,4 @@ async def admin_import_suite(
     try:
         return await backup_orchestrator.import_suite(data, passphrase, cookie=suite_session)
     except (backup_orchestrator.InvalidPassphrase, ValueError) as exc:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc))
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc)) from exc

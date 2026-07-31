@@ -224,6 +224,13 @@ def init_schema(conn: sqlite3.Connection) -> None:
         conn.commit()
     except sqlite3.OperationalError:
         pass  # columns already exist
+    # Idempotent migration: add account_disabled column if it doesn't exist
+    # (GL-10.1, foroba#190 — admin panel "disable account" action).
+    try:
+        conn.execute("ALTER TABLE users ADD COLUMN account_disabled INTEGER NOT NULL DEFAULT 0")
+        conn.commit()
+    except sqlite3.OperationalError:
+        pass  # column already exists
 
 
 # (email, name, plaintext password, tier, audience, is_admin)

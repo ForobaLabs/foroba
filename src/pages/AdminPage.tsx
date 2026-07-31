@@ -13,13 +13,15 @@ import { fetchForobaHealthDetailed } from '../api/foroba';
 import type { DetailedHealth } from '../api/foroba';
 import { fetchPazuruHealthDetailed } from '../api/pazuru';
 import { fetchTsumiHealthDetailed } from '../api/tsumi';
+import { useAuth } from '../auth/AuthProvider';
 
 type Tab = 'flags' | 'users' | 'backup' | 'status';
 
 export default function AdminPage(): React.ReactElement {
   const [activeTab, setActiveTab] = useState<Tab>('flags');
   const { settings, loading: flagsLoading, toggle } = useAdminSettings();
-  const { users } = useAdminUsers();
+  const { users, setAccountDisabled } = useAdminUsers();
+  const { user } = useAuth();
 
   return (
     <PageContainer>
@@ -82,7 +84,11 @@ export default function AdminPage(): React.ReactElement {
         />
       )}
       {activeTab === 'users' && (
-        <AdminUsersTable users={users} />
+        <AdminUsersTable
+          users={users}
+          currentUserId={user?.id}
+          onSetAccountDisabled={setAccountDisabled}
+        />
       )}
       {activeTab === 'backup' && <AdminBackupPanel />}
       {activeTab === 'status' && <AdminStatusPanel />}

@@ -71,6 +71,8 @@ def login(request: Request, req: LoginRequest, response: Response,
     user = repo.get_user_by_email(conn, req.email)
     if user is not None and repo.is_locked_out(user):
         raise HTTPException(status.HTTP_423_LOCKED, "Account temporarily locked. Try again later.")
+    if user is not None and user.get("account_disabled"):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "This account has been disabled.")
     if user is None or not verify_password(req.password, user["password_hash"]):
         if user is not None:
             repo.register_failed_login(conn, user["id"])
@@ -98,6 +100,8 @@ def login_2fa(request: Request, req: Login2FARequest, response: Response,
     user = repo.get_user_by_email(conn, req.email)
     if user is not None and repo.is_locked_out(user):
         raise HTTPException(status.HTTP_423_LOCKED, "Account temporarily locked. Try again later.")
+    if user is not None and user.get("account_disabled"):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "This account has been disabled.")
     if user is None or not user.get("totp_enabled") or not user.get("totp_secret"):
         raise HTTPException(400, "2FA not set up")
     if not verify_code(user["totp_secret"], req.code):

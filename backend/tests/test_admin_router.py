@@ -31,7 +31,7 @@ def setup(tmp_path):
 
 
 def test_get_settings_public_no_auth(setup):
-    tc, conn, _, _ = setup
+    tc, _conn, _, _ = setup
     resp = tc.get("/jeli/admin/settings")
     assert resp.status_code == 200
     data = resp.json()
@@ -39,21 +39,21 @@ def test_get_settings_public_no_auth(setup):
 
 
 def test_get_admin_settings_requires_admin(setup):
-    tc, conn, _, regular = setup
+    tc, _conn, _, regular = setup
     tc.app.dependency_overrides[get_current_user] = lambda: regular
     resp = tc.get("/admin/settings")
     assert resp.status_code == 403
 
 
 def test_get_admin_settings_admin_ok(setup):
-    tc, conn, admin, _ = setup
+    tc, _conn, admin, _ = setup
     tc.app.dependency_overrides[get_current_user] = lambda: admin
     resp = tc.get("/admin/settings")
     assert resp.status_code == 200
 
 
 def test_patch_admin_setting(setup):
-    tc, conn, admin, _ = setup
+    tc, _conn, admin, _ = setup
     tc.app.dependency_overrides[get_current_user] = lambda: admin
     resp = tc.patch(
         "/admin/settings/premium_gating_enabled",
@@ -65,7 +65,7 @@ def test_patch_admin_setting(setup):
 
 
 def test_patch_invalid_value_returns_422(setup):
-    tc, conn, admin, _ = setup
+    tc, _conn, admin, _ = setup
     tc.app.dependency_overrides[get_current_user] = lambda: admin
     resp = tc.patch(
         "/admin/settings/premium_gating_enabled",
@@ -75,7 +75,7 @@ def test_patch_invalid_value_returns_422(setup):
 
 
 def test_get_admin_users_returns_list(setup):
-    tc, conn, admin, _ = setup
+    tc, _conn, admin, _ = setup
     tc.app.dependency_overrides[get_current_user] = lambda: admin
     resp = tc.get("/admin/users")
     assert resp.status_code == 200
@@ -85,7 +85,7 @@ def test_get_admin_users_returns_list(setup):
 
 
 def test_export_backup_requires_admin(setup):
-    tc, conn, _, regular = setup
+    tc, _conn, _, regular = setup
     tc.app.dependency_overrides[get_current_user] = lambda: regular
     resp = tc.post("/admin/backup/export-suite", json={"passphrase": "pw"})
     assert resp.status_code == 403
@@ -94,7 +94,7 @@ def test_export_backup_requires_admin(setup):
 def test_export_backup_calls_orchestrator(setup, monkeypatch):
     import admin_router
 
-    tc, conn, admin, _ = setup
+    tc, _conn, admin, _ = setup
     tc.app.dependency_overrides[get_current_user] = lambda: admin
 
     async def _fake_export_suite(passphrase, cookie):
@@ -110,7 +110,7 @@ def test_export_backup_calls_orchestrator(setup, monkeypatch):
 def test_import_backup_calls_orchestrator(setup, monkeypatch):
     import admin_router
 
-    tc, conn, admin, _ = setup
+    tc, _conn, admin, _ = setup
     tc.app.dependency_overrides[get_current_user] = lambda: admin
 
     async def _fake_import_suite(encrypted, passphrase, cookie):
@@ -128,10 +128,44 @@ def test_import_backup_calls_orchestrator(setup, monkeypatch):
     assert resp.json()["foroba"]["restored_files"] == []
 
 
+def test_disable_account_requires_admin(setup):
+    tc, _conn, _, regular = setup
+    tc.app.dependency_overrides[get_current_user] = lambda: regular
+    resp = tc.patch(f"/admin/users/{regular['id']}/disabled", json={"disabled": True})
+    assert resp.status_code == 403
+
+
+def test_admin_can_disable_and_enable_another_account(setup):
+    tc, _conn, admin, regular = setup
+    tc.app.dependency_overrides[get_current_user] = lambda: admin
+
+    resp = tc.patch(f"/admin/users/{regular['id']}/disabled", json={"disabled": True})
+    assert resp.status_code == 200
+    assert resp.json()["account_disabled"] is True
+
+    resp2 = tc.patch(f"/admin/users/{regular['id']}/disabled", json={"disabled": False})
+    assert resp2.status_code == 200
+    assert resp2.json()["account_disabled"] is False
+
+
+def test_admin_cannot_disable_own_account(setup):
+    tc, _conn, admin, _ = setup
+    tc.app.dependency_overrides[get_current_user] = lambda: admin
+    resp = tc.patch(f"/admin/users/{admin['id']}/disabled", json={"disabled": True})
+    assert resp.status_code == 400
+
+
+def test_disable_account_unknown_user_returns_404(setup):
+    tc, _conn, admin, _ = setup
+    tc.app.dependency_overrides[get_current_user] = lambda: admin
+    resp = tc.patch("/admin/users/999999/disabled", json={"disabled": True})
+    assert resp.status_code == 404
+
+
 def test_import_backup_wrong_passphrase_returns_400(setup, monkeypatch):
     import admin_router
 
-    tc, conn, admin, _ = setup
+    tc, _conn, admin, _ = setup
     tc.app.dependency_overrides[get_current_user] = lambda: admin
 
     async def _fake_import_suite(encrypted, passphrase, cookie):
