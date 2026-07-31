@@ -5,10 +5,10 @@ stages:
   - docker
 
 default:
-  image: node:20-alpine
+  image: node:22-alpine
   before_script:
     - corepack enable
-    - corepack prepare pnpm@latest --activate
+    - corepack prepare pnpm@11.6.0 --activate
     - pnpm install --frozen-lockfile --ignore-scripts
 
 lint:
