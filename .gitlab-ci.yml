@@ -9,6 +9,15 @@ include:
   - template: Jobs/Secret-Detection.gitlab-ci.yml
   - template: Jobs/SAST-IaC.gitlab-ci.yml
 
+# The security template jobs run in their own scanner images (no node/pnpm/git) and
+# must not inherit `default.before_script` below, which is for this project's own jobs.
+semgrep-sast:
+  before_script: []
+secret_detection:
+  before_script: []
+kics-iac-sast:
+  before_script: []
+
 default:
   image: node:22-alpine
   before_script:
