@@ -23,8 +23,10 @@ COPY foroba/ .
 # (see docker-compose.prod.yml) or these links point at localhost for real users.
 ARG VITE_PAZURU_APP_URL=http://localhost:5173
 ARG VITE_TSUMI_APP_URL=http://localhost:5178
+ARG VITE_DEPLOYMENT_MODE=selfhost
 ENV VITE_PAZURU_APP_URL=$VITE_PAZURU_APP_URL
 ENV VITE_TSUMI_APP_URL=$VITE_TSUMI_APP_URL
+ENV VITE_DEPLOYMENT_MODE=$VITE_DEPLOYMENT_MODE
 RUN pnpm build
 
 # ── Stage 3: Python backend ──────────────────────────────────────────────────

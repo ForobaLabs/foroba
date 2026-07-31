@@ -26,6 +26,7 @@ import {
 } from '../hooks/useServiceHealth';
 
 const TSUMI_APP_URL = import.meta.env.VITE_TSUMI_APP_URL ?? 'http://localhost:5178';
+const DEPLOYMENT_MODE = import.meta.env.VITE_DEPLOYMENT_MODE ?? 'selfhost';
 
 function ConnectInvestmentButton({ variant }: { variant?: 'outline' }) {
   return (
@@ -91,11 +92,17 @@ export function PortfolioPage() {
               <Badge variant="warning">Offline</Badge>
             </div>
             <p className="text-sm text-[var(--color-text-muted)]">
-              Tsumi is not reachable. Start it at{' '}
-              <code className="rounded bg-[var(--color-bg-elevated)] px-1 text-xs">
-                {import.meta.env.VITE_TSUMI_API_URL ?? 'http://localhost:8050'}
-              </code>{' '}
-              to see your portfolio here.
+              {DEPLOYMENT_MODE === 'selfhost' ? (
+                <>
+                  Tsumi is not reachable. Start it at{' '}
+                  <code className="rounded bg-[var(--color-bg-elevated)] px-1 text-xs">
+                    {import.meta.env.VITE_TSUMI_API_URL ?? 'http://localhost:8050'}
+                  </code>{' '}
+                  to see your portfolio here.
+                </>
+              ) : (
+                'Portfolio data is temporarily unavailable. Please try again in a moment.'
+              )}
             </p>
           </CardContent>
         </Card>
