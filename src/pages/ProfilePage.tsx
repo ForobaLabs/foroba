@@ -1,7 +1,10 @@
 import { useEffect, useState } from 'react';
 import { ProfileEditor, useUserProfile, useSuiteProfile, PageContainer, SectionHeader, FinanceLevelBadge } from '@foroba/ui';
 
-const FOROBA_URL = import.meta.env.VITE_FOROBA_API_URL || 'http://localhost:8002';
+// GL-12: this page only renders within Foroba itself, so nginx's /jeli/*
+// proxy (same pattern as src/auth/api.ts) reaches the backend without any
+// build-time URL — previously this hardcoded a `localhost:8002` fallback
+// that leaked into hosted builds whenever VITE_FOROBA_API_URL wasn't set.
 
 export function ProfilePage() {
   const { profile, updateProfile } = useUserProfile();
@@ -22,7 +25,7 @@ export function ProfilePage() {
 
   async function saveName() {
     setSaving(true);
-    await fetch(`${FOROBA_URL}/auth/me/name`, {
+    await fetch('/jeli/auth/me/name', {
       method: 'PUT',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
@@ -38,7 +41,7 @@ export function ProfilePage() {
     if (!file) return;
     const form = new FormData();
     form.append('file', file);
-    await fetch(`${FOROBA_URL}/auth/me/avatar`, { method: 'POST', credentials: 'include', body: form });
+    await fetch('/jeli/auth/me/avatar', { method: 'POST', credentials: 'include', body: form });
     await refetch();
   }
 
