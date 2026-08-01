@@ -5,7 +5,10 @@ from main import app
 
 
 async def _fake_gather_context(*a, **k):
-    return "Pazuru is currently offline — no data available.", "Tsumi is currently offline — no data available."
+    return (
+        "Pazuru is currently offline — no data available.",
+        "Tsumi is currently offline — no data available.",
+    )
 
 
 async def _empty_stream_chat(system_prompt, message):
@@ -15,6 +18,7 @@ async def _empty_stream_chat(system_prompt, message):
 
 def test_chat_degrades_gracefully_when_ollama_down(monkeypatch):
     import main
+
     monkeypatch.setattr(main, "gather_context", _fake_gather_context)
     monkeypatch.setattr(main, "stream_chat", _empty_stream_chat)
 

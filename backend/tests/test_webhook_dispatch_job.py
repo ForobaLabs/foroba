@@ -1,5 +1,6 @@
 """Tests for webhook_dispatch_job: HMAC signing, dedup, retry/auto-disable (foroba#165,
 TI-D item 5, Plan A)."""
+
 from __future__ import annotations
 
 import hashlib
@@ -30,7 +31,9 @@ def test_sign_matches_hmac_sha256():
 
 @pytest.mark.asyncio
 async def test_deliver_event_skips_if_already_delivered_successfully(conn):
-    webhook = dict(db.create_webhook(conn, user_id=1, target_url="https://x.test/hook", signing_secret="sec"))
+    webhook = dict(
+        db.create_webhook(conn, user_id=1, target_url="https://x.test/hook", signing_secret="sec")
+    )
     db.upsert_webhook_delivery_success(conn, webhook["id"], "goal_reached:1", 1)
 
     calls = []
@@ -41,14 +44,19 @@ async def test_deliver_event_skips_if_already_delivered_successfully(conn):
             raise AssertionError("should not POST — already delivered")
 
     await wdj._deliver_event(
-        _FakeClient(), conn, webhook, {"event_key": "goal_reached:1", "event": "goal_reached", "data": {}}
+        _FakeClient(),
+        conn,
+        webhook,
+        {"event_key": "goal_reached:1", "event": "goal_reached", "data": {}},
     )
     assert calls == []
 
 
 @pytest.mark.asyncio
 async def test_deliver_event_success_resets_failure_count(conn):
-    webhook = dict(db.create_webhook(conn, user_id=1, target_url="https://x.test/hook", signing_secret="sec"))
+    webhook = dict(
+        db.create_webhook(conn, user_id=1, target_url="https://x.test/hook", signing_secret="sec")
+    )
     db.register_webhook_failure(conn, webhook["id"])
 
     class _FakeResponse:
@@ -60,7 +68,10 @@ async def test_deliver_event_success_resets_failure_count(conn):
             return _FakeResponse()
 
     await wdj._deliver_event(
-        _FakeClient(), conn, webhook, {"event_key": "goal_reached:1", "event": "goal_reached", "data": {}}
+        _FakeClient(),
+        conn,
+        webhook,
+        {"event_key": "goal_reached:1", "event": "goal_reached", "data": {}},
     )
 
     delivery = db.get_webhook_delivery(conn, webhook["id"], "goal_reached:1")
@@ -71,7 +82,9 @@ async def test_deliver_event_success_resets_failure_count(conn):
 
 @pytest.mark.asyncio
 async def test_deliver_event_retries_before_marking_failed(conn):
-    webhook = dict(db.create_webhook(conn, user_id=1, target_url="https://x.test/hook", signing_secret="sec"))
+    webhook = dict(
+        db.create_webhook(conn, user_id=1, target_url="https://x.test/hook", signing_secret="sec")
+    )
 
     class _FailingClient:
         async def post(self, *a, **k):
@@ -95,7 +108,9 @@ async def test_deliver_event_retries_before_marking_failed(conn):
 
 @pytest.mark.asyncio
 async def test_deliver_event_auto_disables_webhook_after_ten_failed_events(conn):
-    webhook = dict(db.create_webhook(conn, user_id=1, target_url="https://x.test/hook", signing_secret="sec"))
+    webhook = dict(
+        db.create_webhook(conn, user_id=1, target_url="https://x.test/hook", signing_secret="sec")
+    )
 
     class _FailingClient:
         async def post(self, *a, **k):

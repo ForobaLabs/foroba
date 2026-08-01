@@ -1,5 +1,6 @@
 """Tests for offsite_backup.py (TI-E, foroba#172). boto3 is fully mocked — no
 real network, no real R2 credentials."""
+
 from __future__ import annotations
 
 import pytest
@@ -9,8 +10,11 @@ import offsite_backup as ob
 
 def _clear_config(monkeypatch) -> None:
     for attr in (
-        "r2_account_id", "r2_access_key_id", "r2_secret_access_key",
-        "r2_bucket", "backup_encryption_passphrase",
+        "r2_account_id",
+        "r2_access_key_id",
+        "r2_secret_access_key",
+        "r2_bucket",
+        "backup_encryption_passphrase",
     ):
         monkeypatch.setattr(ob.settings, attr, "")
 

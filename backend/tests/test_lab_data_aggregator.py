@@ -38,9 +38,7 @@ async def test_gather_dataframes_prefixes_keys():
 @respx.mock
 async def test_gather_dataframes_degrades_gracefully_on_failure():
     respx.get("http://pazuru.local/api/lab/export").mock(return_value=Response(500))
-    respx.get("http://tsumi.local/api/lab/export").mock(
-        return_value=Response(200, json={})
-    )
+    respx.get("http://tsumi.local/api/lab/export").mock(return_value=Response(200, json={}))
 
     dfs = await gather_dataframes("http://pazuru.local", "http://tsumi.local", cookie=None)
 

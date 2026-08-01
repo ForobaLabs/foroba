@@ -1,4 +1,5 @@
 """Parametrised CRUD over the users table. No SQL string interpolation."""
+
 from __future__ import annotations
 
 import sqlite3
@@ -38,9 +39,7 @@ def register_failed_login(conn: sqlite3.Connection, user_id: int) -> dict:
         "SELECT failed_login_attempts FROM users WHERE id = ?", (user_id,)
     ).fetchone()
     if row["failed_login_attempts"] >= LOCKOUT_MAX_ATTEMPTS:
-        locked_until = (
-            datetime.now(UTC) + timedelta(minutes=LOCKOUT_DURATION_MINUTES)
-        ).isoformat()
+        locked_until = (datetime.now(UTC) + timedelta(minutes=LOCKOUT_DURATION_MINUTES)).isoformat()
         conn.execute("UPDATE users SET locked_until = ? WHERE id = ?", (locked_until, user_id))
     conn.commit()
     return get_user_by_id(conn, user_id)
@@ -67,16 +66,32 @@ def set_account_disabled(conn: sqlite3.Connection, user_id: int, disabled: bool)
     conn.commit()
 
 
-def create_user(conn: sqlite3.Connection, *, email: str, name: str,
-                password_hash: str, tier: str = "free",
-                audience: str = "base", birth_year: int | None = None,
-                country: str | None = None) -> dict:
+def create_user(
+    conn: sqlite3.Connection,
+    *,
+    email: str,
+    name: str,
+    password_hash: str,
+    tier: str = "free",
+    audience: str = "base",
+    birth_year: int | None = None,
+    country: str | None = None,
+) -> dict:
     first_name, last_name = _split_full_name(name)
     cur = conn.execute(
         "INSERT INTO users (email, name, password_hash, tier, audience, birth_year, country, "
         "first_name, last_name) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-        (email, name, password_hash, tier, audience, birth_year,
-         country.upper() if country else None, first_name, last_name),
+        (
+            email,
+            name,
+            password_hash,
+            tier,
+            audience,
+            birth_year,
+            country.upper() if country else None,
+            first_name,
+            last_name,
+        ),
     )
     conn.commit()
     return get_user_by_id(conn, cur.lastrowid)
@@ -101,8 +116,7 @@ def get_user_by_id(conn: sqlite3.Connection, user_id: int) -> dict | None:
     return _row_to_dict(row)
 
 
-def set_audience(conn: sqlite3.Connection, user_id: int, audience: str,
-                 *, locked: bool) -> None:
+def set_audience(conn: sqlite3.Connection, user_id: int, audience: str, *, locked: bool) -> None:
     conn.execute(
         "UPDATE users SET audience = ?, audience_locked = ? WHERE id = ?",
         (audience, 1 if locked else 0, user_id),
@@ -119,9 +133,7 @@ def set_display_currency(conn: sqlite3.Connection, user_id: int, currency: str) 
 
 
 def set_show_debts(conn: sqlite3.Connection, user_id: int, show_debts: bool) -> None:
-    conn.execute(
-        "UPDATE users SET show_debts = ? WHERE id = ?", (1 if show_debts else 0, user_id)
-    )
+    conn.execute("UPDATE users SET show_debts = ? WHERE id = ?", (1 if show_debts else 0, user_id))
     conn.commit()
 
 
@@ -150,8 +162,9 @@ def list_all_users(conn: sqlite3.Connection) -> list[dict]:
 
 
 def set_totp_secret(conn: sqlite3.Connection, user_id: int, secret: str) -> None:
-    conn.execute("UPDATE users SET totp_secret = ?, totp_enabled = 0 WHERE id = ?",
-                 (secret, user_id))
+    conn.execute(
+        "UPDATE users SET totp_secret = ?, totp_enabled = 0 WHERE id = ?", (secret, user_id)
+    )
     conn.commit()
 
 
@@ -161,8 +174,7 @@ def enable_totp(conn: sqlite3.Connection, user_id: int) -> None:
 
 
 def disable_totp(conn: sqlite3.Connection, user_id: int) -> None:
-    conn.execute("UPDATE users SET totp_enabled = 0, totp_secret = NULL WHERE id = ?",
-                 (user_id,))
+    conn.execute("UPDATE users SET totp_enabled = 0, totp_secret = NULL WHERE id = ?", (user_id,))
     conn.commit()
 
 
@@ -189,8 +201,9 @@ def get_share_preferences(conn: sqlite3.Connection, user_id: int) -> dict[str, b
     return {r["resource_type"]: bool(r["shared"]) for r in rows}
 
 
-def set_share_preference(conn: sqlite3.Connection, user_id: int, resource_type: str,
-                         shared: bool) -> None:
+def set_share_preference(
+    conn: sqlite3.Connection, user_id: int, resource_type: str, shared: bool
+) -> None:
     conn.execute(
         "INSERT INTO share_preferences (user_id, resource_type, shared, updated_at) "
         "VALUES (?, ?, ?, datetime('now')) "

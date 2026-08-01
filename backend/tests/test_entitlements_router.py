@@ -24,8 +24,7 @@ def app_conn():
     app.dependency_overrides[get_conn] = lambda: conn
 
     def _as(email):
-        return lambda: dict(conn.execute(
-            "SELECT * FROM users WHERE email=?", (email,)).fetchone())
+        return lambda: dict(conn.execute("SELECT * FROM users WHERE email=?", (email,)).fetchone())
 
     app.include_router(router)
 
@@ -37,7 +36,7 @@ def app_conn():
 
 
 def test_entitlements_lists_registry(app_conn):
-    app, conn, _as = app_conn
+    app, _conn, _as = app_conn
     app.dependency_overrides[get_current_user] = _as("demo@foroba.app")
     c = TestClient(app)
     r = c.get("/auth/entitlements")
@@ -48,7 +47,7 @@ def test_entitlements_lists_registry(app_conn):
 
 
 def test_require_feature_402_for_free_user(app_conn):
-    app, conn, _as = app_conn
+    app, _conn, _as = app_conn
     app.dependency_overrides[get_current_user] = _as("demo@foroba.app")
     c = TestClient(app)
     r = c.get("/needs-backtest")
@@ -56,7 +55,7 @@ def test_require_feature_402_for_free_user(app_conn):
 
 
 def test_require_feature_allows_premium(app_conn):
-    app, conn, _as = app_conn
+    app, _conn, _as = app_conn
     app.dependency_overrides[get_current_user] = _as("pro@foroba.app")
     c = TestClient(app)
     assert c.get("/needs-backtest").status_code == 200

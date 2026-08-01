@@ -16,12 +16,14 @@ async def _collect(gen):
 async def test_run_lab_turn_happy_path(monkeypatch):
     monkeypatch.setattr(sandbox_docker, "is_docker_running", lambda: True)
     monkeypatch.setattr(
-        lab_service, "_generate_code",
+        lab_service,
+        "_generate_code",
         lambda *a, **k: {"explanation": "computing", "code": "result_text = 'hi'"},
     )
     monkeypatch.setattr(lab_service, "check_imports", lambda code: None)
     monkeypatch.setattr(
-        sandbox_docker, "run_sandbox",
+        sandbox_docker,
+        "run_sandbox",
         lambda code, dfs: {"ok": True, "text": "the answer is 42", "artifacts": []},
     )
     monkeypatch.setattr(lab_service, "_update_user_context", lambda *a, **k: "updated ctx")
@@ -45,12 +47,14 @@ async def test_run_lab_turn_retries_on_disallowed_import(monkeypatch):
             raise DisallowedImportError("os is not allowed")
 
     monkeypatch.setattr(
-        lab_service, "_generate_code",
+        lab_service,
+        "_generate_code",
         lambda *a, **k: {"explanation": "computing", "code": "result_text = 'hi'"},
     )
     monkeypatch.setattr(lab_service, "check_imports", _check_imports)
     monkeypatch.setattr(
-        sandbox_docker, "run_sandbox",
+        sandbox_docker,
+        "run_sandbox",
         lambda code, dfs: {"ok": True, "text": "ok", "artifacts": []},
     )
     monkeypatch.setattr(lab_service, "_update_user_context", lambda *a, **k: "ctx")
@@ -64,12 +68,14 @@ async def test_run_lab_turn_retries_on_disallowed_import(monkeypatch):
 async def test_run_lab_turn_exhausts_retries_and_errors(monkeypatch):
     monkeypatch.setattr(sandbox_docker, "is_docker_running", lambda: True)
     monkeypatch.setattr(
-        lab_service, "_generate_code",
+        lab_service,
+        "_generate_code",
         lambda *a, **k: {"explanation": "computing", "code": "1/0"},
     )
     monkeypatch.setattr(lab_service, "check_imports", lambda code: None)
     monkeypatch.setattr(
-        sandbox_docker, "run_sandbox",
+        sandbox_docker,
+        "run_sandbox",
         lambda code, dfs: {"ok": False, "error": "ZeroDivisionError", "traceback": "..."},
     )
 
@@ -83,6 +89,7 @@ async def test_run_lab_turn_docker_not_running_and_fails_to_start(monkeypatch):
 
     async def _ensure(*a, **k):
         return False
+
     monkeypatch.setattr(sandbox_docker, "ensure_docker_running", _ensure)
 
     called = {"n": 0}
@@ -90,6 +97,7 @@ async def test_run_lab_turn_docker_not_running_and_fails_to_start(monkeypatch):
     def _generate(*a, **k):
         called["n"] += 1
         return {"explanation": "", "code": ""}
+
     monkeypatch.setattr(lab_service, "_generate_code", _generate)
 
     events = await _collect(lab_service.run_lab_turn("q", {}, [], ""))
@@ -113,7 +121,8 @@ async def test_run_lab_turn_generate_code_exception_retries_then_succeeds(monkey
     monkeypatch.setattr(lab_service, "_generate_code", _generate)
     monkeypatch.setattr(lab_service, "check_imports", lambda code: None)
     monkeypatch.setattr(
-        sandbox_docker, "run_sandbox",
+        sandbox_docker,
+        "run_sandbox",
         lambda code, dfs: {"ok": True, "text": "ok", "artifacts": []},
     )
     monkeypatch.setattr(lab_service, "_update_user_context", lambda *a, **k: "ctx")
@@ -128,7 +137,8 @@ async def test_run_lab_turn_handles_null_code_from_llm(monkeypatch):
     """Regression: Ollama can return {"code": null} — must not crash ast.parse(None)."""
     monkeypatch.setattr(sandbox_docker, "is_docker_running", lambda: True)
     monkeypatch.setattr(
-        lab_service, "_generate_code",
+        lab_service,
+        "_generate_code",
         lambda *a, **k: {"explanation": "no code needed", "code": None},
     )
 
@@ -144,7 +154,8 @@ async def test_run_lab_turn_handles_non_string_code_from_llm(monkeypatch):
     generated.get("code") or "" only coerces falsy values, not wrong-typed truthy ones."""
     monkeypatch.setattr(sandbox_docker, "is_docker_running", lambda: True)
     monkeypatch.setattr(
-        lab_service, "_generate_code",
+        lab_service,
+        "_generate_code",
         lambda *a, **k: {"explanation": "computing", "code": ["result_text = 'hi'"]},
     )
 
@@ -160,7 +171,8 @@ async def test_run_lab_turn_handles_markdown_fenced_code(monkeypatch):
     Must raise SyntaxError caught internally, not propagate."""
     monkeypatch.setattr(sandbox_docker, "is_docker_running", lambda: True)
     monkeypatch.setattr(
-        lab_service, "_generate_code",
+        lab_service,
+        "_generate_code",
         lambda *a, **k: {"explanation": "computing", "code": "```python\nresult_text = 'hi'\n```"},
     )
 
@@ -173,7 +185,8 @@ async def test_run_lab_turn_handles_markdown_fenced_code(monkeypatch):
 async def test_run_lab_turn_passes_web_results_to_codegen(monkeypatch):
     monkeypatch.setattr(sandbox_docker, "is_docker_running", lambda: True)
     monkeypatch.setattr(
-        sandbox_docker, "run_sandbox",
+        sandbox_docker,
+        "run_sandbox",
         lambda code, dfs: {"ok": True, "text": "done", "artifacts": []},
     )
     captured = {}
@@ -186,9 +199,15 @@ async def test_run_lab_turn_passes_web_results_to_codegen(monkeypatch):
     monkeypatch.setattr(lab_service, "check_imports", lambda code: None)
     monkeypatch.setattr(lab_service, "_update_user_context", lambda *a, **k: "ctx")
 
-    await _collect(lab_service.run_lab_turn(
-        "q", {}, [], "", web_results=[{"title": "T", "snippet": "S", "url": "U"}],
-    ))
+    await _collect(
+        lab_service.run_lab_turn(
+            "q",
+            {},
+            [],
+            "",
+            web_results=[{"title": "T", "snippet": "S", "url": "U"}],
+        )
+    )
 
     assert captured["web_results"][0]["title"] == "T"
 

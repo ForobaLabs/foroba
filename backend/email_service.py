@@ -8,6 +8,7 @@ exception as "generation failed" and would incorrectly overwrite a successful
 report just because the notification email didn't go out. All SMTP errors are
 therefore caught and logged here, not propagated.
 """
+
 from __future__ import annotations
 
 import logging

@@ -4,6 +4,7 @@ Mirrors report_scheduler.py's start_X_scheduler() convention: one
 BackgroundScheduler instance for this concern, started explicitly from
 main.py's startup event.
 """
+
 from __future__ import annotations
 
 import logging

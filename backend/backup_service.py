@@ -5,6 +5,7 @@ validates the archive only contains the exact expected filenames (whitelist —
 also the path-traversal guard), takes a timestamped safety copy of whatever is
 currently on disk, then atomically replaces each file.
 """
+
 from __future__ import annotations
 
 import io

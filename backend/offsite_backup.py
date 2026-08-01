@@ -7,6 +7,7 @@ endpoint. The uploaded bytes are always already-encrypted (produced by
 No-ops when unconfigured, following the same convention as `GLITCHTIP_DSN`: an
 empty `.env` means the feature is simply off, not an error.
 """
+
 from __future__ import annotations
 
 from datetime import UTC, datetime

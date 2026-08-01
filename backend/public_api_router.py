@@ -5,6 +5,7 @@ zero new business logic. Every route requires require_api_key (401 unauthenticat
 audience-gated, 402 tier-gated) plus a per-key rate limit stricter than the browser-facing
 default (RATE_LIMIT_DEFAULT).
 """
+
 from __future__ import annotations
 
 import sqlite3
@@ -28,8 +29,13 @@ def _cookie_for(user: dict) -> str:
     wrapped internal services can still fan out to Pazuru/Tsumi on the user's behalf."""
     private_key, _, kid = keys.get_keypair(settings)
     return create_token(
-        user["id"], private_key, settings.jwt_ttl_minutes,
-        tier=user["tier"], audience=user["audience"], is_admin=bool(user["is_admin"]), kid=kid,
+        user["id"],
+        private_key,
+        settings.jwt_ttl_minutes,
+        tier=user["tier"],
+        audience=user["audience"],
+        is_admin=bool(user["is_admin"]),
+        kid=kid,
     )
 
 
@@ -50,4 +56,6 @@ async def public_notifications(
     user: dict = Depends(require_api_key),
     conn: sqlite3.Connection = Depends(get_conn),
 ) -> dict:
-    return await notification_service.generate_notifications(conn, user["id"], cookie=_cookie_for(user))
+    return await notification_service.generate_notifications(
+        conn, user["id"], cookie=_cookie_for(user)
+    )

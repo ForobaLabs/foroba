@@ -1,4 +1,5 @@
 """Auth endpoints: register, login, logout, me."""
+
 from __future__ import annotations
 
 import sqlite3
@@ -33,41 +34,61 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 def _set_session_cookie(response: Response, user: dict) -> None:
     private_key, _, kid = keys.get_keypair(settings)
     token = create_token(
-        user["id"], private_key, settings.jwt_ttl_minutes,
+        user["id"],
+        private_key,
+        settings.jwt_ttl_minutes,
         tier=user.get("tier", "free"),
         audience=user.get("audience", "base"),
         is_admin=bool(user.get("is_admin", 0)),
         kid=kid,
     )
     response.set_cookie(
-        "suite_session", token, httponly=True, samesite="lax",
-        secure=settings.cookie_secure, max_age=settings.jwt_ttl_minutes * 60,
+        "suite_session",
+        token,
+        httponly=True,
+        samesite="lax",
+        secure=settings.cookie_secure,
+        max_age=settings.jwt_ttl_minutes * 60,
     )
 
 
 @router.post("/register", response_model=UserPublic, status_code=201)
 @limiter.limit("5/minute")
-def register(request: Request, req: RegisterRequest, response: Response,
-             conn: sqlite3.Connection = Depends(get_conn)) -> dict:
+def register(
+    request: Request,
+    req: RegisterRequest,
+    response: Response,
+    conn: sqlite3.Connection = Depends(get_conn),
+) -> dict:
     if repo.get_user_by_email(conn, req.email):
         raise HTTPException(status.HTTP_409_CONFLICT, "Email already registered")
-    user = repo.create_user(conn, email=req.email, name=req.name,
-                            password_hash=hash_password(req.password),
-                            birth_year=req.birth_year, country=req.country)
+    user = repo.create_user(
+        conn,
+        email=req.email,
+        name=req.name,
+        password_hash=hash_password(req.password),
+        birth_year=req.birth_year,
+        country=req.country,
+    )
     _set_session_cookie(response, user)
     return user
 
 
 @router.post("/onboarding/complete", status_code=204)
-def complete_onboarding(user: dict = Depends(get_current_user),
-                        conn: sqlite3.Connection = Depends(get_conn)) -> None:
+def complete_onboarding(
+    user: dict = Depends(get_current_user), conn: sqlite3.Connection = Depends(get_conn)
+) -> None:
     repo.complete_onboarding(conn, user["id"])
 
 
 @router.post("/login", response_model=None)
 @limiter.limit("10/minute")
-def login(request: Request, req: LoginRequest, response: Response,
-          conn: sqlite3.Connection = Depends(get_conn)) -> dict:
+def login(
+    request: Request,
+    req: LoginRequest,
+    response: Response,
+    conn: sqlite3.Connection = Depends(get_conn),
+) -> dict:
     user = repo.get_user_by_email(conn, req.email)
     if user is not None and repo.is_locked_out(user):
         raise HTTPException(status.HTTP_423_LOCKED, "Account temporarily locked. Try again later.")
@@ -95,8 +116,12 @@ class Login2FARequest(BaseModel):
 
 @router.post("/login/2fa", response_model=None)
 @limiter.limit("10/minute")
-def login_2fa(request: Request, req: Login2FARequest, response: Response,
-              conn: sqlite3.Connection = Depends(get_conn)) -> dict:
+def login_2fa(
+    request: Request,
+    req: Login2FARequest,
+    response: Response,
+    conn: sqlite3.Connection = Depends(get_conn),
+) -> dict:
     user = repo.get_user_by_email(conn, req.email)
     if user is not None and repo.is_locked_out(user):
         raise HTTPException(status.HTTP_423_LOCKED, "Account temporarily locked. Try again later.")
@@ -123,8 +148,9 @@ def me(user: dict = Depends(get_current_user)) -> dict:
 
 
 @router.get("/household")
-def get_household(user: dict = Depends(get_current_user),
-                  conn: sqlite3.Connection = Depends(get_conn)) -> dict:
+def get_household(
+    user: dict = Depends(get_current_user), conn: sqlite3.Connection = Depends(get_conn)
+) -> dict:
     household_id = user.get("household_id")
     members = repo.get_household_members(conn, household_id) if household_id else []
     return {
@@ -135,8 +161,11 @@ def get_household(user: dict = Depends(get_current_user),
 
 
 @router.post("/household/join")
-def join_household(req: HouseholdJoinRequest, user: dict = Depends(get_current_user),
-                   conn: sqlite3.Connection = Depends(get_conn)) -> dict:
+def join_household(
+    req: HouseholdJoinRequest,
+    user: dict = Depends(get_current_user),
+    conn: sqlite3.Connection = Depends(get_conn),
+) -> dict:
     if req.email == user["email"]:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Cannot join a household with yourself")
     other = repo.get_user_by_email(conn, req.email)
@@ -152,38 +181,54 @@ def join_household(req: HouseholdJoinRequest, user: dict = Depends(get_current_u
 
 
 @router.post("/household/leave", status_code=204)
-def leave_household(user: dict = Depends(get_current_user),
-                    conn: sqlite3.Connection = Depends(get_conn)) -> None:
+def leave_household(
+    user: dict = Depends(get_current_user), conn: sqlite3.Connection = Depends(get_conn)
+) -> None:
     repo.set_household_id(conn, user["id"], None)
 
 
 @router.put("/household/share", status_code=204)
-def set_share_preference(req: ShareToggleRequest, user: dict = Depends(get_current_user),
-                         conn: sqlite3.Connection = Depends(get_conn)) -> None:
+def set_share_preference(
+    req: ShareToggleRequest,
+    user: dict = Depends(get_current_user),
+    conn: sqlite3.Connection = Depends(get_conn),
+) -> None:
     repo.set_share_preference(conn, user["id"], req.resource_type, req.shared)
 
 
 @router.put("/me/currency", status_code=204)
-def set_display_currency(req: DisplayCurrencyRequest, user: dict = Depends(get_current_user),
-                         conn: sqlite3.Connection = Depends(get_conn)) -> None:
+def set_display_currency(
+    req: DisplayCurrencyRequest,
+    user: dict = Depends(get_current_user),
+    conn: sqlite3.Connection = Depends(get_conn),
+) -> None:
     repo.set_display_currency(conn, user["id"], req.display_currency.upper())
 
 
 @router.put("/me/show-debts", status_code=204)
-def update_show_debts(req: ShowDebtsRequest, user: dict = Depends(get_current_user),
-                      conn: sqlite3.Connection = Depends(get_conn)) -> None:
+def update_show_debts(
+    req: ShowDebtsRequest,
+    user: dict = Depends(get_current_user),
+    conn: sqlite3.Connection = Depends(get_conn),
+) -> None:
     repo.set_show_debts(conn, user["id"], req.show_debts)
 
 
 @router.put("/me/name", status_code=204)
-def update_name(req: NameUpdateRequest, user: dict = Depends(get_current_user),
-                conn: sqlite3.Connection = Depends(get_conn)) -> None:
+def update_name(
+    req: NameUpdateRequest,
+    user: dict = Depends(get_current_user),
+    conn: sqlite3.Connection = Depends(get_conn),
+) -> None:
     repo.set_name(conn, user["id"], req.first_name, req.last_name)
 
 
 @router.post("/me/avatar")
-async def upload_avatar(file: UploadFile = File(...), user: dict = Depends(get_current_user),
-                        conn: sqlite3.Connection = Depends(get_conn)) -> dict:
+async def upload_avatar(
+    file: UploadFile = File(...),
+    user: dict = Depends(get_current_user),
+    conn: sqlite3.Connection = Depends(get_conn),
+) -> dict:
     content = await file.read()
     avatar_url = save_avatar(user["id"], file, content)
     repo.set_avatar_url(conn, user["id"], avatar_url)
@@ -191,6 +236,9 @@ async def upload_avatar(file: UploadFile = File(...), user: dict = Depends(get_c
 
 
 @router.get("/visible-owners")
-def visible_owners(resource_type: str, user: dict = Depends(get_current_user),
-                   conn: sqlite3.Connection = Depends(get_conn)) -> dict:
+def visible_owners(
+    resource_type: str,
+    user: dict = Depends(get_current_user),
+    conn: sqlite3.Connection = Depends(get_conn),
+) -> dict:
     return {"owner_ids": repo.get_visible_owner_ids(conn, user["id"], resource_type)}

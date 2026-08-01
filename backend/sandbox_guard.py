@@ -1,11 +1,21 @@
 """AST-based import whitelist — fast first-pass reject before Docker execution."""
+
 from __future__ import annotations
 
 import ast
 
 ALLOWED_MODULES = {
-    "pandas", "numpy", "matplotlib", "matplotlib.pyplot", "scipy",
-    "statsmodels", "sklearn", "math", "statistics", "datetime", "json",
+    "pandas",
+    "numpy",
+    "matplotlib",
+    "matplotlib.pyplot",
+    "scipy",
+    "statsmodels",
+    "sklearn",
+    "math",
+    "statistics",
+    "datetime",
+    "json",
 }
 
 

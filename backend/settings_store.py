@@ -1,4 +1,5 @@
 """Runtime settings store — lightweight toggle table in the auth SQLite DB."""
+
 from __future__ import annotations
 
 import sqlite3
@@ -26,8 +27,7 @@ def init_settings(conn: sqlite3.Connection) -> None:
     conn.commit()
     for key, value in DEFAULT_SETTINGS.items():
         conn.execute(
-            "INSERT OR IGNORE INTO runtime_settings (key, value, updated_at) "
-            "VALUES (?, ?, ?)",
+            "INSERT OR IGNORE INTO runtime_settings (key, value, updated_at) VALUES (?, ?, ?)",
             (key, value, _now()),
         )
     conn.commit()

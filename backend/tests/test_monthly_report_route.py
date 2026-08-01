@@ -1,4 +1,5 @@
 """Route tests for /reports/monthly/* (service mocked, foroba#159, TI-D item 2)."""
+
 from __future__ import annotations
 
 import sqlite3
@@ -13,10 +14,24 @@ from db import init_schema
 from main import app
 from settings_store import init_settings, set_value
 
-_PREMIUM_USER = {"id": 1, "email": "u1@test.local", "name": "U1", "tier": "premium",
-                  "audience": "base", "household_id": None, "is_admin": False}
-_FREE_USER = {"id": 2, "email": "u2@test.local", "name": "U2", "tier": "free",
-              "audience": "base", "household_id": None, "is_admin": False}
+_PREMIUM_USER = {
+    "id": 1,
+    "email": "u1@test.local",
+    "name": "U1",
+    "tier": "premium",
+    "audience": "base",
+    "household_id": None,
+    "is_admin": False,
+}
+_FREE_USER = {
+    "id": 2,
+    "email": "u2@test.local",
+    "name": "U2",
+    "tier": "free",
+    "audience": "base",
+    "household_id": None,
+    "is_admin": False,
+}
 
 
 def _override_user(user):
@@ -46,10 +61,12 @@ def test_generate_requires_premium():
 
 
 def test_generate_returns_report(monkeypatch):
-    conn = _override_user(_PREMIUM_USER)
+    _override_user(_PREMIUM_USER)
 
     async def fake_generate(conn_, user, year_month, trigger, *, cookie):
-        return db.create_monthly_report(conn_, user_id=user["id"], year_month=year_month, trigger=trigger)
+        return db.create_monthly_report(
+            conn_, user_id=user["id"], year_month=year_month, trigger=trigger
+        )
 
     monkeypatch.setattr(mrs, "generate_new_report", fake_generate)
     try:
@@ -93,10 +110,17 @@ def test_retry_returns_409_on_invalid_retry(monkeypatch):
 
 def test_pdf_returns_200_for_success_row():
     conn = _override_user(_PREMIUM_USER)
-    row = db.create_monthly_report(conn, user_id=_PREMIUM_USER["id"], year_month="2026-07", trigger="manual")
+    row = db.create_monthly_report(
+        conn, user_id=_PREMIUM_USER["id"], year_month="2026-07", trigger="manual"
+    )
     db.update_monthly_report_result(
-        conn, row["id"], status="success", narrative_text="Great month.",
-        context_snapshot_json=None, error_message=None, attempt_count=1,
+        conn,
+        row["id"],
+        status="success",
+        narrative_text="Great month.",
+        context_snapshot_json=None,
+        error_message=None,
+        attempt_count=1,
     )
     try:
         client = TestClient(app)
@@ -109,7 +133,9 @@ def test_pdf_returns_200_for_success_row():
 
 def test_pdf_returns_409_for_non_success_row():
     conn = _override_user(_PREMIUM_USER)
-    row = db.create_monthly_report(conn, user_id=_PREMIUM_USER["id"], year_month="2026-07", trigger="manual")
+    row = db.create_monthly_report(
+        conn, user_id=_PREMIUM_USER["id"], year_month="2026-07", trigger="manual"
+    )
     try:
         client = TestClient(app)
         resp = client.get(f"/reports/monthly/{row['id']}/pdf")

@@ -4,6 +4,7 @@ Shared core used by both the scheduled job (report_scheduler.py) and the manual
 generate/retry endpoints (monthly_report_router.py). Reuses jeli_service's existing
 Pazuru/Tsumi context gathering — no new upstream endpoints.
 """
+
 from __future__ import annotations
 
 import json
@@ -38,7 +39,11 @@ class InvalidRetryError(Exception):
 
 
 async def _run_generation(
-    conn: sqlite3.Connection, row: sqlite3.Row, user: dict, *, cookie: str | None,
+    conn: sqlite3.Connection,
+    row: sqlite3.Row,
+    user: dict,
+    *,
+    cookie: str | None,
 ) -> sqlite3.Row:
     """Run one generation attempt against an existing row, update it in place with
     the result, and return the updated row. Never raises — always leaves the row in
@@ -46,7 +51,9 @@ async def _run_generation(
     attempt_count = row["attempt_count"] + 1
     try:
         pazuru_ctx, tsumi_ctx = await jeli_service.gather_context(
-            settings.pazuru_api_url.rstrip("/"), settings.tsumi_api_url.rstrip("/"), cookie,
+            settings.pazuru_api_url.rstrip("/"),
+            settings.tsumi_api_url.rstrip("/"),
+            cookie,
         )
         system_prompt = PROMPT_TEMPLATE.format(
             user_name=user.get("name") or "the user",
@@ -59,11 +66,18 @@ async def _run_generation(
         )
         snapshot = json.dumps({"pazuru_context": pazuru_ctx, "tsumi_context": tsumi_ctx})
         updated = db.update_monthly_report_result(
-            conn, row["id"], status="success", narrative_text=narrative,
-            context_snapshot_json=snapshot, error_message=None, attempt_count=attempt_count,
+            conn,
+            row["id"],
+            status="success",
+            narrative_text=narrative,
+            context_snapshot_json=snapshot,
+            error_message=None,
+            attempt_count=attempt_count,
         )
         send_email(
-            user["email"], f"Your {row['year_month']} financial report is ready", narrative[:500],
+            user["email"],
+            f"Your {row['year_month']} financial report is ready",
+            narrative[:500],
         )
         return updated
     except Exception as exc:
@@ -71,14 +85,23 @@ async def _run_generation(
             "Monthly report generation failed for user %s (%s)", user["id"], row["year_month"]
         )
         return db.update_monthly_report_result(
-            conn, row["id"], status="failed", narrative_text=row["narrative_text"],
-            context_snapshot_json=row["context_snapshot_json"], error_message=str(exc)[:500],
+            conn,
+            row["id"],
+            status="failed",
+            narrative_text=row["narrative_text"],
+            context_snapshot_json=row["context_snapshot_json"],
+            error_message=str(exc)[:500],
             attempt_count=attempt_count,
         )
 
 
 async def generate_new_report(
-    conn: sqlite3.Connection, user: dict, year_month: str, trigger: str, *, cookie: str | None,
+    conn: sqlite3.Connection,
+    user: dict,
+    year_month: str,
+    trigger: str,
+    *,
+    cookie: str | None,
 ) -> sqlite3.Row:
     """Create a new report row and run generation once. Consumes quota — raises
     QuotaExceededError if the (user, year_month) cap is already reached."""
@@ -90,7 +113,11 @@ async def generate_new_report(
 
 
 async def retry_report(
-    conn: sqlite3.Connection, user: dict, report_id: int, *, cookie: str | None,
+    conn: sqlite3.Connection,
+    user: dict,
+    report_id: int,
+    *,
+    cookie: str | None,
 ) -> sqlite3.Row:
     """Retry a failed report in place — never consumes quota."""
     row = db.get_monthly_report(conn, report_id, user_id=user["id"])

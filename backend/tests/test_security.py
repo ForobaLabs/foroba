@@ -1,4 +1,3 @@
-
 import jwt
 import pytest
 from cryptography.hazmat.primitives import serialization
@@ -14,10 +13,14 @@ def _keypair():
         format=serialization.PrivateFormat.PKCS8,
         encryption_algorithm=serialization.NoEncryption(),
     ).decode()
-    public_pem = key.public_key().public_bytes(
-        encoding=serialization.Encoding.PEM,
-        format=serialization.PublicFormat.SubjectPublicKeyInfo,
-    ).decode()
+    public_pem = (
+        key.public_key()
+        .public_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PublicFormat.SubjectPublicKeyInfo,
+        )
+        .decode()
+    )
     return private_pem, public_pem
 
 
@@ -41,6 +44,7 @@ def test_hash_and_verify_argon2():
 
 def test_verify_legacy_bcrypt():
     import bcrypt as _bcrypt
+
     legacy = _bcrypt.hashpw(b"secret123", _bcrypt.gensalt()).decode()
     assert verify_password("secret123", legacy) is True
     assert verify_password("wrong", legacy) is False

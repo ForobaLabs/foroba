@@ -1,4 +1,5 @@
 """Health endpoint tests (TI-B item 1, foroba#152)."""
+
 import pytest
 from fastapi.testclient import TestClient
 

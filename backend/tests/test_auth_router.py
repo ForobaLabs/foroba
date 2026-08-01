@@ -23,9 +23,16 @@ def client():
 
 
 def test_register_then_me(client):
-    r = client.post("/auth/register", json={
-        "email": "x@y.com", "email_confirm": "x@y.com", "name": "X",
-        "password": "password123", "password_confirm": "password123"})
+    r = client.post(
+        "/auth/register",
+        json={
+            "email": "x@y.com",
+            "email_confirm": "x@y.com",
+            "name": "X",
+            "password": "password123",
+            "password_confirm": "password123",
+        },
+    )
     assert r.status_code == 201, r.text
     assert client.cookies.get("suite_session")
 
@@ -35,8 +42,7 @@ def test_register_then_me(client):
 
 
 def test_login_wrong_password_401(client):
-    client.post("/auth/register", json={
-        "email": "x@y.com", "name": "X", "password": "password123"})
+    client.post("/auth/register", json={"email": "x@y.com", "name": "X", "password": "password123"})
     r = client.post("/auth/login", json={"email": "x@y.com", "password": "nope"})
     assert r.status_code == 401
 
@@ -46,9 +52,16 @@ def test_me_without_cookie_401(client):
 
 
 def test_update_display_currency(client):
-    register = client.post("/auth/register", json={
-        "email": "curr@y.com", "email_confirm": "curr@y.com", "name": "Curr User",
-        "password": "password123", "password_confirm": "password123"})
+    register = client.post(
+        "/auth/register",
+        json={
+            "email": "curr@y.com",
+            "email_confirm": "curr@y.com",
+            "name": "Curr User",
+            "password": "password123",
+            "password_confirm": "password123",
+        },
+    )
     assert register.status_code == 201
 
     resp = client.put("/auth/me/currency", json={"display_currency": "USD"})
@@ -68,7 +81,9 @@ def test_put_show_debts_updates_preference():
     conn.row_factory = sqlite3.Row
     init_schema(conn)
     user = repo.create_user(
-        conn, email="debts-toggle@y.com", name="Debts Toggle",
+        conn,
+        email="debts-toggle@y.com",
+        name="Debts Toggle",
         password_hash=hash_password("password123"),
     )
     app = FastAPI()
@@ -88,7 +103,9 @@ def test_update_name_splits_and_returns_in_me():
     conn.row_factory = sqlite3.Row
     init_schema(conn)
     user = repo.create_user(
-        conn, email="rename-router@y.com", name="Old Name",
+        conn,
+        email="rename-router@y.com",
+        name="Old Name",
         password_hash=hash_password("password123"),
     )
     app = FastAPI()

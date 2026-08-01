@@ -8,6 +8,7 @@ guaranteed to be powered on overnight). Mints an internal admin JWT (same
 encrypted archive to R2. No-ops (logs and returns) when offsite_backup is
 unconfigured or no admin user exists yet.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -40,13 +41,19 @@ async def _run_daily_backup_async() -> None:
 
     private_key, _, kid = keys.get_keypair(settings)
     token = create_token(
-        admin["id"], private_key, settings.jwt_ttl_minutes,
-        tier=admin["tier"], audience=admin["audience"], is_admin=True, kid=kid,
+        admin["id"],
+        private_key,
+        settings.jwt_ttl_minutes,
+        tier=admin["tier"],
+        audience=admin["audience"],
+        is_admin=True,
+        kid=kid,
     )
 
     try:
         archive = await backup_orchestrator.export_suite(
-            settings.backup_encryption_passphrase, cookie=token,
+            settings.backup_encryption_passphrase,
+            cookie=token,
         )
         key = offsite_backup.upload_backup(archive)
         logger.info("Offsite backup scheduler: uploaded %s", key)

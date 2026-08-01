@@ -1,8 +1,10 @@
 """Tests for require_api_key: key verification, entitlement gating, last_used tracking
 (foroba#165, TI-D item 5, Plan A)."""
+
 from __future__ import annotations
 
 import sqlite3
+from typing import ClassVar
 
 import pytest
 from fastapi import HTTPException
@@ -35,7 +37,9 @@ def _seed_user(conn, *, tier="premium", audience="base") -> int:
 def _seed_key(conn, user_id: int, *, is_active: bool = True) -> tuple[str, str]:
     secret = "s3cr3t-test-value"
     prefix = "fpk_testprefix"
-    db.create_api_key(conn, user_id=user_id, label="test", key_prefix=prefix, secret_hash=hash_password(secret))
+    db.create_api_key(
+        conn, user_id=user_id, label="test", key_prefix=prefix, secret_hash=hash_password(secret)
+    )
     if not is_active:
         row = db.get_api_key_by_prefix(conn, prefix)
         db.revoke_api_key(conn, row["id"], user_id=user_id)
@@ -99,7 +103,7 @@ def test_api_key_rate_limit_key_uses_prefix():
     from auth.api_key_auth import api_key_rate_limit_key
 
     class _FakeRequest:
-        headers = {"authorization": "Bearer fpk_abc123.somesecret"}
+        headers: ClassVar = {"authorization": "Bearer fpk_abc123.somesecret"}
 
     assert api_key_rate_limit_key(_FakeRequest()) == "fpk_abc123"
 
@@ -108,6 +112,6 @@ def test_api_key_rate_limit_key_falls_back_to_anonymous():
     from auth.api_key_auth import api_key_rate_limit_key
 
     class _FakeRequest:
-        headers: dict = {}
+        headers: ClassVar[dict] = {}
 
     assert api_key_rate_limit_key(_FakeRequest()) == "anonymous"

@@ -13,6 +13,7 @@ run skips (logged info, not an error) rather than consuming another quota slot;
 manual "Generate"/"Retry" via the API remain the quota-scoped paths for
 additional reports within the same month.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -42,11 +43,14 @@ async def _generate_for_user(conn, user: dict, year_month: str, token: str) -> N
     if existing > 0:
         logger.info(
             "Monthly report already exists for user %s (%s) — skipping scheduled run",
-            user["id"], year_month,
+            user["id"],
+            year_month,
         )
         return
 
-    row = db.create_monthly_report(conn, user_id=user["id"], year_month=year_month, trigger="scheduled")
+    row = db.create_monthly_report(
+        conn, user_id=user["id"], year_month=year_month, trigger="scheduled"
+    )
     for delay in [0, *_RETRY_DELAYS_SECONDS]:
         if delay:
             await asyncio.sleep(delay)
@@ -55,7 +59,10 @@ async def _generate_for_user(conn, user: dict, year_month: str, token: str) -> N
             return
     logger.error(
         "Monthly report generation exhausted %d attempts for user %s (%s): %s",
-        len(_RETRY_DELAYS_SECONDS) + 1, user["id"], year_month, row["error_message"],
+        len(_RETRY_DELAYS_SECONDS) + 1,
+        user["id"],
+        year_month,
+        row["error_message"],
     )
 
 
@@ -68,15 +75,21 @@ async def _generate_all_monthly_reports_async() -> None:
 
     users = list_all_users(conn)
     eligible = [
-        u for u in users
+        u
+        for u in users
         if evaluate("banking.monthly_ai_report", u, gating_enabled=gating_enabled).unlocked
     ]
     logger.info("Monthly report scheduler: %d eligible user(s) for %s", len(eligible), year_month)
 
     for user in eligible:
         token = create_token(
-            user["id"], private_key, settings.jwt_ttl_minutes,
-            tier=user["tier"], audience=user["audience"], is_admin=bool(user["is_admin"]), kid=kid,
+            user["id"],
+            private_key,
+            settings.jwt_ttl_minutes,
+            tier=user["tier"],
+            audience=user["audience"],
+            is_admin=bool(user["is_admin"]),
+            kid=kid,
         )
         try:
             await _generate_for_user(conn, user, year_month, token)

@@ -1,4 +1,5 @@
 """Onboarding (MiFID questionnaire) and manual audience toggle."""
+
 from __future__ import annotations
 
 import sqlite3
@@ -28,18 +29,22 @@ def get_questionnaire() -> dict:
 
 
 @router.post("/onboarding/mifid")
-def submit(req: SubmitRequest,
-           user: dict = Depends(get_current_user),
-           conn: sqlite3.Connection = Depends(get_conn)) -> dict:
+def submit(
+    req: SubmitRequest,
+    user: dict = Depends(get_current_user),
+    conn: sqlite3.Connection = Depends(get_conn),
+) -> dict:
     audience = score_mifid(req.answers)
     repo.set_audience(conn, user["id"], audience, locked=True)
     return {"audience": audience, "locked": True}
 
 
 @router.patch("/auth/audience")
-def set_manual(req: AudienceRequest,
-               user: dict = Depends(get_current_user),
-               conn: sqlite3.Connection = Depends(get_conn)) -> dict:
+def set_manual(
+    req: AudienceRequest,
+    user: dict = Depends(get_current_user),
+    conn: sqlite3.Connection = Depends(get_conn),
+) -> dict:
     audience = "expert" if req.audience == "expert" else "base"
     repo.set_audience(conn, user["id"], audience, locked=False)
     return {"audience": audience, "locked": False}

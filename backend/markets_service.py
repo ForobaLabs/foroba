@@ -14,6 +14,7 @@ gainers + top losers (screener top_movers scan, both directions) plus news
 headlines for the top gainer, so the page has real content before the user
 picks a specific symbol.
 """
+
 from __future__ import annotations
 
 import asyncio

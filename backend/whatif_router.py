@@ -1,5 +1,6 @@
 """What-if simulator routes: live preview + saveable named scenarios
 (foroba#162, TI-D item 1)."""
+
 from __future__ import annotations
 
 import json
@@ -67,9 +68,12 @@ class ScenarioOut(BaseModel):
 
 def _to_out(row: sqlite3.Row) -> ScenarioOut:
     return ScenarioOut(
-        id=row["id"], name=row["name"], horizon_months=row["horizon_months"],
+        id=row["id"],
+        name=row["name"],
+        horizon_months=row["horizon_months"],
         params=json.loads(row["params_json"]),
-        created_at=row["created_at"], updated_at=row["updated_at"],
+        created_at=row["created_at"],
+        updated_at=row["updated_at"],
     )
 
 
@@ -89,8 +93,11 @@ def create_scenario(
     conn: sqlite3.Connection = Depends(get_conn),
 ) -> ScenarioOut:
     row = db.create_whatif_scenario(
-        conn, created_by_user_id=user["id"], household_id=user.get("household_id"),
-        name=body.name, horizon_months=body.horizon_months,
+        conn,
+        created_by_user_id=user["id"],
+        household_id=user.get("household_id"),
+        name=body.name,
+        horizon_months=body.horizon_months,
         params_json=json.dumps(body.params.model_dump()),
     )
     return _to_out(row)
@@ -103,11 +110,15 @@ async def get_scenario(
     conn: sqlite3.Connection = Depends(get_conn),
     suite_session: str | None = Cookie(default=None),
 ) -> dict:
-    row = db.get_whatif_scenario(conn, scenario_id, user_id=user["id"], household_id=user.get("household_id"))
+    row = db.get_whatif_scenario(
+        conn, scenario_id, user_id=user["id"], household_id=user.get("household_id")
+    )
     if row is None:
         raise HTTPException(404, "Scenario not found")
     params = json.loads(row["params_json"])
-    projection = await whatif_service.simulate(params, row["horizon_months"], owner_cookie=suite_session)
+    projection = await whatif_service.simulate(
+        params, row["horizon_months"], owner_cookie=suite_session
+    )
     return {**_to_out(row).model_dump(), "projection": projection}
 
 
@@ -119,8 +130,12 @@ def update_scenario(
     conn: sqlite3.Connection = Depends(get_conn),
 ) -> ScenarioOut:
     row = db.update_whatif_scenario(
-        conn, scenario_id, user_id=user["id"], household_id=user.get("household_id"),
-        name=body.name, horizon_months=body.horizon_months,
+        conn,
+        scenario_id,
+        user_id=user["id"],
+        household_id=user.get("household_id"),
+        name=body.name,
+        horizon_months=body.horizon_months,
         params_json=json.dumps(body.params.model_dump()),
     )
     if row is None:
@@ -134,5 +149,7 @@ def delete_scenario(
     user: dict = Depends(require_feature(FEATURE_KEY)),
     conn: sqlite3.Connection = Depends(get_conn),
 ) -> None:
-    if not db.delete_whatif_scenario(conn, scenario_id, user_id=user["id"], household_id=user.get("household_id")):
+    if not db.delete_whatif_scenario(
+        conn, scenario_id, user_id=user["id"], household_id=user.get("household_id")
+    ):
         raise HTTPException(404, "Scenario not found")

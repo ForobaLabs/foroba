@@ -15,6 +15,7 @@ Revises: 0012
 Create Date: 2026-07-31 00:00:00.000000
 
 """
+
 from __future__ import annotations
 
 import sqlalchemy as sa
@@ -33,16 +34,12 @@ _TARGETS = ["content", "code"]
 def upgrade() -> None:
     bind = op.get_bind()
     for column in _TARGETS:
-        rows = bind.execute(
-            sa.text(f"SELECT id, {column} FROM sandbox_conversations")
-        ).fetchall()
+        rows = bind.execute(sa.text(f"SELECT id, {column} FROM sandbox_conversations")).fetchall()
         for row_id, value in rows:
             if value is None or is_encrypted(value):
                 continue
             bind.execute(
-                sa.text(
-                    f"UPDATE sandbox_conversations SET {column} = :val WHERE id = :id"
-                ),
+                sa.text(f"UPDATE sandbox_conversations SET {column} = :val WHERE id = :id"),
                 {"val": encrypt(value), "id": row_id},
             )
 

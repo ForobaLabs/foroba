@@ -1,4 +1,5 @@
 """SQLite identity store for the Foroba backend (suite identity authority)."""
+
 from __future__ import annotations
 
 import sqlite3
@@ -247,9 +248,7 @@ def seed_mock_users(conn: sqlite3.Connection) -> list[str]:
     """Insert mock users that do not already exist. Returns created emails."""
     created: list[str] = []
     for email, name, pw, tier, audience, is_admin in MOCK_USERS:
-        exists = conn.execute(
-            "SELECT 1 FROM users WHERE email = ?", (email,)
-        ).fetchone()
+        exists = conn.execute("SELECT 1 FROM users WHERE email = ?", (email,)).fetchone()
         if exists:
             continue
         conn.execute(
@@ -395,8 +394,13 @@ def _whatif_visibility_clause() -> str:
 
 
 def create_whatif_scenario(
-    conn: sqlite3.Connection, *, created_by_user_id: int, household_id: str | None,
-    name: str, horizon_months: int, params_json: str,
+    conn: sqlite3.Connection,
+    *,
+    created_by_user_id: int,
+    household_id: str | None,
+    name: str,
+    horizon_months: int,
+    params_json: str,
 ) -> sqlite3.Row:
     cur = conn.execute(
         "INSERT INTO whatif_scenarios "
@@ -432,8 +436,14 @@ def get_whatif_scenario(
 
 
 def update_whatif_scenario(
-    conn: sqlite3.Connection, scenario_id: int, *, user_id: int, household_id: str | None,
-    name: str, horizon_months: int, params_json: str,
+    conn: sqlite3.Connection,
+    scenario_id: int,
+    *,
+    user_id: int,
+    household_id: str | None,
+    name: str,
+    horizon_months: int,
+    params_json: str,
 ) -> sqlite3.Row | None:
     if get_whatif_scenario(conn, scenario_id, user_id=user_id, household_id=household_id) is None:
         return None
@@ -549,7 +559,11 @@ def connect(db_path: str) -> sqlite3.Connection:
 
 
 def create_monthly_report(
-    conn: sqlite3.Connection, *, user_id: int, year_month: str, trigger: str,
+    conn: sqlite3.Connection,
+    *,
+    user_id: int,
+    year_month: str,
+    trigger: str,
 ) -> sqlite3.Row:
     cur = conn.execute(
         "INSERT INTO monthly_reports (user_id, year_month, trigger, status) "
@@ -566,12 +580,16 @@ def get_monthly_report(
     conn: sqlite3.Connection, report_id: int, *, user_id: int
 ) -> sqlite3.Row | None:
     return conn.execute(
-        "SELECT * FROM monthly_reports WHERE id = ? AND user_id = ?", (report_id, user_id),
+        "SELECT * FROM monthly_reports WHERE id = ? AND user_id = ?",
+        (report_id, user_id),
     ).fetchone()
 
 
 def list_monthly_reports(
-    conn: sqlite3.Connection, *, user_id: int, year_month: str | None = None,
+    conn: sqlite3.Connection,
+    *,
+    user_id: int,
+    year_month: str | None = None,
 ) -> list[sqlite3.Row]:
     if year_month:
         return conn.execute(
@@ -596,9 +614,14 @@ def count_monthly_reports_this_month(
 
 
 def update_monthly_report_result(
-    conn: sqlite3.Connection, report_id: int, *, status: str,
-    narrative_text: str | None, context_snapshot_json: str | None,
-    error_message: str | None, attempt_count: int,
+    conn: sqlite3.Connection,
+    report_id: int,
+    *,
+    status: str,
+    narrative_text: str | None,
+    context_snapshot_json: str | None,
+    error_message: str | None,
+    attempt_count: int,
 ) -> sqlite3.Row | None:
     conn.execute(
         "UPDATE monthly_reports SET status = ?, narrative_text = ?, context_snapshot_json = ?, "
@@ -610,7 +633,12 @@ def update_monthly_report_result(
 
 
 def create_api_key(
-    conn: sqlite3.Connection, *, user_id: int, label: str, key_prefix: str, secret_hash: str,
+    conn: sqlite3.Connection,
+    *,
+    user_id: int,
+    label: str,
+    key_prefix: str,
+    secret_hash: str,
 ) -> sqlite3.Row:
     cur = conn.execute(
         "INSERT INTO api_keys (user_id, label, key_prefix, secret_hash) VALUES (?, ?, ?, ?)",
@@ -624,7 +652,8 @@ def create_api_key(
 
 def get_api_key_by_id(conn: sqlite3.Connection, key_id: int, *, user_id: int) -> sqlite3.Row | None:
     return conn.execute(
-        "SELECT * FROM api_keys WHERE id = ? AND user_id = ?", (key_id, user_id),
+        "SELECT * FROM api_keys WHERE id = ? AND user_id = ?",
+        (key_id, user_id),
     ).fetchone()
 
 
@@ -634,13 +663,15 @@ def get_api_key_by_prefix(conn: sqlite3.Connection, key_prefix: str) -> sqlite3.
 
 def list_api_keys(conn: sqlite3.Connection, *, user_id: int) -> list[sqlite3.Row]:
     return conn.execute(
-        "SELECT * FROM api_keys WHERE user_id = ? ORDER BY created_at DESC, id DESC", (user_id,),
+        "SELECT * FROM api_keys WHERE user_id = ? ORDER BY created_at DESC, id DESC",
+        (user_id,),
     ).fetchall()
 
 
 def revoke_api_key(conn: sqlite3.Connection, key_id: int, *, user_id: int) -> bool:
     cur = conn.execute(
-        "UPDATE api_keys SET is_active = 0 WHERE id = ? AND user_id = ?", (key_id, user_id),
+        "UPDATE api_keys SET is_active = 0 WHERE id = ? AND user_id = ?",
+        (key_id, user_id),
     )
     conn.commit()
     return cur.rowcount > 0
@@ -652,7 +683,11 @@ def touch_api_key_last_used(conn: sqlite3.Connection, key_id: int) -> None:
 
 
 def create_webhook(
-    conn: sqlite3.Connection, *, user_id: int, target_url: str, signing_secret: str,
+    conn: sqlite3.Connection,
+    *,
+    user_id: int,
+    target_url: str,
+    signing_secret: str,
 ) -> sqlite3.Row:
     cur = conn.execute(
         "INSERT INTO webhooks (user_id, target_url, signing_secret) VALUES (?, ?, ?)",
@@ -666,13 +701,15 @@ def create_webhook(
 
 def get_webhook(conn: sqlite3.Connection, webhook_id: int, *, user_id: int) -> sqlite3.Row | None:
     return conn.execute(
-        "SELECT * FROM webhooks WHERE id = ? AND user_id = ?", (webhook_id, user_id),
+        "SELECT * FROM webhooks WHERE id = ? AND user_id = ?",
+        (webhook_id, user_id),
     ).fetchone()
 
 
 def list_webhooks(conn: sqlite3.Connection, *, user_id: int) -> list[sqlite3.Row]:
     return conn.execute(
-        "SELECT * FROM webhooks WHERE user_id = ? ORDER BY created_at DESC, id DESC", (user_id,),
+        "SELECT * FROM webhooks WHERE user_id = ? ORDER BY created_at DESC, id DESC",
+        (user_id,),
     ).fetchall()
 
 
@@ -683,7 +720,8 @@ def list_active_webhooks(conn: sqlite3.Connection) -> list[sqlite3.Row]:
 
 def delete_webhook(conn: sqlite3.Connection, webhook_id: int, *, user_id: int) -> bool:
     cur = conn.execute(
-        "DELETE FROM webhooks WHERE id = ? AND user_id = ?", (webhook_id, user_id),
+        "DELETE FROM webhooks WHERE id = ? AND user_id = ?",
+        (webhook_id, user_id),
     )
     conn.commit()
     return cur.rowcount > 0
@@ -732,7 +770,10 @@ def get_webhook_delivery(
 
 
 def upsert_webhook_delivery_success(
-    conn: sqlite3.Connection, webhook_id: int, event_key: str, attempt_count: int,
+    conn: sqlite3.Connection,
+    webhook_id: int,
+    event_key: str,
+    attempt_count: int,
 ) -> None:
     conn.execute(
         "INSERT INTO webhook_deliveries "
@@ -747,7 +788,12 @@ def upsert_webhook_delivery_success(
 
 
 def upsert_webhook_delivery_attempt(
-    conn: sqlite3.Connection, webhook_id: int, event_key: str, *, attempt_count: int, status: str,
+    conn: sqlite3.Connection,
+    webhook_id: int,
+    event_key: str,
+    *,
+    attempt_count: int,
+    status: str,
 ) -> None:
     """status is 'pending' (will retry next tick) or 'failed' (exhausted retries)."""
     conn.execute(

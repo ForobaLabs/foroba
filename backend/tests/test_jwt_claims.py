@@ -11,10 +11,14 @@ def _keypair():
         format=serialization.PrivateFormat.PKCS8,
         encryption_algorithm=serialization.NoEncryption(),
     ).decode()
-    public_pem = key.public_key().public_bytes(
-        encoding=serialization.Encoding.PEM,
-        format=serialization.PublicFormat.SubjectPublicKeyInfo,
-    ).decode()
+    public_pem = (
+        key.public_key()
+        .public_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PublicFormat.SubjectPublicKeyInfo,
+        )
+        .decode()
+    )
     return private_pem, public_pem
 
 
@@ -23,8 +27,12 @@ PRIVATE_KEY, PUBLIC_KEY = _keypair()
 
 def test_create_token_includes_claims():
     token = create_token(
-        42, PRIVATE_KEY, 60,
-        tier="premium", audience="expert", is_admin=True,
+        42,
+        PRIVATE_KEY,
+        60,
+        tier="premium",
+        audience="expert",
+        is_admin=True,
     )
     claims = decode_token(token, PUBLIC_KEY)
     assert claims["sub"] == "42"

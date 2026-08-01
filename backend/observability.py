@@ -13,6 +13,7 @@ GL-11.5 hardening: also strips a fixed set of known-sensitive field names from
 a future `sentry_sdk.set_context`/`set_extra` call ever includes one of these —
 defense in depth on top of the request/breadcrumb scrubbing above.
 """
+
 from __future__ import annotations
 
 from typing import Any
@@ -24,8 +25,13 @@ _SENSITIVE_BREADCRUMB_CATEGORIES = {"http", "query"}
 # Known-sensitive field names (GL-11.5) — stripped wherever they appear in
 # event["extra"]/event["contexts"], however deeply nested.
 _SENSITIVE_KEYS = {
-    "external_id", "raw_label", "iban", "session_id_enc",
-    "content", "code", "raw_text",
+    "external_id",
+    "raw_label",
+    "iban",
+    "session_id_enc",
+    "content",
+    "code",
+    "raw_text",
 }
 
 

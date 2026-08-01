@@ -19,7 +19,9 @@ def client(tmp_path, monkeypatch):
     conn.row_factory = sqlite3.Row
     init_schema(conn)
     user = repo.create_user(
-        conn, email="avatar-test@y.com", name="Avatar Test",
+        conn,
+        email="avatar-test@y.com",
+        name="Avatar Test",
         password_hash=hash_password("password123"),
     )
     app = FastAPI()

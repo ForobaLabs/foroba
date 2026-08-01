@@ -3,6 +3,7 @@
 Storage directory is configurable via AVATAR_STORAGE_DIR (tests use a tmp_path;
 production defaults to backend/static/avatars, served by main.py's StaticFiles mount).
 """
+
 from __future__ import annotations
 
 import os

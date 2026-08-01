@@ -1,5 +1,6 @@
 """Tests for fx_service.py — TI-D item 3 Plan 3, foroba#164. All HTTP calls to
 Frankfurter are mocked via respx; no real network access."""
+
 from __future__ import annotations
 
 import sqlite3
@@ -95,7 +96,9 @@ def test_refresh_latest_rates_upserts_multiple_currencies(conn):
         return_value=httpx.Response(
             200,
             json={
-                "amount": 1, "base": "EUR", "date": "2026-07-22",
+                "amount": 1,
+                "base": "EUR",
+                "date": "2026-07-22",
                 "rates": {"USD": 1.08, "GBP": 0.86},
             },
         )

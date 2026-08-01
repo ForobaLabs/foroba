@@ -1,4 +1,5 @@
 """users.show_debts column (TI-D item 6, Pazuru debts module net-worth toggle)"""
+
 from __future__ import annotations
 
 from alembic import op
@@ -10,9 +11,7 @@ depends_on = None
 
 
 def upgrade() -> None:
-    op.execute(
-        "ALTER TABLE users ADD COLUMN show_debts INTEGER NOT NULL DEFAULT 0"
-    )
+    op.execute("ALTER TABLE users ADD COLUMN show_debts INTEGER NOT NULL DEFAULT 0")
 
 
 def downgrade() -> None:

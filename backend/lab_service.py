@@ -1,4 +1,5 @@
 """Ollama code-gen + self-correction orchestration for Jeli Lab."""
+
 from __future__ import annotations
 
 import asyncio
@@ -37,7 +38,7 @@ CODEGEN_SYSTEM_PROMPT = (
 
 def _chunk_words(text: str, size: int = 6) -> list[str]:
     words = text.split()
-    return [" ".join(words[i:i + size]) for i in range(0, len(words), size)]
+    return [" ".join(words[i : i + size]) for i in range(0, len(words), size)]
 
 
 def _generate_code(
@@ -48,14 +49,19 @@ def _generate_code(
     error_feedback: str | None = None,
     web_results: list[dict[str, str]] | None = None,
 ) -> dict[str, str]:
-    messages = [{"role": "system", "content": CODEGEN_SYSTEM_PROMPT.format(
-        dataframe_names=", ".join(dataframe_names)
-    )}]
-    if user_context:
-        messages.append({
+    messages = [
+        {
             "role": "system",
-            "content": f"What we know about this user: {user_context}",
-        })
+            "content": CODEGEN_SYSTEM_PROMPT.format(dataframe_names=", ".join(dataframe_names)),
+        }
+    ]
+    if user_context:
+        messages.append(
+            {
+                "role": "system",
+                "content": f"What we know about this user: {user_context}",
+            }
+        )
     if web_results:
         summary = "\n".join(f"- {r['title']}: {r['snippet']} ({r['url']})" for r in web_results)
         messages.append({"role": "system", "content": f"Recent web search results:\n{summary}"})
@@ -63,12 +69,14 @@ def _generate_code(
         messages.append({"role": turn["role"], "content": turn["content"]})
     messages.append({"role": "user", "content": question})
     if error_feedback:
-        messages.append({
-            "role": "user",
-            "content": (
-                f"The previous code failed with this error, please fix it:\n{error_feedback}"
-            ),
-        })
+        messages.append(
+            {
+                "role": "user",
+                "content": (
+                    f"The previous code failed with this error, please fix it:\n{error_feedback}"
+                ),
+            }
+        )
 
     response = httpx.post(
         f"{settings.ollama_base_url}/api/chat",
@@ -92,15 +100,21 @@ def _update_user_context(question: str, code: str, existing_context: str) -> str
             json={
                 "model": settings.ollama_model,
                 "messages": [
-                    {"role": "system", "content": (
-                        "Update this user's durable profile notes in one short paragraph, "
-                        "given their existing notes and their latest question. Respond with "
-                        "plain text only, no JSON."
-                    )},
-                    {"role": "user", "content": (
-                        f"Existing notes: {existing_context or '(none yet)'}\n"
-                        f"Latest question: {question}"
-                    )},
+                    {
+                        "role": "system",
+                        "content": (
+                            "Update this user's durable profile notes in one short paragraph, "
+                            "given their existing notes and their latest question. Respond with "
+                            "plain text only, no JSON."
+                        ),
+                    },
+                    {
+                        "role": "user",
+                        "content": (
+                            f"Existing notes: {existing_context or '(none yet)'}\n"
+                            f"Latest question: {question}"
+                        ),
+                    },
                 ],
                 "stream": False,
             },
@@ -152,7 +166,12 @@ async def _attempt_turn(
     try:
         generated = await asyncio.to_thread(
             _generate_code,
-            question, dataframe_names, history, user_context, error_feedback, web_results,
+            question,
+            dataframe_names,
+            history,
+            user_context,
+            error_feedback,
+            web_results,
         )
     except Exception as exc:
         return {"ok": False, "code": "", "error": str(exc)}
@@ -203,6 +222,7 @@ def _stream_success(result: dict[str, Any]) -> AsyncGenerator[dict[str, Any], No
             yield {"type": "token", "value": chunk}
         for artifact in result.get("artifacts", []):
             yield {"type": "artifact", **artifact}
+
     return _gen()
 
 
@@ -225,8 +245,13 @@ async def run_lab_turn(
 
     for _attempt in range(MAX_ATTEMPTS):
         result = await _attempt_turn(
-            question, dataframe_names, dataframes, history, user_context,
-            error_feedback, web_results,
+            question,
+            dataframe_names,
+            dataframes,
+            history,
+            user_context,
+            error_feedback,
+            web_results,
         )
         code = result.get("code", "")
 
@@ -234,7 +259,10 @@ async def run_lab_turn(
             async for event in _stream_success(result):
                 yield event
             updated_context = await asyncio.to_thread(
-                _update_user_context, question, code, user_context,
+                _update_user_context,
+                question,
+                code,
+                user_context,
             )
             yield {"type": "done", "code": code, "context": updated_context}
             return

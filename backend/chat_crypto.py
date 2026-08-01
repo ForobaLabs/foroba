@@ -9,6 +9,7 @@ transparently by a column type.
 FIELD_ENCRYPTION_KEY must be a urlsafe-base64 32-byte key. Generate once with:
   python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
 """
+
 from __future__ import annotations
 
 from cryptography.fernet import Fernet, InvalidToken
@@ -20,8 +21,8 @@ def _fernet() -> Fernet:
     if not settings.field_encryption_key:
         raise RuntimeError(
             "FIELD_ENCRYPTION_KEY is not set. Generate one with: "
-            "python -c \"from cryptography.fernet import Fernet; "
-            "print(Fernet.generate_key().decode())\""
+            'python -c "from cryptography.fernet import Fernet; '
+            'print(Fernet.generate_key().decode())"'
         )
     return Fernet(settings.field_encryption_key.encode())
 

@@ -45,13 +45,17 @@ def test_admin_seed_user_exists(tmp_path):
 
 def test_require_admin_allows_admin(tmp_path):
     conn, _ = fresh_db(tmp_path)
-    admin = dict(conn.execute(
-        "SELECT * FROM users WHERE email = ?", ("admin@foroba.app",)
-    ).fetchone())
+    admin = dict(
+        conn.execute("SELECT * FROM users WHERE email = ?", ("admin@foroba.app",)).fetchone()
+    )
     private_key, _, _ = keys.get_keypair(settings)
     token = create_token(
-        admin["id"], private_key, 60,
-        tier=admin["tier"], audience=admin["audience"], is_admin=bool(admin["is_admin"]),
+        admin["id"],
+        private_key,
+        60,
+        tier=admin["tier"],
+        audience=admin["audience"],
+        is_admin=bool(admin["is_admin"]),
     )
     app = make_app(admin_only=True)
     app.dependency_overrides[get_conn] = lambda: conn
@@ -62,13 +66,17 @@ def test_require_admin_allows_admin(tmp_path):
 
 def test_require_admin_blocks_regular_user(tmp_path):
     conn, _ = fresh_db(tmp_path)
-    user = dict(conn.execute(
-        "SELECT * FROM users WHERE email = ?", ("demo@foroba.app",)
-    ).fetchone())
+    user = dict(
+        conn.execute("SELECT * FROM users WHERE email = ?", ("demo@foroba.app",)).fetchone()
+    )
     private_key, _, _ = keys.get_keypair(settings)
     token = create_token(
-        user["id"], private_key, 60,
-        tier=user["tier"], audience=user["audience"], is_admin=False,
+        user["id"],
+        private_key,
+        60,
+        tier=user["tier"],
+        audience=user["audience"],
+        is_admin=False,
     )
     app = make_app(admin_only=True)
     app.dependency_overrides[get_conn] = lambda: conn

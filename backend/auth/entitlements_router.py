@@ -1,4 +1,5 @@
 """Entitlements endpoint and the require_feature dependency factory."""
+
 from __future__ import annotations
 
 import sqlite3
@@ -40,6 +41,7 @@ def require_feature(key: str) -> Callable[..., dict]:
     """Dependency factory: 403 if not visible (audience), 402 if locked (tier)."""
     if key not in REGISTRY:
         raise ValueError(f"require_feature: unknown feature key {key!r}")
+
     def _dep(
         user: dict = Depends(get_current_user),
         conn: sqlite3.Connection = Depends(get_conn),
@@ -52,4 +54,5 @@ def require_feature(key: str) -> Callable[..., dict]:
         if not access.unlocked:
             raise HTTPException(402, {"error": {"code": "premium_required", "feature": key}})
         return user
+
     return _dep

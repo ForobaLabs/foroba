@@ -1,4 +1,5 @@
 """users.display_currency column (TI-D item 3 Plan 3, foroba#164)"""
+
 from __future__ import annotations
 
 from alembic import op
@@ -10,9 +11,7 @@ depends_on = None
 
 
 def upgrade() -> None:
-    op.execute(
-        "ALTER TABLE users ADD COLUMN display_currency TEXT NOT NULL DEFAULT 'EUR'"
-    )
+    op.execute("ALTER TABLE users ADD COLUMN display_currency TEXT NOT NULL DEFAULT 'EUR'")
 
 
 def downgrade() -> None:

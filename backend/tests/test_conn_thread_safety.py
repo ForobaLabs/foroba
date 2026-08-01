@@ -4,6 +4,7 @@ one sqlite3.Connection across threadpool worker threads (or, in an
 interim fix, raced on Alembic's shared migration state when several
 threads created their first connection at the same time).
 """
+
 import concurrent.futures
 import importlib
 import threading
@@ -17,9 +18,11 @@ def conn_module(tmp_path, monkeypatch):
     each test starts with fresh thread-local/lock state."""
     db_path = str(tmp_path / "test.db")
     import config
+
     monkeypatch.setattr(config.settings, "auth_db_path", db_path, raising=False)
 
     import auth.conn as conn_mod
+
     importlib.reload(conn_mod)
     yield conn_mod
     importlib.reload(conn_mod)

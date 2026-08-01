@@ -1,4 +1,5 @@
 """CRUD tests for monthly_reports (foroba#159, TI-D item 2)."""
+
 from __future__ import annotations
 
 import sqlite3
@@ -55,8 +56,13 @@ def test_count_reports_this_month(conn):
 def test_update_report_result_success(conn):
     row = db.create_monthly_report(conn, user_id=1, year_month="2026-07", trigger="manual")
     updated = db.update_monthly_report_result(
-        conn, row["id"], status="success", narrative_text="Summary text",
-        context_snapshot_json='{"a": 1}', error_message=None, attempt_count=1,
+        conn,
+        row["id"],
+        status="success",
+        narrative_text="Summary text",
+        context_snapshot_json='{"a": 1}',
+        error_message=None,
+        attempt_count=1,
     )
     assert updated["status"] == "success"
     assert updated["narrative_text"] == "Summary text"
@@ -66,8 +72,13 @@ def test_update_report_result_success(conn):
 def test_update_report_result_failure(conn):
     row = db.create_monthly_report(conn, user_id=1, year_month="2026-07", trigger="manual")
     updated = db.update_monthly_report_result(
-        conn, row["id"], status="failed", narrative_text=None,
-        context_snapshot_json=None, error_message="Ollama timeout", attempt_count=4,
+        conn,
+        row["id"],
+        status="failed",
+        narrative_text=None,
+        context_snapshot_json=None,
+        error_message="Ollama timeout",
+        attempt_count=4,
     )
     assert updated["status"] == "failed"
     assert updated["error_message"] == "Ollama timeout"

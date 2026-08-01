@@ -4,6 +4,7 @@ Mirrors jeli_service._fetch_context / gather_context's graceful-fallback pattern
 but returns full DataFrames (decoded from base64 parquet) instead of a text summary,
 since Lab needs to compute on the data, not just describe it.
 """
+
 from __future__ import annotations
 
 import asyncio

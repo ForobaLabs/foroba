@@ -16,12 +16,12 @@ def setup(tmp_path):
     seed_mock_users(conn)
     init_settings(conn)
 
-    admin_user = dict(conn.execute(
-        "SELECT * FROM users WHERE email = ?", ("admin@foroba.app",)
-    ).fetchone())
-    regular_user = dict(conn.execute(
-        "SELECT * FROM users WHERE email = ?", ("demo@foroba.app",)
-    ).fetchone())
+    admin_user = dict(
+        conn.execute("SELECT * FROM users WHERE email = ?", ("admin@foroba.app",)).fetchone()
+    )
+    regular_user = dict(
+        conn.execute("SELECT * FROM users WHERE email = ?", ("demo@foroba.app",)).fetchone()
+    )
 
     app = FastAPI()
     app.include_router(admin_router)

@@ -1,4 +1,5 @@
 """Jeli Lab: /lab/chat NDJSON streaming, aggregating Pazuru + Tsumi data."""
+
 from __future__ import annotations
 
 import json
@@ -46,19 +47,33 @@ async def lab_chat(
     # of deployment_mode=="hosted" — see config.py. The per-IP rate limit above and the
     # global sandbox concurrency cap in lab_service.py are what make that opt-in safe.
     if settings.deployment_mode == "hosted" and not settings.lab_hosted_enabled:
+
         async def _hosted_disabled_stream():
-            yield json.dumps({
-                "type": "error",
-                "value": "Jeli Lab is not available in the hosted beta.",
-            }) + "\n"
+            yield (
+                json.dumps(
+                    {
+                        "type": "error",
+                        "value": "Jeli Lab is not available in the hosted beta.",
+                    }
+                )
+                + "\n"
+            )
+
         return StreamingResponse(_hosted_disabled_stream(), media_type="application/x-ndjson")
 
     if get_all(conn).get("lab_service_enabled", "true") == "false":
+
         async def _disabled_stream():
-            yield json.dumps({
-                "type": "error",
-                "value": "Jeli Lab is currently unavailable. Please try again later.",
-            }) + "\n"
+            yield (
+                json.dumps(
+                    {
+                        "type": "error",
+                        "value": "Jeli Lab is currently unavailable. Please try again later.",
+                    }
+                )
+                + "\n"
+            )
+
         return StreamingResponse(_disabled_stream(), media_type="application/x-ndjson")
 
     dataframes = await gather_dataframes(
@@ -80,7 +95,10 @@ async def lab_chat(
         answer_parts: list[str] = []
         error_message: str | None = None
         async for event in run_lab_turn(
-            question=body.message, dataframes=dataframes, history=history, user_context=context,
+            question=body.message,
+            dataframes=dataframes,
+            history=history,
+            user_context=context,
             web_results=web_results,
         ):
             if event["type"] == "token":
@@ -101,9 +119,13 @@ async def lab_chat(
 
         if code is not None:
             save_sandbox_turn(
-                conn, user_id, body.session_id, body.message,
+                conn,
+                user_id,
+                body.session_id,
+                body.message,
                 error_message or " ".join(answer_parts),
-                code=code, artifacts_json=json.dumps(artifacts),
+                code=code,
+                artifacts_json=json.dumps(artifacts),
             )
 
     return StreamingResponse(_stream(), media_type="application/x-ndjson")

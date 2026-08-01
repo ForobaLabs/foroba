@@ -1,4 +1,5 @@
 """Resolve the current user from the suite_session cookie."""
+
 from __future__ import annotations
 
 import os

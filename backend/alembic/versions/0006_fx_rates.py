@@ -1,4 +1,5 @@
 """fx_rates table (TI-D item 3 Plan 3, foroba#164)"""
+
 from __future__ import annotations
 
 from alembic import op

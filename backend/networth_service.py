@@ -22,6 +22,7 @@ Upstream endpoints:
 All figures are in EUR. Display-currency conversion happens client-side (see
 fx_service.py + CurrencyContext.tsx) — this service never converts.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -101,7 +102,10 @@ def _merge_history(
 
 
 async def fetch_networth(
-    days: int = 365, *, cookie: str | None = None, include_manual_assets: bool = True,
+    days: int = 365,
+    *,
+    cookie: str | None = None,
+    include_manual_assets: bool = True,
     include_debts: bool = False,
 ) -> dict[str, Any]:
     """Aggregate Pazuru bank net worth + Tsumi portfolio value (already including
@@ -123,14 +127,14 @@ async def fetch_networth(
         if include_manual_assets:
             fetches.append(
                 _get_json(
-                    client, f"{tsumi_base}/api/manual-assets/net-worth-history",
-                    {"days": days}, cookie,
+                    client,
+                    f"{tsumi_base}/api/manual-assets/net-worth-history",
+                    {"days": days},
+                    cookie,
                 )
             )
         if include_debts:
-            fetches.append(
-                _get_json(client, f"{pazuru_base}/api/debts/net-worth", {}, cookie)
-            )
+            fetches.append(_get_json(client, f"{pazuru_base}/api/debts/net-worth", {}, cookie))
         results = await asyncio.gather(*fetches)
 
     bank, investments_summary, investments_history = results[0], results[1], results[2]

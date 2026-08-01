@@ -1,4 +1,5 @@
 """Webhook registration & management endpoints (foroba#165, TI-D item 5, Plan A)."""
+
 from __future__ import annotations
 
 import secrets
@@ -40,8 +41,11 @@ class WebhookCreated(WebhookOut):
 
 def _to_out(row: sqlite3.Row) -> WebhookOut:
     return WebhookOut(
-        id=row["id"], target_url=row["target_url"], is_active=bool(row["is_active"]),
-        consecutive_failures=row["consecutive_failures"], disabled_at=row["disabled_at"],
+        id=row["id"],
+        target_url=row["target_url"],
+        is_active=bool(row["is_active"]),
+        consecutive_failures=row["consecutive_failures"],
+        disabled_at=row["disabled_at"],
         created_at=row["created_at"],
     )
 
@@ -53,7 +57,9 @@ def create_webhook(
     conn: sqlite3.Connection = Depends(get_conn),
 ) -> WebhookCreated:
     signing_secret = secrets.token_urlsafe(32)
-    row = db.create_webhook(conn, user_id=user["id"], target_url=body.target_url, signing_secret=signing_secret)
+    row = db.create_webhook(
+        conn, user_id=user["id"], target_url=body.target_url, signing_secret=signing_secret
+    )
     return WebhookCreated(**_to_out(row).model_dump(), signing_secret=signing_secret)
 
 

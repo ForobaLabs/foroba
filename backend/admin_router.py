@@ -2,6 +2,7 @@
 
 Public endpoint /jeli/admin/settings is unauthenticated so Pazuru/Tsumi can poll it.
 """
+
 from __future__ import annotations
 
 import sqlite3

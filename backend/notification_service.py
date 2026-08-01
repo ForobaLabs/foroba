@@ -22,6 +22,7 @@ Every alert carries a stable `key` (see individual `_check_*` functions)
 so a user's dismissal (notification_dismissals table, checked by the
 caller) permanently suppresses that specific alert instance.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -58,7 +59,9 @@ async def _get_json(
         return None
 
 
-def _check_balance_low(accounts: list[dict[str, Any]], threshold_cents: int) -> list[dict[str, Any]]:
+def _check_balance_low(
+    accounts: list[dict[str, Any]], threshold_cents: int
+) -> list[dict[str, Any]]:
     today = date.today().isoformat()
     alerts = []
     for acc in accounts:
@@ -87,7 +90,7 @@ def _check_goals(goals: list[dict[str, Any]]) -> list[dict[str, Any]]:
             "severity": "positive",
             "title": "Goal reached",
             "message": (
-                f"You reached your goal \"{g['name']}\" "
+                f'You reached your goal "{g["name"]}" '
                 f"({g['saved_cents'] / 100:.2f} {g['currency']})."
             ),
         }
@@ -160,18 +163,14 @@ async def generate_notifications(
 ) -> dict[str, Any]:
     """Compute active (non-dismissed) alerts for one user. Never raises."""
     pazuru_base = settings.pazuru_api_url.rstrip("/")
-    threshold_cents = int(
-        settings_store.get_all(conn).get("low_balance_threshold_cents", "10000")
-    )
+    threshold_cents = int(settings_store.get_all(conn).get("low_balance_threshold_cents", "10000"))
 
     async with httpx.AsyncClient() as client:
         accounts, goals, recurring, transactions = await asyncio.gather(
             _get_json(client, f"{pazuru_base}/api/accounts", {}, cookie),
             _get_json(client, f"{pazuru_base}/api/goals", {}, cookie),
             _get_json(client, f"{pazuru_base}/api/recurring", {}, cookie),
-            _get_json(
-                client, f"{pazuru_base}/api/transactions", {"page_size": 200}, cookie
-            ),
+            _get_json(client, f"{pazuru_base}/api/transactions", {"page_size": 200}, cookie),
         )
 
     degraded = any(x is None for x in (accounts, goals, recurring, transactions))

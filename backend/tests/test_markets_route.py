@@ -1,4 +1,5 @@
 """Route test for GET /markets/snapshot (service mocked)."""
+
 from __future__ import annotations
 
 from typing import Any
@@ -9,7 +10,9 @@ import main
 import markets_service as ms
 
 
-async def _fake_snapshot(symbol: str, asset_class: str, *, cookie: str | None = None) -> dict[str, Any]:
+async def _fake_snapshot(
+    symbol: str, asset_class: str, *, cookie: str | None = None
+) -> dict[str, Any]:
     return {
         "symbol": symbol,
         "asset_class": asset_class,

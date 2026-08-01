@@ -1,4 +1,5 @@
 """Unit tests for notification_service.py's deterministic alert checks (foroba#158)."""
+
 from __future__ import annotations
 
 import db as db_module
@@ -24,7 +25,13 @@ def test_balance_low_silent_above_threshold():
 
 def test_goal_reached_only_for_achieved():
     goals = [
-        {"id": 1, "name": "Emergency fund", "saved_cents": 100000, "currency": "EUR", "is_achieved": True},
+        {
+            "id": 1,
+            "name": "Emergency fund",
+            "saved_cents": 100000,
+            "currency": "EUR",
+            "is_achieved": True,
+        },
         {"id": 2, "name": "Car", "saved_cents": 500, "currency": "EUR", "is_achieved": False},
     ]
     alerts = ns._check_goals(goals)
@@ -86,5 +93,5 @@ def test_transaction_anomaly_ignores_transfers_income_refunds():
     txns = [_txn(i, -2500) for i in range(5)]
     outlier = _txn(99, -30000)
     outlier["is_transfer"] = True
-    alerts = ns._check_transaction_anomalies(txns + [outlier])
+    alerts = ns._check_transaction_anomalies([*txns, outlier])
     assert alerts == []

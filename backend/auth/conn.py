@@ -31,6 +31,7 @@ creation (which only happens once per distinct worker thread, not per
 request) so `connect()`/`run_migrations()` never runs concurrently, while
 each thread still ends up with its own private connection object.
 """
+
 from __future__ import annotations
 
 import sqlite3

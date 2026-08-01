@@ -1,4 +1,5 @@
 """TOTP helpers (pyotp) + QR provisioning. Used by 2FA (feature-flagged off)."""
+
 from __future__ import annotations
 
 import base64

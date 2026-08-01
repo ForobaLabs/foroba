@@ -1,5 +1,6 @@
 """Unit tests for api_keys/webhooks/webhook_deliveries CRUD helpers (foroba#165,
 TI-D item 5, Plan A)."""
+
 from __future__ import annotations
 
 import sqlite3
@@ -82,10 +83,14 @@ def test_reactivate_webhook_resets_failure_state(conn):
 
 
 def test_webhook_delivery_dedup_and_attempt_tracking(conn):
-    webhook = db.create_webhook(conn, user_id=1, target_url="https://x.test/hook", signing_secret="sec")
+    webhook = db.create_webhook(
+        conn, user_id=1, target_url="https://x.test/hook", signing_secret="sec"
+    )
     assert db.get_webhook_delivery(conn, webhook["id"], "goal_reached:1") is None
 
-    db.upsert_webhook_delivery_attempt(conn, webhook["id"], "goal_reached:1", attempt_count=1, status="pending")
+    db.upsert_webhook_delivery_attempt(
+        conn, webhook["id"], "goal_reached:1", attempt_count=1, status="pending"
+    )
     row = db.get_webhook_delivery(conn, webhook["id"], "goal_reached:1")
     assert row["attempt_count"] == 1
     assert row["last_status"] == "pending"

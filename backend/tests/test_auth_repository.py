@@ -16,8 +16,12 @@ def conn():
 
 def test_set_show_debts_persists_value(conn):
     repo.create_user(
-        conn, email="debts-test@example.com", name="Debts Test",
-        password_hash="x", tier="free", audience="base",
+        conn,
+        email="debts-test@example.com",
+        name="Debts Test",
+        password_hash="x",
+        tier="free",
+        audience="base",
     )
     user = repo.get_user_by_email(conn, "debts-test@example.com")
     assert bool(user["show_debts"]) is False
@@ -29,8 +33,12 @@ def test_set_show_debts_persists_value(conn):
 
 def test_create_user_splits_name_into_first_last(conn):
     repo.create_user(
-        conn, email="split-name@example.com", name="Ada Lovelace",
-        password_hash="x", tier="free", audience="base",
+        conn,
+        email="split-name@example.com",
+        name="Ada Lovelace",
+        password_hash="x",
+        tier="free",
+        audience="base",
     )
     user = repo.get_user_by_email(conn, "split-name@example.com")
     assert user["first_name"] == "Ada"
@@ -39,8 +47,12 @@ def test_create_user_splits_name_into_first_last(conn):
 
 def test_create_user_single_word_name_has_empty_last_name(conn):
     repo.create_user(
-        conn, email="single-name@example.com", name="Cher",
-        password_hash="x", tier="free", audience="base",
+        conn,
+        email="single-name@example.com",
+        name="Cher",
+        password_hash="x",
+        tier="free",
+        audience="base",
     )
     user = repo.get_user_by_email(conn, "single-name@example.com")
     assert user["first_name"] == "Cher"
@@ -49,8 +61,12 @@ def test_create_user_single_word_name_has_empty_last_name(conn):
 
 def test_set_name_updates_first_last_and_derived_name(conn):
     repo.create_user(
-        conn, email="rename@example.com", name="Old Name",
-        password_hash="x", tier="free", audience="base",
+        conn,
+        email="rename@example.com",
+        name="Old Name",
+        password_hash="x",
+        tier="free",
+        audience="base",
     )
     user = repo.get_user_by_email(conn, "rename@example.com")
 
@@ -63,8 +79,12 @@ def test_set_name_updates_first_last_and_derived_name(conn):
 
 def test_set_avatar_url_updates_column(conn):
     repo.create_user(
-        conn, email="avatar@example.com", name="Avatar Test",
-        password_hash="x", tier="free", audience="base",
+        conn,
+        email="avatar@example.com",
+        name="Avatar Test",
+        password_hash="x",
+        tier="free",
+        audience="base",
     )
     user = repo.get_user_by_email(conn, "avatar@example.com")
 

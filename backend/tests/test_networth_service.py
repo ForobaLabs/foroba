@@ -1,5 +1,6 @@
 """Unit tests for networth_service.py's merge/fold logic — TI-D item 3 Plan 3,
 foroba#164. HTTP calls mocked via monkeypatch, no real network access."""
+
 from __future__ import annotations
 
 import pytest
@@ -16,10 +17,20 @@ def test_merge_history_two_way_unchanged_when_no_manual_assets():
 
     result = ns._merge_history(bank_history, investments_history, [])
     assert result == [
-        {"date": "2026-07-20", "bank_eur": 100.0, "investments_eur": 50.0,
-         "manual_assets_eur": 0.0, "total_eur": 150.0},
-        {"date": "2026-07-21", "bank_eur": 105.0, "investments_eur": 50.0,
-         "manual_assets_eur": 0.0, "total_eur": 155.0},
+        {
+            "date": "2026-07-20",
+            "bank_eur": 100.0,
+            "investments_eur": 50.0,
+            "manual_assets_eur": 0.0,
+            "total_eur": 150.0,
+        },
+        {
+            "date": "2026-07-21",
+            "bank_eur": 105.0,
+            "investments_eur": 50.0,
+            "manual_assets_eur": 0.0,
+            "total_eur": 155.0,
+        },
     ]
 
 
@@ -52,8 +63,13 @@ async def test_fetch_networth_does_not_double_count_manual_assets_in_total(monke
         if "portfolio/summary" in url:
             # Tsumi's total_eur already folds in manual_assets_eur (tsumi#177,
             # confirmed via portfolio_service.py: total_eur = positions + manual_assets_eur).
-            return {"total_eur": 250.0, "manual_assets_eur": 200.0, "pnl_eur": 5.0,
-                    "pnl_pct": 11.11, "position_count": 2}
+            return {
+                "total_eur": 250.0,
+                "manual_assets_eur": 200.0,
+                "pnl_eur": 5.0,
+                "pnl_pct": 11.11,
+                "position_count": 2,
+            }
         if "portfolio/history" in url:
             return [{"date": "2026-07-21", "value": 50.0}]
         if "manual-assets/net-worth-history" in url:
@@ -74,11 +90,18 @@ async def test_fetch_networth_excludes_manual_assets_when_flag_false(monkeypatch
     async def _fake_get_json(client, url, params, cookie):
         call_urls.append(url)
         if "accounts/net-worth" in url:
-            return {"summary": {"total_cents": 10000, "currency": "EUR", "account_count": 1},
-                    "history": []}
+            return {
+                "summary": {"total_cents": 10000, "currency": "EUR", "account_count": 1},
+                "history": [],
+            }
         if "portfolio/summary" in url:
-            return {"total_eur": 250.0, "manual_assets_eur": 200.0, "pnl_eur": 5.0,
-                    "pnl_pct": 11.11, "position_count": 2}
+            return {
+                "total_eur": 250.0,
+                "manual_assets_eur": 200.0,
+                "pnl_eur": 5.0,
+                "pnl_pct": 11.11,
+                "position_count": 2,
+            }
         if "portfolio/history" in url:
             return []
         raise AssertionError(f"unexpected URL {url} when include_manual_assets=False")
@@ -94,11 +117,18 @@ async def test_fetch_networth_excludes_manual_assets_when_flag_false(monkeypatch
 async def test_fetch_networth_subtracts_debts_when_include_debts_true(monkeypatch):
     async def _fake_get_json(client, url, params, cookie):
         if "accounts/net-worth" in url:
-            return {"summary": {"total_cents": 1_000_000, "currency": "EUR", "account_count": 1},
-                    "history": []}
+            return {
+                "summary": {"total_cents": 1_000_000, "currency": "EUR", "account_count": 1},
+                "history": [],
+            }
         if "portfolio/summary" in url:
-            return {"total_eur": 0.0, "manual_assets_eur": 0.0, "pnl_eur": 0.0,
-                    "pnl_pct": 0.0, "position_count": 0}
+            return {
+                "total_eur": 0.0,
+                "manual_assets_eur": 0.0,
+                "pnl_eur": 0.0,
+                "pnl_pct": 0.0,
+                "position_count": 0,
+            }
         if "portfolio/history" in url:
             return []
         if "debts/net-worth" in url:
@@ -119,11 +149,18 @@ async def test_fetch_networth_omits_debts_key_when_include_debts_false(monkeypat
     async def _fake_get_json(client, url, params, cookie):
         call_urls.append(url)
         if "accounts/net-worth" in url:
-            return {"summary": {"total_cents": 1_000_000, "currency": "EUR", "account_count": 1},
-                    "history": []}
+            return {
+                "summary": {"total_cents": 1_000_000, "currency": "EUR", "account_count": 1},
+                "history": [],
+            }
         if "portfolio/summary" in url:
-            return {"total_eur": 0.0, "manual_assets_eur": 0.0, "pnl_eur": 0.0,
-                    "pnl_pct": 0.0, "position_count": 0}
+            return {
+                "total_eur": 0.0,
+                "manual_assets_eur": 0.0,
+                "pnl_eur": 0.0,
+                "pnl_pct": 0.0,
+                "position_count": 0,
+            }
         if "portfolio/history" in url:
             return []
         raise AssertionError(f"unexpected URL {url} when include_debts=False")

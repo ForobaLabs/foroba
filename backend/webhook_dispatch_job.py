@@ -12,6 +12,7 @@ successfully to the same webhook. Bounded retry (3 attempts) before an event is 
 permanently "failed"; a webhook auto-disables after 10 consecutive failed events,
 protecting the scheduler from wasting cycles on a dead endpoint.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -47,18 +48,21 @@ def _sign(signing_secret: str, body: bytes) -> str:
 
 async def _events_for_user(conn, user: dict, cookie: str) -> list[dict]:
     """Alerts (from notification_service) + monthly reports with status='success'."""
-    notifications = await notification_service.generate_notifications(conn, user["id"], cookie=cookie)
+    notifications = await notification_service.generate_notifications(
+        conn, user["id"], cookie=cookie
+    )
     events = [
-        {"event_key": a["key"], "event": a["type"], "data": a}
-        for a in notifications["items"]
+        {"event_key": a["key"], "event": a["type"], "data": a} for a in notifications["items"]
     ]
     for report in db.list_monthly_reports(conn, user_id=user["id"]):
         if report["status"] == "success":
-            events.append({
-                "event_key": f"monthly_report:{report['id']}",
-                "event": "monthly_report_ready",
-                "data": {"id": report["id"], "year_month": report["year_month"]},
-            })
+            events.append(
+                {
+                    "event_key": f"monthly_report:{report['id']}",
+                    "event": "monthly_report_ready",
+                    "data": {"id": report["id"], "year_month": report["year_month"]},
+                }
+            )
     return events
 
 
@@ -68,11 +72,13 @@ async def _deliver_event(client, conn, webhook: dict, event: dict) -> None:
         return  # dedup — already delivered
 
     attempt_count = (existing["attempt_count"] if existing else 0) + 1
-    body = json.dumps({
-        "event": event["event"],
-        "data": event["data"],
-        "timestamp": datetime.now(UTC).isoformat(),
-    }).encode()
+    body = json.dumps(
+        {
+            "event": event["event"],
+            "data": event["data"],
+            "timestamp": datetime.now(UTC).isoformat(),
+        }
+    ).encode()
 
     try:
         resp = await client.post(
@@ -90,7 +96,10 @@ async def _deliver_event(client, conn, webhook: dict, event: dict) -> None:
         return
     except Exception as exc:
         logger.warning(
-            "webhook delivery failed (webhook=%s, event=%s): %s", webhook["id"], event["event_key"], exc
+            "webhook delivery failed (webhook=%s, event=%s): %s",
+            webhook["id"],
+            event["event_key"],
+            exc,
         )
 
     if attempt_count < _MAX_ATTEMPTS:
@@ -105,7 +114,9 @@ async def _deliver_event(client, conn, webhook: dict, event: dict) -> None:
     updated = db.register_webhook_failure(conn, webhook["id"])
     if not updated["is_active"]:
         logger.warning(
-            "webhook %s auto-disabled after %d consecutive failures", webhook["id"], updated["consecutive_failures"]
+            "webhook %s auto-disabled after %d consecutive failures",
+            webhook["id"],
+            updated["consecutive_failures"],
         )
 
 
@@ -127,8 +138,13 @@ async def _dispatch_all_async() -> None:
             if user is None:
                 continue
             token = create_token(
-                user["id"], private_key, settings.jwt_ttl_minutes,
-                tier=user["tier"], audience=user["audience"], is_admin=bool(user["is_admin"]), kid=kid,
+                user["id"],
+                private_key,
+                settings.jwt_ttl_minutes,
+                tier=user["tier"],
+                audience=user["audience"],
+                is_admin=bool(user["is_admin"]),
+                kid=kid,
             )
             try:
                 events = await _events_for_user(conn, user, token)
@@ -141,7 +157,9 @@ async def _dispatch_all_async() -> None:
                         await _deliver_event(client, conn, webhook, event)
                     except Exception:
                         logger.exception(
-                            "unexpected error delivering webhook %s event %s", webhook["id"], event["event_key"]
+                            "unexpected error delivering webhook %s event %s",
+                            webhook["id"],
+                            event["event_key"],
                         )
 
 

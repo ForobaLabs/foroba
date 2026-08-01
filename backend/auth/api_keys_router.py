@@ -1,5 +1,6 @@
 """API key management endpoints — issue/list/revoke personal API keys (foroba#165,
 TI-D item 5, Plan A)."""
+
 from __future__ import annotations
 
 import secrets
@@ -35,8 +36,12 @@ class ApiKeyCreated(ApiKeyOut):
 
 def _to_out(row: sqlite3.Row) -> ApiKeyOut:
     return ApiKeyOut(
-        id=row["id"], label=row["label"], key_prefix=row["key_prefix"],
-        is_active=bool(row["is_active"]), last_used_at=row["last_used_at"], created_at=row["created_at"],
+        id=row["id"],
+        label=row["label"],
+        key_prefix=row["key_prefix"],
+        is_active=bool(row["is_active"]),
+        last_used_at=row["last_used_at"],
+        created_at=row["created_at"],
     )
 
 
@@ -49,7 +54,11 @@ def create_api_key(
     secret = secrets.token_urlsafe(32)
     prefix = "fpk_" + secrets.token_hex(6)
     row = db.create_api_key(
-        conn, user_id=user["id"], label=body.label, key_prefix=prefix, secret_hash=hash_password(secret),
+        conn,
+        user_id=user["id"],
+        label=body.label,
+        key_prefix=prefix,
+        secret_hash=hash_password(secret),
     )
     return ApiKeyCreated(**_to_out(row).model_dump(), key=f"{prefix}.{secret}")
 

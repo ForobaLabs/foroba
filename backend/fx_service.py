@@ -10,6 +10,7 @@ IMPORTANT: api.frankfurter.app 301-redirects to api.frankfurter.dev (discovered
 live during Plan 1 / pazuru#99) — httpx does not follow redirects by default,
 so follow_redirects=True is required on every request.
 """
+
 from __future__ import annotations
 
 import logging
@@ -78,9 +79,7 @@ def refresh_latest_rates(conn: sqlite3.Connection) -> None:
     logger.info("Refreshed %d FX rates for %s.", len(rates), today.isoformat())
 
 
-def get_rate(
-    conn: sqlite3.Connection, currency: str, rate_date: date | None = None
-) -> float:
+def get_rate(conn: sqlite3.Connection, currency: str, rate_date: date | None = None) -> float:
     """Return how many EUR 1 unit of `currency` is worth on `rate_date` (default: today).
 
     Cache-first: looks up the exact (currency, rate_date) row. On miss, fetches
@@ -110,9 +109,7 @@ def get_rate(
         ).fetchone()
         if fallback:
             return fallback[0]
-        raise FxRateUnavailable(
-            f"No cached or live FX rate available for {currency!r}"
-        ) from exc
+        raise FxRateUnavailable(f"No cached or live FX rate available for {currency!r}") from exc
 
     if currency not in rates:
         raise FxRateUnavailable(f"Frankfurter has no rate for currency {currency!r}")

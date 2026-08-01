@@ -1,5 +1,6 @@
 """GET /fx/rates — latest EUR-based FX rates, for the frontend currency
 dropdown + client-side conversion (TI-D item 3 Plan 3, foroba#164)."""
+
 from __future__ import annotations
 
 import sqlite3

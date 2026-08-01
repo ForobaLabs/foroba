@@ -1,4 +1,5 @@
 """Jeli service — context gathering + Ollama interaction."""
+
 from __future__ import annotations
 
 import asyncio
@@ -19,6 +20,7 @@ PROMPT_TEMPLATE = (Path(__file__).parent / "prompts" / "jeli_system.txt").read_t
 # ---------------------------------------------------------------------------
 # Personality helpers
 # ---------------------------------------------------------------------------
+
 
 def _tone_label(value: int) -> str:
     if value <= 2:
@@ -41,7 +43,11 @@ def _tone_description(value: int) -> str:
 
 
 def _expertise_label(value: int) -> str:
-    return "Financial expert" if value >= 7 else ("Intermediate" if value >= 4 else "Beginner-friendly")
+    return (
+        "Financial expert"
+        if value >= 7
+        else ("Intermediate" if value >= 4 else "Beginner-friendly")
+    )
 
 
 def _expertise_description(value: int) -> str:
@@ -55,6 +61,7 @@ def _expertise_description(value: int) -> str:
 # ---------------------------------------------------------------------------
 # Context gathering
 # ---------------------------------------------------------------------------
+
 
 async def _fetch_context(
     client: httpx.AsyncClient, url: str, label: str, cookie: str | None
@@ -87,6 +94,7 @@ async def gather_context(
 # System prompt builder
 # ---------------------------------------------------------------------------
 
+
 def build_system_prompt(
     pazuru_context: str,
     tsumi_context: str,
@@ -109,6 +117,7 @@ def build_system_prompt(
 # Ollama streaming
 # ---------------------------------------------------------------------------
 
+
 async def stream_chat(system_prompt: str, message: str) -> AsyncIterator[str]:
     payload = {
         "model": settings.ollama_model,
@@ -119,7 +128,9 @@ async def stream_chat(system_prompt: str, message: str) -> AsyncIterator[str]:
         "stream": True,
     }
     try:
-        async with httpx.AsyncClient(timeout=httpx.Timeout(connect=10.0, read=300.0, write=30.0, pool=5.0)) as client:
+        async with httpx.AsyncClient(
+            timeout=httpx.Timeout(connect=10.0, read=300.0, write=30.0, pool=5.0)
+        ) as client:
             async with client.stream(
                 "POST",
                 f"{settings.ollama_base_url}/api/chat",
@@ -160,7 +171,9 @@ async def generate_narrative(system_prompt: str, message: str) -> str:
         ],
         "stream": False,
     }
-    async with httpx.AsyncClient(timeout=httpx.Timeout(connect=10.0, read=300.0, write=30.0, pool=5.0)) as client:
+    async with httpx.AsyncClient(
+        timeout=httpx.Timeout(connect=10.0, read=300.0, write=30.0, pool=5.0)
+    ) as client:
         resp = await client.post(f"{settings.ollama_base_url}/api/chat", json=payload)
         resp.raise_for_status()
         data = resp.json()

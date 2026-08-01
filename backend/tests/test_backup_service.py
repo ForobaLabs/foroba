@@ -1,4 +1,5 @@
 """Tests for backup_service.py (TI-A, foroba#151)."""
+
 from __future__ import annotations
 
 import io
@@ -34,14 +35,18 @@ def test_export_archive_contains_all_three_files(paths):
 
 
 def test_import_archive_restores_files(paths):
-    db_path, priv, pub = paths
+    db_path, priv, _pub = paths
     archive = backup_service.export_archive()
     db_path.write_bytes(b"corrupted")
     priv.write_bytes(b"corrupted")
 
     result = backup_service.import_archive(archive)
 
-    assert set(result["restored_files"]) == {"foroba_identity.db", "jwt_private.pem", "jwt_public.pem"}
+    assert set(result["restored_files"]) == {
+        "foroba_identity.db",
+        "jwt_private.pem",
+        "jwt_public.pem",
+    }
     assert db_path.read_bytes() == b"fake-sqlite-content"
     assert priv.read_bytes() == b"fake-private-key"
 

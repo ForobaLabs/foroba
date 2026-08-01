@@ -1,4 +1,5 @@
 """Route test for GET /networth/summary (service mocked, foroba#157)."""
+
 from __future__ import annotations
 
 from typing import Any
@@ -11,16 +12,30 @@ from main import app
 
 
 async def _fake_fetch_networth(
-    days: int, *, cookie: str | None = None, include_manual_assets: bool = True,
+    days: int,
+    *,
+    cookie: str | None = None,
+    include_manual_assets: bool = True,
     include_debts: bool = False,
 ) -> dict[str, Any]:
     return {
-        "bank": {"total_cents": 10000, "currency": "EUR", "account_count": 1,
-                 "excluded_accounts": []},
+        "bank": {
+            "total_cents": 10000,
+            "currency": "EUR",
+            "account_count": 1,
+            "excluded_accounts": [],
+        },
         "investments": {"total_eur": 50.0, "pnl_eur": 5.0, "pnl_pct": 11.11, "position_count": 2},
         "total_eur": 150.0,
-        "history": [{"date": "2026-07-16", "bank_eur": 100.0, "investments_eur": 50.0,
-                     "manual_assets_eur": 0.0, "total_eur": 150.0}],
+        "history": [
+            {
+                "date": "2026-07-16",
+                "bank_eur": 100.0,
+                "investments_eur": 50.0,
+                "manual_assets_eur": 0.0,
+                "total_eur": 150.0,
+            }
+        ],
         "degraded": False,
         "disclaimer": ns.DISCLAIMER,
         "_cookie_seen": cookie,
@@ -65,8 +80,9 @@ def test_networth_route_forwards_cookie(monkeypatch):
 def test_networth_route_forwards_include_manual_assets_flag(monkeypatch):
     captured = {}
 
-    async def _capturing_fetch(days, *, cookie=None, include_manual_assets=True,
-                                include_debts=False):
+    async def _capturing_fetch(
+        days, *, cookie=None, include_manual_assets=True, include_debts=False
+    ):
         captured["include_manual_assets"] = include_manual_assets
         return await _fake_fetch_networth(days, cookie=cookie)
 
@@ -84,8 +100,9 @@ def test_networth_route_forwards_include_manual_assets_flag(monkeypatch):
 def test_networth_route_forwards_include_debts_flag(monkeypatch):
     captured = {}
 
-    async def _capturing_fetch(days, *, cookie=None, include_manual_assets=True,
-                                include_debts=False):
+    async def _capturing_fetch(
+        days, *, cookie=None, include_manual_assets=True, include_debts=False
+    ):
         captured["include_debts"] = include_debts
         return await _fake_fetch_networth(days, cookie=cookie)
 

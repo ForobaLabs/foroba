@@ -1,4 +1,5 @@
 """Docker lifecycle for the Jeli Lab sandbox: auto-start, container run, cleanup."""
+
 from __future__ import annotations
 
 import asyncio
@@ -34,8 +35,10 @@ def is_docker_running() -> bool:
         return True
     try:
         subprocess.run(
-            ["docker", "info"], capture_output=True,
-            timeout=DOCKER_INFO_TIMEOUT_SECONDS, check=True,
+            ["docker", "info"],
+            capture_output=True,
+            timeout=DOCKER_INFO_TIMEOUT_SECONDS,
+            check=True,
         )
         return True
     except (subprocess.CalledProcessError, subprocess.TimeoutExpired, FileNotFoundError):
@@ -80,21 +83,31 @@ def run_sandbox(code: str, dataframes: dict[str, pd.DataFrame]) -> dict[str, Any
             df.to_parquet(data_dir / f"{name}.parquet")
 
         cmd = [
-            "docker", "run", "--rm",
-            "--network", "none",
+            "docker",
+            "run",
+            "--rm",
+            "--network",
+            "none",
             "--read-only",
-            "--tmpfs", "/tmp:size=64m",
+            "--tmpfs",
+            "/tmp:size=64m",
             "--memory=512m",
             "--cpus=1",
             "--pids-limit=64",
-            "--ulimit", "cpu=10",
-            "--user", "sandboxuser",
-            "-v", f"{workspace}:/workspace:ro",
+            "--ulimit",
+            "cpu=10",
+            "--user",
+            "sandboxuser",
+            "-v",
+            f"{workspace}:/workspace:ro",
             settings.sandbox_image,
         ]
         try:
             proc = subprocess.run(
-                cmd, capture_output=True, text=True, timeout=CONTAINER_RUN_TIMEOUT_SECONDS,
+                cmd,
+                capture_output=True,
+                text=True,
+                timeout=CONTAINER_RUN_TIMEOUT_SECONDS,
             )
             last_line = proc.stdout.strip().splitlines()[-1] if proc.stdout.strip() else "{}"
             return json.loads(last_line)

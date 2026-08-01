@@ -1,4 +1,5 @@
 """Tests for monthly_report_service core generate/retry logic (foroba#159)."""
+
 from __future__ import annotations
 
 import sqlite3
@@ -9,7 +10,13 @@ import db
 import jeli_service
 import monthly_report_service as mrs
 
-_USER = {"id": 1, "email": "u1@test.local", "name": "Test User", "tier": "premium", "audience": "base"}
+_USER = {
+    "id": 1,
+    "email": "u1@test.local",
+    "name": "Test User",
+    "tier": "premium",
+    "audience": "base",
+}
 
 
 @pytest.fixture
@@ -37,7 +44,9 @@ async def test_generate_new_report_success(monkeypatch, conn):
     monkeypatch.setattr(jeli_service, "gather_context", _fake_gather_context)
     monkeypatch.setattr(jeli_service, "generate_narrative", _fake_generate_narrative)
     sent = []
-    monkeypatch.setattr(mrs, "send_email", lambda to, subject, body: sent.append((to, subject, body)))
+    monkeypatch.setattr(
+        mrs, "send_email", lambda to, subject, body: sent.append((to, subject, body))
+    )
 
     row = await mrs.generate_new_report(conn, _USER, "2026-07", "manual", cookie="cookie123")
 
@@ -66,7 +75,9 @@ async def test_generate_new_report_failure_path_sets_failed_status(monkeypatch, 
     monkeypatch.setattr(jeli_service, "gather_context", _fake_gather_context)
     monkeypatch.setattr(jeli_service, "generate_narrative", _fake_generate_narrative_fails)
     sent = []
-    monkeypatch.setattr(mrs, "send_email", lambda to, subject, body: sent.append((to, subject, body)))
+    monkeypatch.setattr(
+        mrs, "send_email", lambda to, subject, body: sent.append((to, subject, body))
+    )
 
     row = await mrs.generate_new_report(conn, _USER, "2026-07", "manual", cookie=None)
 
@@ -83,7 +94,9 @@ async def test_retry_report_updates_same_row_without_consuming_quota(monkeypatch
 
     failed = await mrs.generate_new_report(conn, _USER, "2026-07", "manual", cookie=None)
     assert failed["status"] == "failed"
-    count_before = db.count_monthly_reports_this_month(conn, user_id=_USER["id"], year_month="2026-07")
+    count_before = db.count_monthly_reports_this_month(
+        conn, user_id=_USER["id"], year_month="2026-07"
+    )
 
     monkeypatch.setattr(jeli_service, "generate_narrative", _fake_generate_narrative)
     retried = await mrs.retry_report(conn, _USER, failed["id"], cookie=None)
@@ -91,7 +104,9 @@ async def test_retry_report_updates_same_row_without_consuming_quota(monkeypatch
     assert retried["id"] == failed["id"]
     assert retried["status"] == "success"
     assert retried["attempt_count"] == 2
-    count_after = db.count_monthly_reports_this_month(conn, user_id=_USER["id"], year_month="2026-07")
+    count_after = db.count_monthly_reports_this_month(
+        conn, user_id=_USER["id"], year_month="2026-07"
+    )
     assert count_after == count_before
 
 

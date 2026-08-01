@@ -1,4 +1,5 @@
 """API-key auth dependency for the public read API (foroba#165, TI-D item 5, Plan A)."""
+
 from __future__ import annotations
 
 import sqlite3
@@ -20,7 +21,9 @@ def require_api_key(
     conn: sqlite3.Connection = Depends(get_conn),
 ) -> dict:
     if not authorization or not authorization.startswith("Bearer "):
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Missing or malformed Authorization header")
+        raise HTTPException(
+            status.HTTP_401_UNAUTHORIZED, "Missing or malformed Authorization header"
+        )
     token = authorization.removeprefix("Bearer ").strip()
     key_prefix, sep, secret = token.rpartition(".")
     if not sep:
@@ -39,11 +42,13 @@ def require_api_key(
     access = evaluate(FEATURE_KEY, user, gating_enabled=gating_enabled)
     if not access.visible:
         raise HTTPException(
-            status.HTTP_403_FORBIDDEN, {"error": {"code": "audience_required", "feature": FEATURE_KEY}}
+            status.HTTP_403_FORBIDDEN,
+            {"error": {"code": "audience_required", "feature": FEATURE_KEY}},
         )
     if not access.unlocked:
         raise HTTPException(
-            status.HTTP_402_PAYMENT_REQUIRED, {"error": {"code": "premium_required", "feature": FEATURE_KEY}}
+            status.HTTP_402_PAYMENT_REQUIRED,
+            {"error": {"code": "premium_required", "feature": FEATURE_KEY}},
         )
 
     db.touch_api_key_last_used(conn, row["id"])

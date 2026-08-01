@@ -3,6 +3,7 @@
 reportlab is pure-Python — no system binary dependency, safe for the Docker
 image. Rendered on-demand only, never cached (spec Non-goals).
 """
+
 from __future__ import annotations
 
 import io
@@ -18,8 +19,12 @@ DISCLAIMER = "AI-generated summary, not financial advice — Personal Finance HU
 def render_pdf(*, year_month: str, narrative_text: str) -> bytes:
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(
-        buffer, pagesize=A4,
-        topMargin=2 * cm, bottomMargin=2 * cm, leftMargin=2 * cm, rightMargin=2 * cm,
+        buffer,
+        pagesize=A4,
+        topMargin=2 * cm,
+        bottomMargin=2 * cm,
+        leftMargin=2 * cm,
+        rightMargin=2 * cm,
     )
     styles = getSampleStyleSheet()
     story = [

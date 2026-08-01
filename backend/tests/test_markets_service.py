@@ -1,4 +1,5 @@
 """Tests for the Markets aggregation service (Tsumi HTTP boundary mocked)."""
+
 from __future__ import annotations
 
 import asyncio
@@ -95,9 +96,7 @@ def test_fetch_snapshot_all_down_returns_partial_not_raise(monkeypatch):
     monkeypatch.setattr(
         ms.httpx,
         "AsyncClient",
-        _client_factory(
-            {"combined": boom, "news/sentiment": boom, "screener/scan": boom}
-        ),
+        _client_factory({"combined": boom, "news/sentiment": boom, "screener/scan": boom}),
     )
     snap = asyncio.run(ms.fetch_snapshot("BTCUSDT", "crypto"))
     assert snap["rating"] is None

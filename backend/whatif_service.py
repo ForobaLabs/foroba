@@ -13,6 +13,7 @@ compounds only the *existing* Tsumi capital — new savings from spend cuts,
 income delta, and one-off events are modeled as bank balance only, never as
 new investment contributions.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -68,7 +69,9 @@ def compute_projection(
     horizon so one-off events and compounding stay accurate."""
     events_by_month: dict[int, int] = {}
     for ev in one_off_events:
-        events_by_month[ev["month_offset"]] = events_by_month.get(ev["month_offset"], 0) + ev["amount_cents"]
+        events_by_month[ev["month_offset"]] = (
+            events_by_month.get(ev["month_offset"], 0) + ev["amount_cents"]
+        )
 
     monthly_growth = investment_growth_rate_pct / 100 / 12
     adjusted_monthly_net = monthly_net_delta_cents + spend_cut_savings_cents + income_delta_cents
@@ -103,7 +106,10 @@ def _monthly_net_delta_cents(bank_history: list[dict[str, Any]]) -> int:
 
 
 async def _get_json(
-    client: httpx.AsyncClient, url: str, params: dict[str, Any] | None, cookie: str | None,
+    client: httpx.AsyncClient,
+    url: str,
+    params: dict[str, Any] | None,
+    cookie: str | None,
 ) -> Any | None:
     cookies = {"suite_session": cookie} if cookie else None
     try:
@@ -116,7 +122,10 @@ async def _get_json(
 
 
 async def _post_json(
-    client: httpx.AsyncClient, url: str, body: dict[str, Any], cookie: str | None,
+    client: httpx.AsyncClient,
+    url: str,
+    body: dict[str, Any],
+    cookie: str | None,
 ) -> Any | None:
     cookies = {"suite_session": cookie} if cookie else None
     try:
@@ -129,8 +138,11 @@ async def _post_json(
 
 
 async def _goal_impacts(
-    client: httpx.AsyncClient, pazuru_base: str, cookie: str | None,
-    goals: list[dict[str, Any]], goal_contributions: list[dict[str, Any]],
+    client: httpx.AsyncClient,
+    pazuru_base: str,
+    cookie: str | None,
+    goals: list[dict[str, Any]],
+    goal_contributions: list[dict[str, Any]],
 ) -> list[dict[str, Any]]:
     extra_by_goal = {gc["goal_id"]: gc["extra_monthly_cents"] for gc in goal_contributions}
     impacts: list[dict[str, Any]] = []
@@ -139,7 +151,8 @@ async def _goal_impacts(
         if extra is None:
             continue
         projection = await _post_json(
-            client, f"{pazuru_base}/api/goals/project",
+            client,
+            f"{pazuru_base}/api/goals/project",
             {
                 "target_cents": g["target_cents"],
                 "saved_cents": g["saved_cents"],
@@ -160,7 +173,10 @@ async def _goal_impacts(
 
 
 async def simulate(
-    params: dict[str, Any], horizon_months: int, *, owner_cookie: str | None,
+    params: dict[str, Any],
+    horizon_months: int,
+    *,
+    owner_cookie: str | None,
 ) -> dict[str, Any]:
     """Fetch current household state from Pazuru+Tsumi and compute the
     projection for the given scenario parameters. Always returns a dict —
@@ -170,13 +186,20 @@ async def simulate(
     tsumi_base = settings.tsumi_api_url.rstrip("/")
 
     async with httpx.AsyncClient() as client:
-        net_worth, investments_summary, goals, what_if_baseline, what_if_adjusted = await asyncio.gather(
+        (
+            net_worth,
+            investments_summary,
+            goals,
+            what_if_baseline,
+            what_if_adjusted,
+        ) = await asyncio.gather(
             _get_json(client, f"{pazuru_base}/api/accounts/net-worth", {"days": 90}, owner_cookie),
             _get_json(client, f"{tsumi_base}/api/portfolio/summary", {}, owner_cookie),
             _get_json(client, f"{pazuru_base}/api/goals", {}, owner_cookie),
             _post_json(client, f"{pazuru_base}/api/forecasts/what-if", {}, owner_cookie),
             _post_json(
-                client, f"{pazuru_base}/api/forecasts/what-if",
+                client,
+                f"{pazuru_base}/api/forecasts/what-if",
                 {
                     "eliminate_categories": params.get("eliminate_categories"),
                     "reduce_merchant_pct": params.get("reduce_merchant_pct"),
@@ -188,8 +211,11 @@ async def simulate(
         bank_summary = net_worth.get("summary") if isinstance(net_worth, dict) else None
         bank_history = net_worth.get("history") if isinstance(net_worth, dict) else None
         degraded = (
-            bank_summary is None or investments_summary is None or goals is None
-            or what_if_baseline is None or what_if_adjusted is None
+            bank_summary is None
+            or investments_summary is None
+            or goals is None
+            or what_if_baseline is None
+            or what_if_adjusted is None
         )
 
         bank_total_cents = bank_summary["total_cents"] if bank_summary else 0
@@ -197,7 +223,8 @@ async def simulate(
         monthly_net_delta_cents = _monthly_net_delta_cents(bank_history or [])
         spend_cut_savings_cents = (
             what_if_baseline["base_cents"] - what_if_adjusted["base_cents"]
-            if what_if_baseline and what_if_adjusted else 0
+            if what_if_baseline and what_if_adjusted
+            else 0
         )
 
         goal_impacts = await _goal_impacts(

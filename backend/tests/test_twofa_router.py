@@ -20,7 +20,8 @@ def client():
     app = FastAPI()
     app.dependency_overrides[get_conn] = lambda: conn
     app.dependency_overrides[get_current_user] = lambda: dict(
-        conn.execute("SELECT * FROM users WHERE email='demo@foroba.app'").fetchone())
+        conn.execute("SELECT * FROM users WHERE email='demo@foroba.app'").fetchone()
+    )
     app.include_router(router)
     return TestClient(app), conn
 
@@ -31,27 +32,30 @@ def test_enroll_returns_qr_and_secret(client):
     assert r.status_code == 200
     body = r.json()
     assert body["qr"].startswith("data:image/png;base64,")
-    assert conn.execute(
-        "SELECT totp_secret FROM users WHERE email='demo@foroba.app'"
-    ).fetchone()["totp_secret"]
+    assert conn.execute("SELECT totp_secret FROM users WHERE email='demo@foroba.app'").fetchone()[
+        "totp_secret"
+    ]
 
 
 def test_verify_enables(client):
     c, conn = client
     c.post("/auth/2fa/enroll")
-    secret = conn.execute(
-        "SELECT totp_secret FROM users WHERE email='demo@foroba.app'"
-    ).fetchone()["totp_secret"]
+    secret = conn.execute("SELECT totp_secret FROM users WHERE email='demo@foroba.app'").fetchone()[
+        "totp_secret"
+    ]
     code = pyotp.TOTP(secret).now()
     r = c.post("/auth/2fa/verify", json={"code": code})
     assert r.status_code == 200
-    assert conn.execute(
-        "SELECT totp_enabled FROM users WHERE email='demo@foroba.app'"
-    ).fetchone()["totp_enabled"] == 1
+    assert (
+        conn.execute("SELECT totp_enabled FROM users WHERE email='demo@foroba.app'").fetchone()[
+            "totp_enabled"
+        ]
+        == 1
+    )
 
 
 def test_verify_rejects_bad_code(client):
-    c, conn = client
+    c, _conn = client
     c.post("/auth/2fa/enroll")
     r = c.post("/auth/2fa/verify", json={"code": "000000"})
     assert r.status_code == 400

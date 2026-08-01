@@ -4,6 +4,7 @@ Foroba is the ONLY service that ever holds the private key — it is generated o
 first startup and persisted to disk. Pazuru/Tsumi never see the private key; they verify
 tokens using the public key exposed at GET /.well-known/jwks.json (see main.py).
 """
+
 from __future__ import annotations
 
 import hashlib

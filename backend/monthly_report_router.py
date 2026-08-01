@@ -1,4 +1,5 @@
 """Monthly AI report routes (foroba#159, TI-D item 2)."""
+
 from __future__ import annotations
 
 import sqlite3
@@ -33,10 +34,15 @@ class ReportOut(BaseModel):
 
 def _to_out(row: sqlite3.Row) -> ReportOut:
     return ReportOut(
-        id=row["id"], year_month=row["year_month"], trigger=row["trigger"],
-        status=row["status"], narrative_text=row["narrative_text"],
-        error_message=row["error_message"], attempt_count=row["attempt_count"],
-        created_at=row["created_at"], updated_at=row["updated_at"],
+        id=row["id"],
+        year_month=row["year_month"],
+        trigger=row["trigger"],
+        status=row["status"],
+        narrative_text=row["narrative_text"],
+        error_message=row["error_message"],
+        attempt_count=row["attempt_count"],
+        created_at=row["created_at"],
+        updated_at=row["updated_at"],
     )
 
 
@@ -118,6 +124,7 @@ def get_pdf(
         year_month=row["year_month"], narrative_text=row["narrative_text"] or ""
     )
     return StreamingResponse(
-        iter([pdf_bytes]), media_type="application/pdf",
+        iter([pdf_bytes]),
+        media_type="application/pdf",
         headers={"Content-Disposition": f'attachment; filename="report-{row["year_month"]}.pdf"'},
     )

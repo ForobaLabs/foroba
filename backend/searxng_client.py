@@ -3,6 +3,7 @@
 Results are summarized into the LLM prompt only — never passed to the sandbox
 execution environment, and the sandbox container never gains network access.
 """
+
 from __future__ import annotations
 
 import logging

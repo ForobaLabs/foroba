@@ -6,6 +6,7 @@ New-user onboarding plan (2026-07-24-new-user-onboarding-and-connectors-plan.md)
   investments) is finished or skipped. Existing users are backfilled to "already done"
   so they never see the new onboarding flow.
 """
+
 from __future__ import annotations
 
 from alembic import op

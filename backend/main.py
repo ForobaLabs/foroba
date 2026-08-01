@@ -3,6 +3,7 @@
 Start:
     uvicorn main:app --host 127.0.0.1 --port 8002 --reload
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -201,9 +202,7 @@ async def markets_snapshot(
     Read-only superapp surface. Degrades gracefully if Tsumi is offline:
     failed sections are null and `degraded` is true; never returns 500.
     """
-    return await markets_service.fetch_snapshot(
-        symbol, asset_class, cookie=suite_session
-    )
+    return await markets_service.fetch_snapshot(symbol, asset_class, cookie=suite_session)
 
 
 @app.get("/markets/overview")
@@ -250,9 +249,7 @@ async def list_notifications(
     low balance, goal reached, recurring payment increased, unusual
     transaction. Deterministic checks over Pazuru data — never LLM-based.
     Degrades gracefully if Pazuru is offline (empty items, degraded=true)."""
-    return await notification_service.generate_notifications(
-        conn, user["id"], cookie=suite_session
-    )
+    return await notification_service.generate_notifications(conn, user["id"], cookie=suite_session)
 
 
 @app.post("/notifications/{notif_key}/dismiss")
@@ -267,9 +264,11 @@ async def dismiss_notification(
 
 
 @app.post("/chat")
-async def jeli_chat(req: ChatRequest,
-                    _: dict = Depends(get_current_user),
-                    suite_session: str | None = Cookie(default=None)) -> StreamingResponse:
+async def jeli_chat(
+    req: ChatRequest,
+    _: dict = Depends(get_current_user),
+    suite_session: str | None = Cookie(default=None),
+) -> StreamingResponse:
     """Stream a Jeli response for the given message.
 
     Gathers context from Pazuru + Tsumi, builds the system prompt,

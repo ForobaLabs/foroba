@@ -19,7 +19,8 @@ def app_conn():
     app = FastAPI()
     app.dependency_overrides[get_conn] = lambda: conn
     app.dependency_overrides[get_current_user] = lambda: dict(
-        conn.execute("SELECT * FROM users WHERE email='demo@foroba.app'").fetchone())
+        conn.execute("SELECT * FROM users WHERE email='demo@foroba.app'").fetchone()
+    )
     app.include_router(router)
     return TestClient(app), conn
 
@@ -33,13 +34,13 @@ def test_get_questionnaire(app_conn):
 
 def test_submit_sets_and_locks_audience(app_conn):
     c, conn = app_conn
-    answers = {"experience": 3, "instruments": 3, "frequency": 2,
-               "knowledge": 2, "risk": 2}
+    answers = {"experience": 3, "instruments": 3, "frequency": 2, "knowledge": 2, "risk": 2}
     r = c.post("/onboarding/mifid", json={"answers": answers})
     assert r.status_code == 200
     assert r.json()["audience"] == "expert"
-    row = conn.execute("SELECT audience, audience_locked FROM users "
-                       "WHERE email='demo@foroba.app'").fetchone()
+    row = conn.execute(
+        "SELECT audience, audience_locked FROM users WHERE email='demo@foroba.app'"
+    ).fetchone()
     assert row["audience"] == "expert" and row["audience_locked"] == 1
 
 
@@ -47,6 +48,5 @@ def test_manual_toggle(app_conn):
     c, conn = app_conn
     r = c.patch("/auth/audience", json={"audience": "expert"})
     assert r.status_code == 200
-    row = conn.execute("SELECT audience FROM users "
-                       "WHERE email='demo@foroba.app'").fetchone()
+    row = conn.execute("SELECT audience FROM users WHERE email='demo@foroba.app'").fetchone()
     assert row["audience"] == "expert"

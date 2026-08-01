@@ -7,6 +7,7 @@ Create Date: 2026-07-16
 Adds notification_dismissals + recurring_amount_baselines (see db.py::SCHEMA)
 for the notifications/alerts feature (foroba#158, TI-C).
 """
+
 from alembic import op
 
 revision = "0003"

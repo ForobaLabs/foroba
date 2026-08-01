@@ -3,7 +3,7 @@ import sqlite3
 import pytest
 
 from auth import repository as repo
-from db import init_schema
+from db import init_schema, seed_mock_users
 
 
 @pytest.fixture
@@ -37,17 +37,12 @@ def test_get_missing_returns_none(conn):
     assert repo.get_user_by_id(conn, 999) is None
 
 
-
-
 def test_set_audience_locks(conn):
     u = repo.create_user(conn, email="m@n.com", name="M", password_hash="h")
     repo.set_audience(conn, u["id"], "expert", locked=True)
     updated = repo.get_user_by_id(conn, u["id"])
     assert updated["audience"] == "expert"
     assert updated["audience_locked"] == 1
-
-
-from db import seed_mock_users
 
 
 def test_seed_mock_users_idempotent(conn):
@@ -63,6 +58,7 @@ def test_seed_mock_users_idempotent(conn):
 
 def test_totp_lifecycle(conn):
     from auth import repository as repo
+
     u = repo.create_user(conn, email="t@f.com", name="T", password_hash="h")
     repo.set_totp_secret(conn, u["id"], "SECRET234567")
     assert repo.get_user_by_id(conn, u["id"])["totp_secret"] == "SECRET234567"

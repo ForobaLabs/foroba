@@ -24,6 +24,7 @@ async def test_stream_chat_ollama_unreachable_completes_gracefully(monkeypatch):
     """Ollama refusing the connection must not crash the widget — the stream
     should complete normally (no exception) with no content, letting the
     frontend show its 'AI offline' fallback instead of a hard connection reset."""
+
     def fake_stream(self, method, url, **kwargs):
         return _RaisingStreamCtx(httpx.ConnectError("Connection refused"))
 
@@ -36,6 +37,7 @@ async def test_stream_chat_ollama_unreachable_completes_gracefully(monkeypatch):
 @pytest.mark.asyncio
 async def test_stream_chat_ollama_http_error_completes_gracefully(monkeypatch):
     """A non-2xx from Ollama (e.g. model not pulled) must also degrade gracefully."""
+
     def fake_stream(self, method, url, **kwargs):
         exc = httpx.HTTPStatusError(
             "500", request=httpx.Request(method, url), response=httpx.Response(500)
@@ -51,7 +53,10 @@ async def test_stream_chat_ollama_http_error_completes_gracefully(monkeypatch):
 @pytest.mark.asyncio
 async def test_generate_narrative_returns_content(monkeypatch):
     async def fake_post(self, url, **kwargs):
-        return httpx.Response(200, json={"message": {"content": "Summary text"}}, request=httpx.Request("POST", url))
+        return httpx.Response(
+            200, json={"message": {"content": "Summary text"}}, request=httpx.Request("POST", url)
+        )
+
     monkeypatch.setattr(httpx.AsyncClient, "post", fake_post)
     result = await jeli_service.generate_narrative("system", "user msg")
     assert result == "Summary text"
@@ -61,6 +66,7 @@ async def test_generate_narrative_returns_content(monkeypatch):
 async def test_generate_narrative_raises_on_ollama_error(monkeypatch):
     async def fake_post(self, url, **kwargs):
         raise httpx.ConnectError("Connection refused")
+
     monkeypatch.setattr(httpx.AsyncClient, "post", fake_post)
     with pytest.raises(httpx.ConnectError):
         await jeli_service.generate_narrative("system", "user msg")
@@ -69,7 +75,10 @@ async def test_generate_narrative_raises_on_ollama_error(monkeypatch):
 @pytest.mark.asyncio
 async def test_generate_narrative_raises_on_empty_content(monkeypatch):
     async def fake_post(self, url, **kwargs):
-        return httpx.Response(200, json={"message": {"content": ""}}, request=httpx.Request("POST", url))
+        return httpx.Response(
+            200, json={"message": {"content": ""}}, request=httpx.Request("POST", url)
+        )
+
     monkeypatch.setattr(httpx.AsyncClient, "post", fake_post)
     with pytest.raises(ValueError):
         await jeli_service.generate_narrative("system", "user msg")

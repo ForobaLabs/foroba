@@ -1,4 +1,5 @@
 """Route tests for /whatif/* (service + db mocked, foroba#162)."""
+
 from __future__ import annotations
 
 import sqlite3
@@ -12,16 +13,39 @@ from db import init_schema
 from main import app
 from settings_store import init_settings, set_value
 
-_PREMIUM_USER = {"id": 1, "email": "u1@test.local", "tier": "premium", "audience": "expert",
-                  "household_id": None, "is_admin": False}
-_FREE_USER = {"id": 2, "email": "u2@test.local", "tier": "free", "audience": "expert",
-              "household_id": None, "is_admin": False}
+_PREMIUM_USER = {
+    "id": 1,
+    "email": "u1@test.local",
+    "tier": "premium",
+    "audience": "expert",
+    "household_id": None,
+    "is_admin": False,
+}
+_FREE_USER = {
+    "id": 2,
+    "email": "u2@test.local",
+    "tier": "free",
+    "audience": "expert",
+    "household_id": None,
+    "is_admin": False,
+}
 
 
 async def _fake_simulate(params, horizon_months, *, owner_cookie=None):
-    return {"points": [{"month": 1, "resolution": "monthly", "bank_eur": 1.0,
-                         "investments_eur": 0.0, "total_eur": 1.0}],
-            "goal_impacts": [], "degraded": False, "disclaimer": ws.DISCLAIMER}
+    return {
+        "points": [
+            {
+                "month": 1,
+                "resolution": "monthly",
+                "bank_eur": 1.0,
+                "investments_eur": 0.0,
+                "total_eur": 1.0,
+            }
+        ],
+        "goal_impacts": [],
+        "degraded": False,
+        "disclaimer": ws.DISCLAIMER,
+    }
 
 
 def _override_user(user):
@@ -67,10 +91,14 @@ def test_scenario_crud_roundtrip(monkeypatch):
     _override_user(_PREMIUM_USER)
     try:
         client = TestClient(app)
-        create = client.post("/whatif/scenarios", json={
-            "name": "Test scenario", "horizon_months": 12,
-            "params": {"horizon_months": 12},
-        })
+        create = client.post(
+            "/whatif/scenarios",
+            json={
+                "name": "Test scenario",
+                "horizon_months": 12,
+                "params": {"horizon_months": 12},
+            },
+        )
         assert create.status_code == 201
         scenario_id = create.json()["id"]
 
@@ -81,9 +109,14 @@ def test_scenario_crud_roundtrip(monkeypatch):
         assert fetched.status_code == 200
         assert fetched.json()["projection"]["points"][0]["month"] == 1
 
-        updated = client.put(f"/whatif/scenarios/{scenario_id}", json={
-            "name": "Renamed", "horizon_months": 24, "params": {"horizon_months": 24},
-        })
+        updated = client.put(
+            f"/whatif/scenarios/{scenario_id}",
+            json={
+                "name": "Renamed",
+                "horizon_months": 24,
+                "params": {"horizon_months": 24},
+            },
+        )
         assert updated.json()["name"] == "Renamed"
 
         deleted = client.delete(f"/whatif/scenarios/{scenario_id}")

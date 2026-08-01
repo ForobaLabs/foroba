@@ -6,6 +6,7 @@ Suite identity plan (2026-07-25-suite-identity-plan1-foroba-backend-shared-ui.md
   their current `name` on the first space.
 - avatar_url: optional, set via POST /auth/me/avatar; NULL means show initials.
 """
+
 from __future__ import annotations
 
 from sqlalchemy import text

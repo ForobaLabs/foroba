@@ -9,6 +9,7 @@ Adds api_keys, webhooks, webhook_deliveries (see db.py::SCHEMA) for personal API
 issuance and webhook event delivery — self-service automation surface for a user's own
 scripts/n8n/Zapier/Home Assistant.
 """
+
 from __future__ import annotations
 
 from alembic import op

@@ -8,6 +8,7 @@ Run:
         --headless -u <users> -r <spawn-rate> -t <duration> \
         --csv loadtest/results/run
 """
+
 from __future__ import annotations
 
 import random

@@ -1,5 +1,6 @@
 """Tests for backup_orchestrator.py (TI-A, foroba#151). Pazuru/Tsumi's HTTP
 boundary is mocked, same pattern as tests/test_markets_service.py."""
+
 from __future__ import annotations
 
 import asyncio
@@ -36,7 +37,9 @@ class _FakeResponse:
 
 
 class _FakeClient:
-    def __init__(self, get_routes: dict[str, bytes], post_routes: dict[str, dict] | None = None) -> None:
+    def __init__(
+        self, get_routes: dict[str, bytes], post_routes: dict[str, dict] | None = None
+    ) -> None:
         self._get_routes = get_routes
         self._post_routes = post_routes or {}
 
@@ -62,11 +65,14 @@ class _FakeClient:
 def test_export_suite_bundles_and_encrypts(monkeypatch):
     monkeypatch.setattr(orch.settings, "pazuru_api_url", "http://pazuru-host")
     monkeypatch.setattr(orch.settings, "tsumi_api_url", "http://tsumi-host")
-    monkeypatch.setattr(orch, "export_archive", lambda: _mini_tar("foroba_identity.db", b"foroba-data"))
+    monkeypatch.setattr(
+        orch, "export_archive", lambda: _mini_tar("foroba_identity.db", b"foroba-data")
+    )
     pazuru_blob = _mini_tar("pazuru.db", b"pazuru-data")
     tsumi_blob = _mini_tar("tsumi.duckdb", b"tsumi-data")
     monkeypatch.setattr(
-        orch.httpx, "AsyncClient",
+        orch.httpx,
+        "AsyncClient",
         lambda *a, **kw: _FakeClient({"pazuru": pazuru_blob, "tsumi": tsumi_blob}),
     )
 
@@ -82,13 +88,18 @@ def test_export_suite_bundles_and_encrypts(monkeypatch):
 def test_decrypt_archive_wrong_passphrase_raises(monkeypatch):
     monkeypatch.setattr(orch.settings, "pazuru_api_url", "http://pazuru-host")
     monkeypatch.setattr(orch.settings, "tsumi_api_url", "http://tsumi-host")
-    monkeypatch.setattr(orch, "export_archive", lambda: _mini_tar("foroba_identity.db", b"foroba-data"))
     monkeypatch.setattr(
-        orch.httpx, "AsyncClient",
-        lambda *a, **kw: _FakeClient({
-            "pazuru": _mini_tar("pazuru.db", b"p"),
-            "tsumi": _mini_tar("tsumi.duckdb", b"t"),
-        }),
+        orch, "export_archive", lambda: _mini_tar("foroba_identity.db", b"foroba-data")
+    )
+    monkeypatch.setattr(
+        orch.httpx,
+        "AsyncClient",
+        lambda *a, **kw: _FakeClient(
+            {
+                "pazuru": _mini_tar("pazuru.db", b"p"),
+                "tsumi": _mini_tar("tsumi.duckdb", b"t"),
+            }
+        ),
     )
     encrypted = asyncio.run(orch.export_suite("right-passphrase", cookie="fake-cookie"))
 
@@ -99,11 +110,14 @@ def test_decrypt_archive_wrong_passphrase_raises(monkeypatch):
 def test_import_suite_forwards_to_pazuru_and_tsumi(monkeypatch):
     monkeypatch.setattr(orch.settings, "pazuru_api_url", "http://pazuru-host")
     monkeypatch.setattr(orch.settings, "tsumi_api_url", "http://tsumi-host")
-    monkeypatch.setattr(orch, "export_archive", lambda: _mini_tar("foroba_identity.db", b"foroba-data"))
+    monkeypatch.setattr(
+        orch, "export_archive", lambda: _mini_tar("foroba_identity.db", b"foroba-data")
+    )
     pazuru_blob = _mini_tar("pazuru.db", b"pazuru-data")
     tsumi_blob = _mini_tar("tsumi.duckdb", b"tsumi-data")
     monkeypatch.setattr(
-        orch.httpx, "AsyncClient",
+        orch.httpx,
+        "AsyncClient",
         lambda *a, **kw: _FakeClient(
             {"pazuru": pazuru_blob, "tsumi": tsumi_blob},
             post_routes={
@@ -115,9 +129,14 @@ def test_import_suite_forwards_to_pazuru_and_tsumi(monkeypatch):
     encrypted = asyncio.run(orch.export_suite("pw", cookie="fake-cookie"))
 
     imported_local: list[bytes] = []
-    monkeypatch.setattr(orch, "import_archive", lambda data: imported_local.append(data) or {
-        "restored_files": ["foroba_identity.db"], "restart_required": True
-    })
+    monkeypatch.setattr(
+        orch,
+        "import_archive",
+        lambda data: (
+            imported_local.append(data)
+            or {"restored_files": ["foroba_identity.db"], "restart_required": True}
+        ),
+    )
 
     result = asyncio.run(orch.import_suite(encrypted, "pw", cookie="fake-cookie"))
 

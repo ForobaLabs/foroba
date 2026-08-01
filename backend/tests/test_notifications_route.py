@@ -1,4 +1,5 @@
 """Route tests for GET /notifications + POST /notifications/{key}/dismiss (foroba#158)."""
+
 from __future__ import annotations
 
 from fastapi.testclient import TestClient

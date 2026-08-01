@@ -14,6 +14,7 @@ this).
 Usage:
     python scripts/encrypt_db_at_rest.py <db_path> <encryption_key>
 """
+
 from __future__ import annotations
 
 import shutil

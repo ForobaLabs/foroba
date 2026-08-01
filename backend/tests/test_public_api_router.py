@@ -1,5 +1,6 @@
 """Route tests for GET /api/public/v1/* — API-key auth path, incl. gating (foroba#165,
 TI-D item 5, Plan A)."""
+
 from __future__ import annotations
 
 from fastapi.testclient import TestClient
@@ -27,13 +28,21 @@ def _seed_user_and_key(conn, *, tier="premium", audience="base") -> str:
     user_id = cur.lastrowid
     secret = "test-secret-value"
     prefix = f"fpk_{tier}{audience}"
-    db.create_api_key(conn, user_id=user_id, label="test", key_prefix=prefix, secret_hash=hash_password(secret))
+    db.create_api_key(
+        conn, user_id=user_id, label="test", key_prefix=prefix, secret_hash=hash_password(secret)
+    )
     return f"{prefix}.{secret}"
 
 
 async def _fake_fetch_networth(days, *, cookie=None):
-    return {"bank": None, "investments": None, "total_eur": 0.0, "history": [], "degraded": True,
-            "disclaimer": "x"}
+    return {
+        "bank": None,
+        "investments": None,
+        "total_eur": 0.0,
+        "history": [],
+        "degraded": True,
+        "disclaimer": "x",
+    }
 
 
 async def _fake_generate_notifications(conn, user_id, *, cookie=None):
@@ -94,7 +103,9 @@ def test_notifications_returns_200_with_valid_premium_key(monkeypatch):
     app.dependency_overrides[get_conn] = lambda: conn
     try:
         client = TestClient(app)
-        resp = client.get("/api/public/v1/notifications", headers={"Authorization": f"Bearer {key}"})
+        resp = client.get(
+            "/api/public/v1/notifications", headers={"Authorization": f"Bearer {key}"}
+        )
         assert resp.status_code == 200
         assert resp.json() == {"items": [], "degraded": False}
     finally:

@@ -10,6 +10,7 @@ Output format: 16-byte random salt (raw bytes) followed by a Fernet token.
 The passphrase is never logged or persisted — used only in-memory to derive
 the key for the duration of a single request.
 """
+
 from __future__ import annotations
 
 import base64
@@ -54,8 +55,8 @@ def decrypt_archive(encrypted: bytes, passphrase: str) -> bytes:
     key = _derive_key(passphrase, salt)
     try:
         return Fernet(key).decrypt(token)
-    except InvalidToken:
-        raise InvalidPassphrase("Wrong passphrase or corrupted archive")
+    except InvalidToken as err:
+        raise InvalidPassphrase("Wrong passphrase or corrupted archive") from err
 
 
 async def _fetch_export(client: httpx.AsyncClient, base_url: str, cookie: str) -> bytes:
@@ -83,10 +84,12 @@ async def export_suite(passphrase: str, cookie: str) -> bytes:
         pazuru_blob = await _fetch_export(client, settings.pazuru_api_url, cookie)
         tsumi_blob = await _fetch_export(client, settings.tsumi_api_url, cookie)
 
-    manifest = json.dumps({
-        "exported_at": datetime.now(UTC).isoformat(),
-        "apps": ["foroba", "pazuru", "tsumi"],
-    }).encode()
+    manifest = json.dumps(
+        {
+            "exported_at": datetime.now(UTC).isoformat(),
+            "apps": ["foroba", "pazuru", "tsumi"],
+        }
+    ).encode()
 
     outer = io.BytesIO()
     with tarfile.open(fileobj=outer, mode="w") as tar:

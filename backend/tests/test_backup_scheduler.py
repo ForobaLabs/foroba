@@ -1,5 +1,6 @@
 """Tests for backup_scheduler.py (TI-E, foroba#172). All dependencies (DB, JWT
 signing, cross-app export, R2 upload) are mocked — no real network/credentials."""
+
 from __future__ import annotations
 
 import asyncio
@@ -11,7 +12,8 @@ def test_skips_when_offsite_backup_not_configured(monkeypatch):
     monkeypatch.setattr(sched.offsite_backup, "is_configured", lambda: False)
     called = {"export": False}
     monkeypatch.setattr(
-        sched.backup_orchestrator, "export_suite",
+        sched.backup_orchestrator,
+        "export_suite",
         lambda *a, **kw: called.__setitem__("export", True),
     )
 
@@ -23,12 +25,17 @@ def test_skips_when_offsite_backup_not_configured(monkeypatch):
 def test_skips_when_no_admin_user_exists(monkeypatch):
     monkeypatch.setattr(sched.offsite_backup, "is_configured", lambda: True)
     monkeypatch.setattr(sched, "get_conn", lambda: object())
-    monkeypatch.setattr(sched, "list_all_users", lambda conn: [
-        {"id": 1, "is_admin": False, "tier": "free", "audience": "base"},
-    ])
+    monkeypatch.setattr(
+        sched,
+        "list_all_users",
+        lambda conn: [
+            {"id": 1, "is_admin": False, "tier": "free", "audience": "base"},
+        ],
+    )
     called = {"export": False}
     monkeypatch.setattr(
-        sched.backup_orchestrator, "export_suite",
+        sched.backup_orchestrator,
+        "export_suite",
         lambda *a, **kw: called.__setitem__("export", True),
     )
 
@@ -40,10 +47,14 @@ def test_skips_when_no_admin_user_exists(monkeypatch):
 def test_happy_path_exports_and_uploads(monkeypatch):
     monkeypatch.setattr(sched.offsite_backup, "is_configured", lambda: True)
     monkeypatch.setattr(sched, "get_conn", lambda: object())
-    monkeypatch.setattr(sched, "list_all_users", lambda conn: [
-        {"id": 1, "is_admin": False, "tier": "free", "audience": "base"},
-        {"id": 2, "is_admin": True, "tier": "premium", "audience": "expert"},
-    ])
+    monkeypatch.setattr(
+        sched,
+        "list_all_users",
+        lambda conn: [
+            {"id": 1, "is_admin": False, "tier": "free", "audience": "base"},
+            {"id": 2, "is_admin": True, "tier": "premium", "audience": "expert"},
+        ],
+    )
     monkeypatch.setattr(sched.keys, "get_keypair", lambda settings: ("priv", "pub", "kid1"))
 
     captured_token_args: dict = {}
@@ -62,7 +73,8 @@ def test_happy_path_exports_and_uploads(monkeypatch):
 
     uploaded: list[bytes] = []
     monkeypatch.setattr(
-        sched.offsite_backup, "upload_backup",
+        sched.offsite_backup,
+        "upload_backup",
         lambda data: uploaded.append(data) or "backups/suite-fake.bin",
     )
 
@@ -76,9 +88,13 @@ def test_happy_path_exports_and_uploads(monkeypatch):
 def test_happy_path_logs_and_does_not_raise_on_export_failure(monkeypatch):
     monkeypatch.setattr(sched.offsite_backup, "is_configured", lambda: True)
     monkeypatch.setattr(sched, "get_conn", lambda: object())
-    monkeypatch.setattr(sched, "list_all_users", lambda conn: [
-        {"id": 2, "is_admin": True, "tier": "free", "audience": "base"},
-    ])
+    monkeypatch.setattr(
+        sched,
+        "list_all_users",
+        lambda conn: [
+            {"id": 2, "is_admin": True, "tier": "free", "audience": "base"},
+        ],
+    )
     monkeypatch.setattr(sched.keys, "get_keypair", lambda settings: ("priv", "pub", "kid1"))
     monkeypatch.setattr(sched, "create_token", lambda *a, **kw: "fake-jwt")
 

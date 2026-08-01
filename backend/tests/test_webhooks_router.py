@@ -1,4 +1,5 @@
 """Route tests for /auth/webhooks CRUD (foroba#165, TI-D item 5, Plan A)."""
+
 from __future__ import annotations
 
 from fastapi.testclient import TestClient
@@ -8,8 +9,14 @@ from auth.conn import get_conn
 from auth.dependencies import get_current_user
 from main import app
 
-_USER = {"id": 1, "email": "u@test.local", "tier": "premium", "audience": "base",
-         "is_admin": 0, "household_id": None}
+_USER = {
+    "id": 1,
+    "email": "u@test.local",
+    "tier": "premium",
+    "audience": "base",
+    "is_admin": 0,
+    "household_id": None,
+}
 
 
 def _memory_conn():

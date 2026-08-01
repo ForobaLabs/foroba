@@ -7,6 +7,7 @@ Create Date: 2026-07-16
 Adds whatif_scenarios (see db.py::SCHEMA) for the household net-worth
 what-if simulator.
 """
+
 from alembic import op
 
 revision = "0004"
