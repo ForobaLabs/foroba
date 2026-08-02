@@ -6,6 +6,7 @@ import sqlite3
 import uuid
 
 from fastapi import APIRouter, Depends, File, HTTPException, Request, Response, UploadFile, status
+from pydantic import BaseModel
 
 from auth import keys
 from auth import repository as repo
@@ -14,10 +15,12 @@ from auth.conn import get_conn  # re-exported for tests that import it from here
 from auth.dependencies import get_current_user
 from auth.models import (
     DisplayCurrencyRequest,
+    EmailOtpSendRequest,
     HouseholdJoinRequest,
     Login2FARequest,
     LoginRequest,
     NameUpdateRequest,
+    RecoveryCodeLoginRequest,
     RegisterRequest,
     ShareToggleRequest,
     ShowDebtsRequest,
@@ -25,7 +28,12 @@ from auth.models import (
 )
 from auth.security import create_token, hash_password, needs_rehash, verify_password
 from config import settings
+from email_otp import EmailNotConfiguredError, generate_and_send
+from email_otp import verify_and_consume as verify_email_otp
+from passkeys.service import authentication_options_for_user
+from passkeys.service import verify_authentication as verify_webauthn_authentication
 from rate_limit import limiter
+from recovery_codes import verify_and_consume as verify_recovery_code
 from twofa.totp import verify_code
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -103,8 +111,8 @@ def login(
         new_hash = hash_password(req.password)
         conn.execute("UPDATE users SET password_hash = ? WHERE id = ?", (new_hash, user["id"]))
         conn.commit()
-    if settings.auth_2fa_enabled and user.get("totp_enabled"):
-        return {"mfa_required": True, "email": user["email"]}
+    if _has_any_mfa_method(user) and settings.auth_2fa_enabled:
+        return {"mfa_required": True, "email": user["email"], "methods": _enabled_methods(user)}
     repo.reset_failed_login(conn, user["id"])
     _set_session_cookie(response, user)
     return UserPublic(**user).model_dump()
@@ -123,14 +131,129 @@ def login_2fa(
         raise HTTPException(status.HTTP_423_LOCKED, "Account temporarily locked. Try again later.")
     if user is not None and user.get("account_disabled"):
         raise HTTPException(status.HTTP_403_FORBIDDEN, "This account has been disabled.")
-    if user is None or not user.get("totp_enabled") or not user.get("totp_secret"):
+    if user is None:
         raise HTTPException(400, "2FA not set up")
-    if not verify_code(user["totp_secret"], req.code):
-        repo.register_failed_login(conn, user["id"])
-        raise HTTPException(401, "Invalid code")
+    if req.method == "totp":
+        totp_ok = (
+            user.get("totp_enabled")
+            and user.get("totp_secret")
+            and verify_code(user["totp_secret"], req.code)
+        )
+        if not totp_ok:
+            repo.register_failed_login(conn, user["id"])
+            raise HTTPException(401, "Invalid code")
+    elif req.method == "email_otp":
+        if not user.get("email_otp_enabled") or not verify_email_otp(conn, user["id"], req.code):
+            repo.register_failed_login(conn, user["id"])
+            raise HTTPException(401, "Invalid code")
     repo.reset_failed_login(conn, user["id"])
     _set_session_cookie(response, user)
     return UserPublic(**user).model_dump()
+
+
+@router.post("/login/email-otp/send")
+@limiter.limit("5/minute")
+def login_email_otp_send(
+    request: Request,
+    req: EmailOtpSendRequest,
+    conn: sqlite3.Connection = Depends(get_conn),
+) -> dict:
+    """Pre-auth email-OTP send for the login-challenge step. Unlike /auth/2fa/email-otp/send
+    (which is for enrollment/step-up and reads the authenticated user from the session), this
+    endpoint runs before a session exists — the login-challenge screen has no cookie yet — so it
+    takes `email` in the body and looks the user up directly. Rate-limited like the rest of the
+    login surface to prevent using it as an email-flooding vector."""
+    user = repo.get_user_by_email(conn, req.email)
+    if user is None or not user.get("email_otp_enabled"):
+        raise HTTPException(400, "Email OTP is not set up for this account")
+    if repo.is_locked_out(user):
+        raise HTTPException(status.HTTP_423_LOCKED, "Account temporarily locked. Try again later.")
+    try:
+        generate_and_send(conn, user["id"], user["email"])
+    except EmailNotConfiguredError as exc:
+        raise HTTPException(503, "Email delivery is not configured") from exc
+    return {"sent": True}
+
+
+@router.post("/login/recovery-code", response_model=None)
+@limiter.limit("5/minute")
+def login_recovery_code(
+    request: Request,
+    req: RecoveryCodeLoginRequest,
+    response: Response,
+    conn: sqlite3.Connection = Depends(get_conn),
+) -> dict:
+    user = repo.get_user_by_email(conn, req.email)
+    if user is not None and repo.is_locked_out(user):
+        raise HTTPException(status.HTTP_423_LOCKED, "Account temporarily locked. Try again later.")
+    if user is not None and user.get("account_disabled"):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "This account has been disabled.")
+    if user is None or not verify_recovery_code(conn, user["id"], req.recovery_code):
+        if user is not None:
+            repo.register_failed_login(conn, user["id"])
+        raise HTTPException(401, "Invalid recovery code")
+    repo.reset_failed_login(conn, user["id"])
+    _set_session_cookie(response, user)
+    return UserPublic(**user).model_dump()
+
+
+class WebauthnLoginOptionsRequest(BaseModel):
+    email: str
+
+
+@router.post("/login/webauthn/options-by-email")
+@limiter.limit("10/minute")
+def login_webauthn_options_by_email(
+    request: Request,
+    req: WebauthnLoginOptionsRequest,
+    conn: sqlite3.Connection = Depends(get_conn),
+) -> dict:
+    import json
+
+    user = repo.get_user_by_email(conn, req.email)
+    if user is None or not user.get("webauthn_enabled"):
+        raise HTTPException(400, "Passkey not set up for this account")
+    return json.loads(authentication_options_for_user(conn, user["id"]))
+
+
+class WebauthnLoginVerifyRequest(BaseModel):
+    email: str
+    credential: str
+
+
+@router.post("/login/webauthn/verify", response_model=None)
+@limiter.limit("10/minute")
+def login_webauthn_verify(
+    request: Request,
+    req: WebauthnLoginVerifyRequest,
+    response: Response,
+    conn: sqlite3.Connection = Depends(get_conn),
+) -> dict:
+    user = repo.get_user_by_email(conn, req.email)
+    if user is None or not user.get("webauthn_enabled"):
+        raise HTTPException(401, "Passkey not set up for this account")
+    if not verify_webauthn_authentication(conn, user["id"], req.credential):
+        raise HTTPException(401, "Passkey verification failed")
+    repo.reset_failed_login(conn, user["id"])
+    _set_session_cookie(response, user)
+    return UserPublic(**user).model_dump()
+
+
+def _has_any_mfa_method(user: dict) -> bool:
+    return bool(
+        user.get("totp_enabled") or user.get("email_otp_enabled") or user.get("webauthn_enabled")
+    )
+
+
+def _enabled_methods(user: dict) -> list[str]:
+    methods = []
+    if user.get("totp_enabled"):
+        methods.append("totp")
+    if user.get("email_otp_enabled"):
+        methods.append("email_otp")
+    if user.get("webauthn_enabled"):
+        methods.append("webauthn")
+    return methods
 
 
 @router.post("/logout", status_code=204)

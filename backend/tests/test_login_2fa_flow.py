@@ -78,3 +78,40 @@ def test_2fa_endpoint_rejects_disabled_account_directly(monkeypatch):
     code = pyotp.TOTP(secret).now()
     r = c.post("/auth/login/2fa", json={"email": "demo@foroba.app", "code": code})
     assert r.status_code == 403
+
+
+def test_login_challenges_lists_all_enabled_methods(monkeypatch):
+    c, _secret = _client(monkeypatch, True)
+    conn = c.app.dependency_overrides[get_conn]()
+    demo = repo.get_user_by_email(conn, "demo@foroba.app")
+    repo.enable_email_otp(conn, demo["id"])
+    r = c.post("/auth/login", json={"email": "demo@foroba.app", "password": "Demo!2026"})
+    assert r.status_code == 200
+    assert set(r.json()["methods"]) == {"totp", "email_otp"}
+
+
+def test_login_2fa_dispatches_to_email_otp(monkeypatch):
+    c, _secret = _client(monkeypatch, True)
+    conn = c.app.dependency_overrides[get_conn]()
+    demo = repo.get_user_by_email(conn, "demo@foroba.app")
+    from config import settings
+
+    monkeypatch.setattr(settings, "smtp_enabled", True)
+    monkeypatch.setattr(settings, "smtp_host", "localhost")
+    monkeypatch.setattr(settings, "smtp_from", "noreply@example.com")
+    sent = {}
+    monkeypatch.setattr("email_otp.send_email", lambda to, subject, body: sent.update(body=body))
+    repo.enable_email_otp(conn, demo["id"])
+    from email_otp import generate_and_send
+
+    generate_and_send(conn, demo["id"], demo["email"])
+    # NOTE: the code is the first digit-only line, not the last line of the body (the last
+    # line is the "It expires in N minutes." footer) — plan's original assertion grabbed
+    # the wrong line.
+    code = next(line.strip() for line in sent["body"].splitlines() if line.strip().isdigit())
+    r = c.post(
+        "/auth/login/2fa",
+        json={"email": "demo@foroba.app", "code": code, "method": "email_otp"},
+    )
+    assert r.status_code == 200
+    assert c.cookies.get("suite_session")

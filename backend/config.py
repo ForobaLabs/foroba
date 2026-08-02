@@ -44,7 +44,7 @@ class Settings(BaseSettings):
     seed_mock_users: bool = True
     premium_gating_enabled: bool = True
     onboarding_mifid_enabled: bool = False
-    auth_2fa_enabled: bool = False
+    auth_2fa_enabled: bool = True  # kill-switch only — see auth/router.py login()
 
     # --- Observability (TI-B item 2, foroba#153) ---
     glitchtip_dsn: str = ""
