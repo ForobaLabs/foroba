@@ -160,6 +160,41 @@ CREATE TABLE IF NOT EXISTS webhook_deliveries (
     last_status TEXT,
     UNIQUE(webhook_id, event_key)
 );
+
+CREATE TABLE IF NOT EXISTS recovery_codes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL REFERENCES users(id),
+    code_hash TEXT NOT NULL,
+    used_at TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS email_otp_codes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL REFERENCES users(id),
+    code_hash TEXT NOT NULL,
+    expires_at TEXT NOT NULL,
+    used_at TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS webauthn_credentials (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL REFERENCES users(id),
+    credential_id TEXT NOT NULL UNIQUE,
+    public_key TEXT NOT NULL,
+    sign_count INTEGER NOT NULL DEFAULT 0,
+    label TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS webauthn_challenges (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER,
+    challenge TEXT NOT NULL,
+    purpose TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
 """
 
 
@@ -230,6 +265,17 @@ def init_schema(conn: sqlite3.Connection) -> None:
     # (GL-10.1, foroba#190 — admin panel "disable account" action).
     try:
         conn.execute("ALTER TABLE users ADD COLUMN account_disabled INTEGER NOT NULL DEFAULT 0")
+        conn.commit()
+    except sqlite3.OperationalError:
+        pass  # column already exists
+    # Idempotent migration: add email_otp_enabled/webauthn_enabled flags (MFA hardening, foroba#199)
+    try:
+        conn.execute("ALTER TABLE users ADD COLUMN email_otp_enabled INTEGER NOT NULL DEFAULT 0")
+        conn.commit()
+    except sqlite3.OperationalError:
+        pass  # column already exists
+    try:
+        conn.execute("ALTER TABLE users ADD COLUMN webauthn_enabled INTEGER NOT NULL DEFAULT 0")
         conn.commit()
     except sqlite3.OperationalError:
         pass  # column already exists
