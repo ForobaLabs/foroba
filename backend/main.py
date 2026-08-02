@@ -47,6 +47,7 @@ from lab_router import router as lab_router
 from monthly_report_router import router as monthly_report_router
 from observability import init_error_tracking
 from onboarding.router import router as onboarding_router
+from passkeys.router import router as passkeys_router
 from public_api_router import router as public_api_router
 from rate_limit import limiter
 from report_scheduler import start_report_scheduler
@@ -106,6 +107,7 @@ app.include_router(onboarding_router)
 app.include_router(admin_router)
 app.include_router(lab_router)
 app.include_router(twofa_router)
+app.include_router(passkeys_router)
 app.include_router(whatif_router)
 app.include_router(monthly_report_router)
 app.include_router(fx_router)

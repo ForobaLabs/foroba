@@ -178,6 +178,34 @@ def disable_totp(conn: sqlite3.Connection, user_id: int) -> None:
     conn.commit()
 
 
+def enable_email_otp(conn: sqlite3.Connection, user_id: int) -> None:
+    conn.execute("UPDATE users SET email_otp_enabled = 1 WHERE id = ?", (user_id,))
+    conn.commit()
+
+
+def disable_email_otp(conn: sqlite3.Connection, user_id: int) -> None:
+    conn.execute("UPDATE users SET email_otp_enabled = 0 WHERE id = ?", (user_id,))
+    conn.commit()
+
+
+def enable_webauthn(conn: sqlite3.Connection, user_id: int) -> None:
+    conn.execute("UPDATE users SET webauthn_enabled = 1 WHERE id = ?", (user_id,))
+    conn.commit()
+
+
+def disable_webauthn(conn: sqlite3.Connection, user_id: int) -> None:
+    conn.execute("UPDATE users SET webauthn_enabled = 0 WHERE id = ?", (user_id,))
+    conn.execute("DELETE FROM webauthn_credentials WHERE user_id = ?", (user_id,))
+    conn.commit()
+
+
+def has_any_webauthn_credential(conn: sqlite3.Connection, user_id: int) -> bool:
+    row = conn.execute(
+        "SELECT COUNT(*) AS n FROM webauthn_credentials WHERE user_id = ?", (user_id,)
+    ).fetchone()
+    return bool(row["n"])
+
+
 def set_household_id(conn: sqlite3.Connection, user_id: int, household_id: str | None) -> None:
     conn.execute("UPDATE users SET household_id = ? WHERE id = ?", (household_id, user_id))
     conn.commit()
