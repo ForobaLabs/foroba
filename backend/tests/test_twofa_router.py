@@ -59,3 +59,44 @@ def test_verify_rejects_bad_code(client):
     c.post("/auth/2fa/enroll")
     r = c.post("/auth/2fa/verify", json={"code": "000000"})
     assert r.status_code == 400
+
+
+def test_methods_lists_all_flags_and_recovery_count(client):
+    c, _conn = client
+    resp = c.get("/auth/2fa/methods")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert set(body.keys()) == {
+        "totp_enabled",
+        "email_otp_enabled",
+        "webauthn_enabled",
+        "recovery_codes_remaining",
+    }
+
+
+def test_remove_last_method_is_blocked(client):
+    c, conn = client
+    c.post("/auth/2fa/enroll")
+    secret = conn.execute(
+        "SELECT totp_secret FROM users WHERE email='demo@foroba.app'"
+    ).fetchone()["totp_secret"]
+    code = pyotp.TOTP(secret).now()
+    c.post("/auth/2fa/verify", json={"code": code})
+    resp = c.delete("/auth/2fa/methods/totp")
+    assert resp.status_code == 400
+
+
+def test_recovery_codes_regenerate_returns_ten_codes(client):
+    c, _conn = client
+    resp = c.post("/auth/2fa/recovery-codes/regenerate")
+    assert resp.status_code == 200
+    assert len(resp.json()["codes"]) == 10
+
+
+def test_email_otp_send_requires_smtp(client, monkeypatch):
+    from config import settings
+
+    c, _conn = client
+    monkeypatch.setattr(settings, "smtp_enabled", False)
+    resp = c.post("/auth/2fa/email-otp/send")
+    assert resp.status_code == 503
