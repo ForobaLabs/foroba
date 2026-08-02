@@ -30,7 +30,7 @@ export async function fetchMe(): Promise<SessionUser | null> {
   return r.json();
 }
 
-export async function login(email: string, password: string): Promise<SessionUser> {
+export async function login(email: string, password: string): Promise<SessionUser | Mfa2FAChallenge> {
   const r = await fetch("/jeli/auth/login", {
     ...opts,
     method: "POST",
