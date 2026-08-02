@@ -52,6 +52,7 @@ from public_api_router import router as public_api_router
 from rate_limit import limiter
 from report_scheduler import start_report_scheduler
 from settings_store import init_settings
+from stepup_router import router as stepup_router
 from twofa.router import router as twofa_router
 from webhook_dispatch_job import start_webhook_dispatch_scheduler
 from whatif_router import router as whatif_router
@@ -108,6 +109,7 @@ app.include_router(admin_router)
 app.include_router(lab_router)
 app.include_router(twofa_router)
 app.include_router(passkeys_router)
+app.include_router(stepup_router)
 app.include_router(whatif_router)
 app.include_router(monthly_report_router)
 app.include_router(fx_router)
