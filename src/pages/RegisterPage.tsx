@@ -86,7 +86,7 @@ export function RegisterPage() {
         country: country || undefined,
       });
       await qc.invalidateQueries({ queryKey: ["session"] });
-      navigate("/onboarding", { replace: true });
+      navigate("/enroll", { replace: true });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Registration failed.");
     } finally {

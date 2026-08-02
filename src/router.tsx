@@ -5,6 +5,7 @@ import { Spinner } from '@foroba/ui';
 import { App } from './App';
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
+import { EnrollmentWizard } from './pages/EnrollmentWizard';
 import { FOROBA_FAQ } from './data/faq';
 
 const DashboardPage     = lazy(() => import('./pages/DashboardPage').then(m => ({ default: m.DashboardPage })));
@@ -35,6 +36,7 @@ const Loading = () => (
 export const router = createBrowserRouter([
   { path: '/login',    element: <LoginPage /> },
   { path: '/register', element: <RegisterPage /> },
+  { path: '/enroll',   element: <EnrollmentWizard /> },
   { path: '/status',   element: <Suspense fallback={<Loading />}><StatusPage /></Suspense> },
   {
     path: '/onboarding',
