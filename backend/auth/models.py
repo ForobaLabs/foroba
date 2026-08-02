@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Literal
+
 from pydantic import BaseModel, EmailStr, Field, model_validator
 
 
@@ -38,6 +40,8 @@ class UserPublic(BaseModel):
     is_admin: bool
     account_disabled: bool = False
     totp_enabled: bool
+    email_otp_enabled: bool = False
+    webauthn_enabled: bool = False
     display_currency: str
     show_debts: bool
     birth_year: int | None = None
@@ -68,3 +72,43 @@ class ShowDebtsRequest(BaseModel):
 class NameUpdateRequest(BaseModel):
     first_name: str = Field(min_length=1, max_length=80)
     last_name: str = Field(min_length=0, max_length=80)
+
+
+class Login2FARequest(BaseModel):
+    email: EmailStr
+    code: str
+    method: Literal["totp", "email_otp"] = "totp"
+
+
+class RecoveryCodeLoginRequest(BaseModel):
+    email: EmailStr
+    recovery_code: str = Field(min_length=6, max_length=20)
+
+
+class EmailOtpSendRequest(BaseModel):
+    email: EmailStr
+
+
+class EmailOtpVerifyRequest(BaseModel):
+    email: EmailStr
+    code: str = Field(min_length=6, max_length=6)
+
+
+class WebauthnVerifyRequest(BaseModel):
+    credential: str  # JSON string of the browser's PublicKeyCredential response
+
+
+class WebauthnRegisterRequest(BaseModel):
+    credential: str
+    label: str = Field(default="Passkey", max_length=60)
+
+
+class MfaMethodsResponse(BaseModel):
+    totp_enabled: bool
+    email_otp_enabled: bool
+    webauthn_enabled: bool
+    recovery_codes_remaining: int
+
+
+class RecoveryCodesResponse(BaseModel):
+    codes: list[str]

@@ -6,7 +6,6 @@ import sqlite3
 import uuid
 
 from fastapi import APIRouter, Depends, File, HTTPException, Request, Response, UploadFile, status
-from pydantic import BaseModel
 
 from auth import keys
 from auth import repository as repo
@@ -16,6 +15,7 @@ from auth.dependencies import get_current_user
 from auth.models import (
     DisplayCurrencyRequest,
     HouseholdJoinRequest,
+    Login2FARequest,
     LoginRequest,
     NameUpdateRequest,
     RegisterRequest,
@@ -108,11 +108,6 @@ def login(
     repo.reset_failed_login(conn, user["id"])
     _set_session_cookie(response, user)
     return UserPublic(**user).model_dump()
-
-
-class Login2FARequest(BaseModel):
-    email: str
-    code: str
 
 
 @router.post("/login/2fa", response_model=None)
