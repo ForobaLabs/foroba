@@ -30,3 +30,4 @@ ruff
 #   macOS:  brew install sqlcipher
 #   Debian/Ubuntu (VPS): apt-get install libsqlcipher-dev
 sqlcipher3==0.5.4
+webauthn==2.5.2
