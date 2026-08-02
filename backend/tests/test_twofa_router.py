@@ -100,3 +100,27 @@ def test_email_otp_send_requires_smtp(client, monkeypatch):
     monkeypatch.setattr(settings, "smtp_enabled", False)
     resp = c.post("/auth/2fa/email-otp/send")
     assert resp.status_code == 503
+
+
+def test_methods_returns_defaults_for_synthetic_dev_bypass_user():
+    """AUTH_DEV_BYPASS's synthetic user (id=0) has no row in `users` — /methods must not
+    500 when repo.get_user_by_id() legitimately returns None for it, it should report
+    nothing-enrolled defaults instead (mirrors the real behavior for that user)."""
+    conn = sqlite3.connect(":memory:", check_same_thread=False)
+    conn.row_factory = sqlite3.Row
+    init_schema(conn)
+    app = FastAPI()
+    app.dependency_overrides[get_conn] = lambda: conn
+    app.dependency_overrides[get_current_user] = lambda: {"id": 0, "email": "dev@localhost.dev"}
+    app.include_router(router)
+    c = TestClient(app)
+
+    resp = c.get("/auth/2fa/methods")
+
+    assert resp.status_code == 200
+    assert resp.json() == {
+        "totp_enabled": False,
+        "email_otp_enabled": False,
+        "webauthn_enabled": False,
+        "recovery_codes_remaining": 0,
+    }

@@ -101,6 +101,15 @@ def methods(
     user: dict = Depends(get_current_user), conn: sqlite3.Connection = Depends(get_conn)
 ) -> dict:
     fresh = repo.get_user_by_id(conn, user["id"])
+    if fresh is None:
+        # AUTH_DEV_BYPASS's synthetic user has no row in `users` — report the
+        # only sensible state for a user with no persisted account: nothing enrolled.
+        return {
+            "totp_enabled": False,
+            "email_otp_enabled": False,
+            "webauthn_enabled": False,
+            "recovery_codes_remaining": 0,
+        }
     return {
         "totp_enabled": bool(fresh["totp_enabled"]),
         "email_otp_enabled": bool(fresh["email_otp_enabled"]),
