@@ -11,7 +11,11 @@ from auth import repository as repo
 from auth.conn import get_conn
 from auth.dependencies import get_current_user
 from auth.models import WebauthnRegisterRequest
-from passkeys.service import registration_options_for_user, verify_registration
+from passkeys.service import (
+    authentication_options_for_user,
+    registration_options_for_user,
+    verify_registration,
+)
 from rate_limit import limiter
 
 router = APIRouter(prefix="/auth/webauthn", tags=["webauthn"])
@@ -25,6 +29,16 @@ def register_options(
     conn: sqlite3.Connection = Depends(get_conn),
 ) -> dict:
     return json.loads(registration_options_for_user(conn, user["id"], user["email"]))
+
+
+@router.post("/authenticate/options")
+@limiter.limit("20/minute")
+def authenticate_options(
+    request: Request,
+    user: dict = Depends(get_current_user),
+    conn: sqlite3.Connection = Depends(get_conn),
+) -> dict:
+    return json.loads(authentication_options_for_user(conn, user["id"]))
 
 
 @router.post("/register/verify")

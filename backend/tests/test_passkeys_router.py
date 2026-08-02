@@ -31,3 +31,16 @@ def test_registration_options_returns_challenge(client, monkeypatch):
     assert resp.status_code == 200
     assert "challenge" in resp.json()
     monkeypatch.delenv("AUTH_DEV_BYPASS", raising=False)
+
+
+def test_authenticate_options_requires_auth(client):
+    resp = client.post("/auth/webauthn/authenticate/options")
+    assert resp.status_code == 401
+
+
+def test_authenticate_options_returns_challenge_for_enrolled_user(client, monkeypatch):
+    monkeypatch.setenv("AUTH_DEV_BYPASS", "true")
+    resp = client.post("/auth/webauthn/authenticate/options")
+    assert resp.status_code == 200
+    assert "challenge" in resp.json()
+    monkeypatch.delenv("AUTH_DEV_BYPASS", raising=False)
