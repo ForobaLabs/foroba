@@ -76,5 +76,22 @@ class Settings(BaseSettings):
     # Empty = unencrypted (dev default).
     db_encryption_key: str = ""
 
+    # --- Cross-app cookie domain (MFA hardening, foroba#199) ---
+    # Empty (default) = host-only cookie, correct for local dev (each app on a different
+    # localhost port already receives cookies regardless of domain scoping). Set to a leading-dot
+    # domain (e.g. ".pfh.example.com") in hosted prod ONLY IF Pazuru/Tsumi/Foroba are split across
+    # subdomains of a shared parent domain — required for suite_session and stepup_* cookies set
+    # by Foroba to reach the other two apps' origins.
+    cookie_domain: str = ""
+
+    # --- WebAuthn / Passkeys (MFA hardening, foroba#199) ---
+    webauthn_rp_id: str = "localhost"
+    webauthn_rp_name: str = "Foroba"
+    webauthn_origin: str = "http://localhost:5175"
+
+    # --- Cross-app step-up tokens (MFA hardening, foroba#199) ---
+    stepup_ttl_minutes: int = 45
+    stepup_refresh_threshold_minutes: int = 15
+
 
 settings = Settings()

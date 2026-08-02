@@ -124,3 +124,47 @@ def test_update_name_splits_and_returns_in_me():
     assert body["first_name"] == "New"
     assert body["last_name"] == "Name"
     assert body["name"] == "New Name"
+
+
+def test_login_sets_cookie_domain_when_configured(client, monkeypatch):
+    # Smoke test that registration still succeeds and issues a cookie when cookie_domain is
+    # set to a foreign domain. NOTE: we can't assert via client.cookies.get() here — httpx's
+    # TestClient cookie jar won't store cookies scoped to a domain that doesn't match the
+    # "testserver" host it requests against, regardless of correctness (see the precise
+    # raw-header assertion in test_login_cookie_domain_attribute_present below).
+    from config import settings
+
+    monkeypatch.setattr(settings, "cookie_domain", ".pfh.example.com")
+    resp = client.post(
+        "/auth/register",
+        json={
+            "email": "domaincookie@example.com",
+            "email_confirm": "domaincookie@example.com",
+            "name": "Domain Cookie",
+            "password": "Sup3rSecret!",
+            "password_confirm": "Sup3rSecret!",
+        },
+    )
+    assert resp.status_code == 201
+    assert resp.headers.get("set-cookie") is not None
+
+
+def test_login_cookie_domain_attribute_present(client, monkeypatch):
+    from config import settings
+
+    monkeypatch.setattr(settings, "cookie_domain", ".pfh.example.com")
+    resp = client.post(
+        "/auth/register",
+        json={
+            "email": "domaincookie2@example.com",
+            "email_confirm": "domaincookie2@example.com",
+            "name": "Domain Cookie2",
+            "password": "Sup3rSecret!",
+            "password_confirm": "Sup3rSecret!",
+        },
+    )
+    if hasattr(resp.headers, "get_list"):
+        raw_cookie_headers = resp.headers.get_list("set-cookie")
+    else:
+        raw_cookie_headers = [resp.headers.get("set-cookie", "")]
+    assert any("Domain=.pfh.example.com" in h for h in raw_cookie_headers)

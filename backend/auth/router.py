@@ -49,6 +49,7 @@ def _set_session_cookie(response: Response, user: dict) -> None:
         samesite="lax",
         secure=settings.cookie_secure,
         max_age=settings.jwt_ttl_minutes * 60,
+        domain=settings.cookie_domain or None,
     )
 
 
