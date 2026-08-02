@@ -90,7 +90,6 @@ class EmailOtpSendRequest(BaseModel):
 
 
 class EmailOtpVerifyRequest(BaseModel):
-    email: EmailStr
     code: str = Field(min_length=6, max_length=6)
 
 

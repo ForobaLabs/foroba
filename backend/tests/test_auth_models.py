@@ -20,7 +20,7 @@ def test_login_2fa_request_rejects_unknown_method():
 
 
 def test_email_otp_verify_request():
-    req = EmailOtpVerifyRequest(email="a@example.com", code="654321")
+    req = EmailOtpVerifyRequest(code="654321")
     assert req.code == "654321"
 
 
