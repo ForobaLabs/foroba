@@ -9,6 +9,7 @@ import { fetchPazuruAccounts } from '../api/pazuru';
 import { fetchInvestmentConnections } from '../api/tsumi';
 import { updateDisplayCurrency, updateShowDebts } from '../auth/api';
 import { useAuth } from '../auth/AuthProvider';
+import { SecuritySettingsSection } from './SecuritySettingsSection';
 
 export function AppSettingsPage() {
   const { profile, updateProfile } = useUserProfile();
@@ -247,6 +248,8 @@ export function AppSettingsPage() {
             Expert = advanced analytics). When MiFID profiling is enabled it sets this
             automatically; a manual override will be available in Settings.
           </p>
+
+          <SecuritySettingsSection />
         </div>
       )}
 
