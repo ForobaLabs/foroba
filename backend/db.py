@@ -521,7 +521,12 @@ def run_migrations(db_path: str) -> None:
     backend_dir = Path(__file__).resolve().parent
     cfg = Config(str(backend_dir / "alembic.ini"))
     cfg.set_main_option("script_location", str(backend_dir / "alembic"))
-    cfg.set_main_option("sqlalchemy.url", _alembic_url(db_path))
+    # ConfigParser (which Config.set_main_option delegates to) interpolates `%`
+    # as an escape char — a SQLCipher URL's percent-encoded password (e.g. the
+    # `=` padding in a base64 key becomes `%3D`) trips "invalid interpolation
+    # syntax" unless every literal `%` is doubled first (alembic's own
+    # documented workaround for passwords containing `%`).
+    cfg.set_main_option("sqlalchemy.url", _alembic_url(db_path).replace("%", "%%"))
     command.upgrade(cfg, "head")
 
 
