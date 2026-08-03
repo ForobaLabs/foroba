@@ -1,6 +1,18 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { fetchMfaMethods, regenerateRecoveryCodes, removeMfaMethod } from "../auth/api";
+import { startRegistration } from "@simplewebauthn/browser";
+import { Button, Input } from "@foroba/ui";
+import {
+  enrollTotp,
+  fetchMfaMethods,
+  passkeyRegisterOptions,
+  passkeyRegisterVerify,
+  regenerateRecoveryCodes,
+  removeMfaMethod,
+  sendEmailOtp,
+  verifyEmailOtp,
+  verifyTotp,
+} from "../auth/api";
 
 type MethodKey = "totp" | "email_otp" | "webauthn";
 
@@ -16,6 +28,10 @@ export function SecuritySettingsSection() {
   const [savingKey, setSavingKey] = useState<string | null>(null);
   const [mfaError, setMfaError] = useState<string | null>(null);
   const [newRecoveryCodes, setNewRecoveryCodes] = useState<string[] | null>(null);
+  // Which not-yet-enrolled method the user is currently adding, plus its inline setup state.
+  const [addingMethod, setAddingMethod] = useState<MethodKey | null>(null);
+  const [addCode, setAddCode] = useState("");
+  const [totpQr, setTotpQr] = useState<string | null>(null);
 
   if (!mfa) return null;
 
@@ -31,6 +47,54 @@ export function SecuritySettingsSection() {
       await qc.invalidateQueries({ queryKey: ["mfa-methods"] });
     } catch (err) {
       setMfaError(err instanceof Error ? err.message : "Failed to remove method.");
+    } finally {
+      setSavingKey(null);
+    }
+  }
+
+  function cancelAdd() {
+    setAddingMethod(null);
+    setAddCode("");
+    setTotpQr(null);
+  }
+
+  async function handleStartAdd(method: MethodKey) {
+    setMfaError(null);
+    setAddCode("");
+    setAddingMethod(method);
+    try {
+      if (method === "totp") {
+        const { qr } = await enrollTotp();
+        setTotpQr(qr);
+      } else if (method === "email_otp") {
+        await sendEmailOtp();
+      } else {
+        const options = await passkeyRegisterOptions();
+        const attestation = await startRegistration({ optionsJSON: options });
+        await passkeyRegisterVerify(JSON.stringify(attestation), "Passkey");
+        await qc.invalidateQueries({ queryKey: ["mfa-methods"] });
+        cancelAdd();
+      }
+    } catch (err) {
+      setMfaError(err instanceof Error ? err.message : "Failed to start setup.");
+      cancelAdd();
+    }
+  }
+
+  async function handleVerifyAdd() {
+    if (!addingMethod || addingMethod === "webauthn") return;
+    setSavingKey(addingMethod);
+    setMfaError(null);
+    try {
+      if (addingMethod === "totp") {
+        await verifyTotp(addCode);
+      } else {
+        await verifyEmailOtp(addCode);
+      }
+      await qc.invalidateQueries({ queryKey: ["mfa-methods"] });
+      cancelAdd();
+    } catch (err) {
+      setMfaError(err instanceof Error ? err.message : "Invalid code.");
     } finally {
       setSavingKey(null);
     }
@@ -62,11 +126,56 @@ export function SecuritySettingsSection() {
           return (
             <div
               key={key}
-              className="flex items-center justify-between gap-3 rounded-lg border border-[var(--color-bg-border)] bg-[var(--color-bg-surface)] px-4.5 py-3.5"
+              className="flex flex-col gap-3 rounded-lg border border-[var(--color-bg-border)] bg-[var(--color-bg-surface)] px-4.5 py-3.5"
             >
-              <span className="text-sm text-[var(--color-text-primary)]">
-                {label} — Not set up
-              </span>
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-sm text-[var(--color-text-primary)]">
+                  {label} — Not set up
+                </span>
+                {addingMethod !== key && (
+                  <button
+                    type="button"
+                    aria-label={`Add ${label}`}
+                    disabled={savingKey !== null}
+                    onClick={() => handleStartAdd(key)}
+                    className="text-xs font-semibold text-[var(--color-accent)] disabled:cursor-not-allowed"
+                  >
+                    Add
+                  </button>
+                )}
+              </div>
+              {addingMethod === key && key !== "webauthn" && (
+                <div className="flex flex-col gap-2">
+                  {key === "totp" && totpQr && (
+                    <img src={totpQr} alt="TOTP QR code" className="mx-auto h-32 w-32" />
+                  )}
+                  {key === "email_otp" && (
+                    <p className="text-xs text-[var(--color-text-secondary)]">
+                      We sent a 6-digit code to your email.
+                    </p>
+                  )}
+                  <Input
+                    value={addCode}
+                    onChange={(e) => setAddCode(e.target.value)}
+                    placeholder="6-digit code"
+                  />
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={handleVerifyAdd}
+                      disabled={savingKey === key || addCode.length === 0}
+                    >
+                      Verify
+                    </Button>
+                    <button
+                      type="button"
+                      onClick={cancelAdd}
+                      className="text-xs font-semibold text-[var(--color-text-secondary)]"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           );
         }

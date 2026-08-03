@@ -4,6 +4,15 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { SecuritySettingsSection } from "./SecuritySettingsSection";
 
+vi.mock("@simplewebauthn/browser", () => ({
+  startRegistration: vi.fn(async () => ({
+    id: "cred-1",
+    rawId: "cred-1",
+    response: {},
+    type: "public-key",
+  })),
+}));
+
 function mockFetchByUrl(byUrl: Record<string, () => Response>) {
   vi.stubGlobal(
     "fetch",
@@ -71,6 +80,40 @@ describe("SecuritySettingsSection", () => {
       expect(globalThis.fetch).toHaveBeenCalledWith(
         expect.stringContaining("/auth/2fa/methods/email_otp"),
         expect.objectContaining({ method: "DELETE" }),
+      ),
+    );
+  });
+
+  it("lets the user add a not-yet-enrolled method (email OTP)", async () => {
+    const user = userEvent.setup();
+    mockFetchByUrl({
+      "/auth/2fa/methods": () =>
+        new Response(
+          JSON.stringify({
+            totp_enabled: true,
+            email_otp_enabled: false,
+            webauthn_enabled: false,
+            recovery_codes_remaining: 10,
+          }),
+          { status: 200 },
+        ),
+      "/auth/2fa/email-otp/send": () => new Response(JSON.stringify({ sent: true }), { status: 200 }),
+      "/auth/2fa/email-otp/verify": () => new Response(JSON.stringify({}), { status: 200 }),
+    });
+    renderSection();
+    await waitFor(() => screen.getByRole("button", { name: "Add Email code" }));
+
+    await user.click(screen.getByRole("button", { name: "Add Email code" }));
+    await waitFor(() =>
+      expect(screen.getByPlaceholderText("6-digit code")).toBeInTheDocument(),
+    );
+    await user.type(screen.getByPlaceholderText("6-digit code"), "654321");
+    await user.click(screen.getByRole("button", { name: "Verify" }));
+
+    await waitFor(() =>
+      expect(globalThis.fetch).toHaveBeenCalledWith(
+        expect.stringContaining("/auth/2fa/email-otp/verify"),
+        expect.objectContaining({ method: "POST" }),
       ),
     );
   });

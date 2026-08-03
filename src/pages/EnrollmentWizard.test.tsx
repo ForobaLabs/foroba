@@ -59,11 +59,57 @@ test("sets up TOTP: shows the QR code, verifies the code, then shows recovery co
   fireEvent.change(screen.getByLabelText("6-digit code"), { target: { value: "123456" } });
   fireEvent.click(screen.getByRole("button", { name: "Verify and continue" }));
 
+  await waitFor(() =>
+    expect(screen.getByText("Add another way to sign in?")).toBeInTheDocument(),
+  );
+  fireEvent.click(screen.getByRole("button", { name: "Finish setup" }));
+
   await waitFor(() => expect(screen.getByText("Save your recovery codes")).toBeInTheDocument());
   expect(screen.getByText("CODE0")).toBeInTheDocument();
 
   fireEvent.click(screen.getByRole("button", { name: "I've saved these codes" }));
   await waitFor(() => expect(screen.getByText("Onboarding")).toBeInTheDocument());
+});
+
+test("allows enrolling a second method (email OTP) before finishing setup", async () => {
+  mockFetchByUrl({
+    "/auth/2fa/enroll": () => ({ secret: "JBSWY3DPEHPK3PXP", qr: "data:image/png;base64,abc" }),
+    "/auth/2fa/verify": () => ({ enabled: true }),
+    "/auth/2fa/email-otp/send": () => ({ sent: true }),
+    "/auth/2fa/email-otp/verify": () => ({}),
+    "/auth/2fa/recovery-codes/regenerate": () => ({
+      codes: Array.from({ length: 10 }, (_, i) => `CODE${i}`),
+    }),
+  });
+  renderPage();
+
+  fireEvent.click(screen.getByText("Authenticator app"));
+  await waitFor(() => expect(screen.getByAltText("TOTP QR code")).toBeInTheDocument());
+  fireEvent.change(screen.getByLabelText("6-digit code"), { target: { value: "123456" } });
+  fireEvent.click(screen.getByRole("button", { name: "Verify and continue" }));
+
+  await waitFor(() =>
+    expect(screen.getByText("Add another way to sign in?")).toBeInTheDocument(),
+  );
+  // Authenticator app is already enrolled, so it must not be offered again.
+  expect(screen.queryByText("Authenticator app")).not.toBeInTheDocument();
+
+  fireEvent.click(screen.getByText("Email code"));
+  await waitFor(() =>
+    expect(screen.getByText("We sent a 6-digit code to your email.")).toBeInTheDocument(),
+  );
+  fireEvent.change(screen.getByLabelText("6-digit code"), { target: { value: "654321" } });
+  fireEvent.click(screen.getByRole("button", { name: "Verify and continue" }));
+
+  await waitFor(() =>
+    expect(screen.getByText("Add another way to sign in?")).toBeInTheDocument(),
+  );
+  // Both are enrolled now — only the passkey option remains offered.
+  expect(screen.queryByText("Email code")).not.toBeInTheDocument();
+  expect(screen.getByText("Passkey (recommended)")).toBeInTheDocument();
+
+  fireEvent.click(screen.getByRole("button", { name: "Finish setup" }));
+  await waitFor(() => expect(screen.getByText("Save your recovery codes")).toBeInTheDocument());
 });
 
 test("sets up email OTP: auto-sends the code, verifies, then shows recovery codes", async () => {
@@ -84,6 +130,11 @@ test("sets up email OTP: auto-sends the code, verifies, then shows recovery code
   fireEvent.change(screen.getByLabelText("6-digit code"), { target: { value: "654321" } });
   fireEvent.click(screen.getByRole("button", { name: "Verify and continue" }));
 
+  await waitFor(() =>
+    expect(screen.getByText("Add another way to sign in?")).toBeInTheDocument(),
+  );
+  fireEvent.click(screen.getByRole("button", { name: "Finish setup" }));
+
   await waitFor(() => expect(screen.getByText("Save your recovery codes")).toBeInTheDocument());
 });
 
@@ -98,6 +149,11 @@ test("sets up a passkey end-to-end without requiring any typed code", async () =
   renderPage();
 
   fireEvent.click(screen.getByText("Passkey (recommended)"));
+
+  await waitFor(() =>
+    expect(screen.getByText("Add another way to sign in?")).toBeInTheDocument(),
+  );
+  fireEvent.click(screen.getByRole("button", { name: "Finish setup" }));
 
   await waitFor(() => expect(screen.getByText("Save your recovery codes")).toBeInTheDocument());
 });

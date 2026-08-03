@@ -12,7 +12,8 @@ import {
   verifyTotp,
 } from "../auth/api";
 
-type Stage = "choose" | "passkey" | "totp" | "email_otp" | "recovery";
+type MethodKey = "totp" | "email_otp" | "webauthn";
+type Stage = "choose" | "passkey" | "totp" | "email_otp" | "more" | "recovery";
 
 export function EnrollmentWizard() {
   const navigate = useNavigate();
@@ -25,6 +26,16 @@ export function EnrollmentWizard() {
   const [emailOtpCode, setEmailOtpCode] = useState("");
   const [emailOtpSent, setEmailOtpSent] = useState(false);
   const [recoveryCodes, setRecoveryCodes] = useState<string[] | null>(null);
+  // Methods enrolled so far in this session — the user can add more than one before
+  // finishing, since step-up later lets them pick whichever enrolled method they prefer.
+  const [enrolled, setEnrolled] = useState<Set<MethodKey>>(new Set());
+
+  const backStage: Stage = enrolled.size > 0 ? "more" : "choose";
+
+  function onMethodEnrolled(method: MethodKey) {
+    setEnrolled((prev) => new Set(prev).add(method));
+    setStage("more");
+  }
 
   async function goToRecovery() {
     const codes = await regenerateRecoveryCodes();
@@ -40,10 +51,10 @@ export function EnrollmentWizard() {
       const options = await passkeyRegisterOptions();
       const attestation = await startRegistration({ optionsJSON: options });
       await passkeyRegisterVerify(JSON.stringify(attestation), "Primary passkey");
-      await goToRecovery();
+      onMethodEnrolled("webauthn");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Passkey setup failed.");
-      setStage("choose");
+      setStage(backStage);
     } finally {
       setLoading(false);
     }
@@ -67,7 +78,7 @@ export function EnrollmentWizard() {
     setLoading(true);
     try {
       await verifyTotp(totpCode);
-      await goToRecovery();
+      onMethodEnrolled("totp");
     } catch {
       setError("Invalid code.");
     } finally {
@@ -93,13 +104,34 @@ export function EnrollmentWizard() {
     setLoading(true);
     try {
       await verifyEmailOtp(emailOtpCode);
-      await goToRecovery();
+      onMethodEnrolled("email_otp");
     } catch {
       setError("Invalid or expired code.");
     } finally {
       setLoading(false);
     }
   }
+
+  const methodOptions: { key: MethodKey; label: string; description: string; onClick: () => void }[] = [
+    {
+      key: "webauthn",
+      label: "Passkey (recommended)",
+      description: "Use your device's fingerprint, face, or security key. No codes to remember.",
+      onClick: onChoosePasskey,
+    },
+    {
+      key: "totp",
+      label: "Authenticator app",
+      description: "Scan a QR code with Google Authenticator, 1Password, or similar.",
+      onClick: onChooseTotp,
+    },
+    {
+      key: "email_otp",
+      label: "Email code",
+      description: "Get a one-time code sent to your registered email each time you sign in.",
+      onClick: onChooseEmailOtp,
+    },
+  ];
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-[var(--color-bg-primary)] p-4">
@@ -114,44 +146,57 @@ export function EnrollmentWizard() {
               like to sign in.
             </p>
             <div className="flex flex-col gap-3">
-              <button
-                onClick={onChoosePasskey}
-                disabled={loading}
-                className="rounded-md border border-[var(--color-bg-border)] p-4 text-left transition-colors hover:bg-[var(--color-bg-elevated)]"
-              >
-                <p className="font-medium text-[var(--color-text-primary)]">
-                  Passkey (recommended)
-                </p>
-                <p className="text-sm text-[var(--color-text-secondary)]">
-                  Use your device's fingerprint, face, or security key. No codes to remember.
-                </p>
-              </button>
-              <button
-                onClick={onChooseTotp}
-                disabled={loading}
-                className="rounded-md border border-[var(--color-bg-border)] p-4 text-left transition-colors hover:bg-[var(--color-bg-elevated)]"
-              >
-                <p className="font-medium text-[var(--color-text-primary)]">Authenticator app</p>
-                <p className="text-sm text-[var(--color-text-secondary)]">
-                  Scan a QR code with Google Authenticator, 1Password, or similar.
-                </p>
-              </button>
-              <button
-                onClick={onChooseEmailOtp}
-                disabled={loading}
-                className="rounded-md border border-[var(--color-bg-border)] p-4 text-left transition-colors hover:bg-[var(--color-bg-elevated)]"
-              >
-                <p className="font-medium text-[var(--color-text-primary)]">Email code</p>
-                <p className="text-sm text-[var(--color-text-secondary)]">
-                  Get a one-time code sent to your registered email each time you sign in.
-                </p>
-              </button>
+              {methodOptions.map((m) => (
+                <button
+                  key={m.key}
+                  onClick={m.onClick}
+                  disabled={loading}
+                  className="rounded-md border border-[var(--color-bg-border)] p-4 text-left transition-colors hover:bg-[var(--color-bg-elevated)]"
+                >
+                  <p className="font-medium text-[var(--color-text-primary)]">{m.label}</p>
+                  <p className="text-sm text-[var(--color-text-secondary)]">{m.description}</p>
+                </button>
+              ))}
             </div>
             {error && (
               <p role="alert" className="mt-4 text-sm text-[var(--color-negative)]">
                 {error}
               </p>
             )}
+          </>
+        )}
+
+        {stage === "more" && (
+          <>
+            <h1 className="mb-1 text-xl font-semibold text-[var(--color-text-primary)]">
+              Add another way to sign in?
+            </h1>
+            <p className="mb-6 text-sm text-[var(--color-text-secondary)]">
+              You can enable more than one method now, or add more later in Settings → Security.
+            </p>
+            <div className="flex flex-col gap-3">
+              {methodOptions
+                .filter((m) => !enrolled.has(m.key))
+                .map((m) => (
+                  <button
+                    key={m.key}
+                    onClick={m.onClick}
+                    disabled={loading}
+                    className="rounded-md border border-[var(--color-bg-border)] p-4 text-left transition-colors hover:bg-[var(--color-bg-elevated)]"
+                  >
+                    <p className="font-medium text-[var(--color-text-primary)]">{m.label}</p>
+                    <p className="text-sm text-[var(--color-text-secondary)]">{m.description}</p>
+                  </button>
+                ))}
+            </div>
+            {error && (
+              <p role="alert" className="mt-4 text-sm text-[var(--color-negative)]">
+                {error}
+              </p>
+            )}
+            <Button className="mt-4 w-full" onClick={() => void goToRecovery()}>
+              Finish setup
+            </Button>
           </>
         )}
 
@@ -192,7 +237,7 @@ export function EnrollmentWizard() {
             </Button>
             <button
               type="button"
-              onClick={() => setStage("choose")}
+              onClick={() => setStage(backStage)}
               className="text-center text-sm text-[var(--color-accent)] hover:underline"
             >
               Back
@@ -238,7 +283,7 @@ export function EnrollmentWizard() {
             </Button>
             <button
               type="button"
-              onClick={() => setStage("choose")}
+              onClick={() => setStage(backStage)}
               className="text-center text-sm text-[var(--color-accent)] hover:underline"
             >
               Back
@@ -257,7 +302,7 @@ export function EnrollmentWizard() {
                   {error}
                 </p>
                 <button
-                  onClick={() => setStage("choose")}
+                  onClick={() => setStage(backStage)}
                   className="text-sm text-[var(--color-accent)] hover:underline"
                 >
                   Back
