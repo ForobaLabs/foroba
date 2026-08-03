@@ -30,9 +30,15 @@ def conn_module(tmp_path, monkeypatch):
 
 def test_get_conn_gives_each_thread_its_own_connection(conn_module):
     ids: dict[int, int] = {}
+    # Keep every connection object alive for the duration of the test: comparing
+    # by id() alone is unsafe if a thread's connection is garbage-collected
+    # before the comparison, since CPython can then reuse the same memory
+    # address for a different object and produce a false id() collision.
+    keepalive: list[object] = []
 
     def worker():
         conn = conn_module.get_conn()
+        keepalive.append(conn)
         ids[threading.get_ident()] = id(conn)
 
     threads = [threading.Thread(target=worker) for _ in range(5)]
