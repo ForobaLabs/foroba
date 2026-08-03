@@ -34,7 +34,7 @@ FROM python:3.12-slim AS backend
 WORKDIR /app/backend
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    gcc libffi-dev && rm -rf /var/lib/apt/lists/*
+    gcc libffi-dev libsqlcipher-dev && rm -rf /var/lib/apt/lists/*
 
 COPY foroba/backend/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
@@ -45,8 +45,10 @@ COPY foroba/backend/ .
 FROM python:3.12-slim AS final
 WORKDIR /app
 
+# libsqlcipher1 (runtime .so, not -dev) — the sqlcipher3 wheel compiled in the
+# `backend` stage dlopen()s this at import time; the -dev headers aren't needed here.
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    curl && rm -rf /var/lib/apt/lists/*
+    curl libsqlcipher1 && rm -rf /var/lib/apt/lists/*
 
 COPY --from=backend /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
 COPY --from=backend /usr/local/bin /usr/local/bin
