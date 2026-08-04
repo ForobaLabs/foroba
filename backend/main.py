@@ -121,7 +121,9 @@ app.include_router(public_api_router)
 @app.on_event("startup")
 def _startup() -> None:
     conn = get_conn()
-    if settings.seed_mock_users:
+    # foroba#214: mock/seed accounts must never be created in hosted (prod) mode,
+    # regardless of the SEED_MOCK_USERS flag -- deployment_mode is the hard gate.
+    if settings.deployment_mode == "selfhost" and settings.seed_mock_users:
         _seed(conn)
         _seed_household(conn)
     init_settings(conn)
