@@ -11,7 +11,7 @@ import {
   PageContainer,
   SectionHeader,
 } from '@foroba/ui';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { useAccountsList, usePazuruHealth } from '../hooks/useServiceHealth';
 
 const BANK_LABELS: Record<string, string> = {

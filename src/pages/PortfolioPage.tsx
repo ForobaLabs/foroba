@@ -16,7 +16,7 @@ import {
   TableHeader,
   TableRow,
 } from '@foroba/ui';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import type { PortfolioAllocationGroup } from '../api/tsumi';
 import {
   usePortfolioAllocations,

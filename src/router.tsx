@@ -1,6 +1,6 @@
 import { AboutPage, HelpPage, LegalPage, SecurityPage } from '@foroba/ui';
 import { lazy, Suspense } from 'react';
-import { createBrowserRouter } from 'react-router-dom';
+import { createBrowserRouter } from 'react-router';
 import { Spinner } from '@foroba/ui';
 import { App } from './App';
 import { LoginPage } from './pages/LoginPage';

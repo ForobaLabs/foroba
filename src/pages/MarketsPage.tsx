@@ -15,7 +15,7 @@ import {
   TableRow,
 } from '@foroba/ui';
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import type { AssetClass, MarketMover } from '../api/markets';
 import { useMarketOverview } from '../hooks/useMarketSnapshot';
 

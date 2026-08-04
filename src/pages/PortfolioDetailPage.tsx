@@ -7,7 +7,7 @@ import {
   SectionHeader,
 } from '@foroba/ui';
 import { ArrowLeft } from 'lucide-react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router';
 import { usePortfolioPositions } from '../hooks/useServiceHealth';
 
 function formatCurrency(amount: number, currency: string) {

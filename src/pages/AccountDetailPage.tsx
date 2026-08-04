@@ -14,7 +14,7 @@ import {
   TableRow,
 } from '@foroba/ui';
 import { ArrowLeft } from 'lucide-react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router';
 import { useAccountDetail, useAccountTransactions } from '../hooks/useServiceHealth';
 
 const BANK_LABELS: Record<string, string> = {

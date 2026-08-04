@@ -1,6 +1,6 @@
 import { AppShell, Footer, NotificationBell, Sidebar, Spinner, Topbar, UserMenu, useSuiteProfile, useTheme, useUserProfile } from '@foroba/ui';
 import { useEffect, useState } from 'react';
-import { Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { Navigate, Outlet, useLocation, useNavigate } from 'react-router';
 import { getNavItems } from './components/AppNavItems';
 import { JeliPanel } from './components/JeliPanel';
 import { useAuth } from './auth/AuthProvider';

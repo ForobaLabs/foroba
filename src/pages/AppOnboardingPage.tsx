@@ -1,6 +1,6 @@
 import { Button } from '@foroba/ui';
 import { OnboardingPage, useLanguage } from '@foroba/ui';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { completeOnboarding } from '../auth/api';
 
 const PAZURU_APP_URL = import.meta.env.VITE_PAZURU_APP_URL ?? 'http://localhost:5173';

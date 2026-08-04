@@ -10,7 +10,7 @@ import {
   SectionHeader,
 } from '@foroba/ui';
 import { ArrowLeft } from 'lucide-react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router';
 import type { AssetClass } from '../api/markets';
 import { useMarketSnapshot } from '../hooks/useMarketSnapshot';
 

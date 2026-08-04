@@ -2,7 +2,7 @@ import { SettingsPage, Switch, useTheme } from '@foroba/ui';
 import { useUserProfile } from '@foroba/ui';
 import type { UserProfile } from '@foroba/ui';
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { fetchFxRates } from '../api/foroba';
 import { fetchPazuruAccounts } from '../api/pazuru';
