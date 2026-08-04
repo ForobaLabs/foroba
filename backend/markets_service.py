@@ -24,6 +24,7 @@ from typing import Any
 import httpx
 
 from config import settings
+from suite_cookies import suite_cookies
 
 logger = logging.getLogger(__name__)
 
@@ -41,12 +42,11 @@ async def _get_json(
     client: httpx.AsyncClient,
     url: str,
     params: dict[str, Any],
-    cookie: str | None,
+    cookies: dict[str, str] | None,
     *,
     timeout: float = _TIMEOUT,
 ) -> Any | None:
     """GET one Tsumi endpoint, returning parsed JSON or None on any failure."""
-    cookies = {"suite_session": cookie} if cookie else None
     try:
         resp = await client.get(url, params=params, cookies=cookies, timeout=timeout)
         resp.raise_for_status()
@@ -61,6 +61,7 @@ async def fetch_snapshot(
     asset_class: str,
     *,
     cookie: str | None = None,
+    stepup_tsumi: str | None = None,
 ) -> dict[str, Any]:
     """Aggregate Tsumi rating + sentiment + top movers into one snapshot.
 
@@ -68,15 +69,16 @@ async def fetch_snapshot(
     """
     base = settings.tsumi_api_url.rstrip("/")
     common = {"symbol": symbol, "asset_class": asset_class}
+    cookies = suite_cookies(cookie, stepup_tsumi=stepup_tsumi)
     async with httpx.AsyncClient() as client:
         combined, sentiment, scan = await asyncio.gather(
-            _get_json(client, f"{base}/api/markets/combined", common, cookie),
-            _get_json(client, f"{base}/api/news/sentiment", common, cookie),
+            _get_json(client, f"{base}/api/markets/combined", common, cookies),
+            _get_json(client, f"{base}/api/news/sentiment", common, cookies),
             _get_json(
                 client,
                 f"{base}/api/screener/scan",
                 {"asset_class": asset_class, "screen": "top_movers", "limit": 5},
-                cookie,
+                cookies,
                 timeout=_SCREENER_TIMEOUT,
             ),
         )
@@ -96,13 +98,16 @@ async def fetch_snapshot(
     }
 
 
-async def fetch_overview(asset_class: str, *, cookie: str | None = None) -> dict[str, Any]:
+async def fetch_overview(
+    asset_class: str, *, cookie: str | None = None, stepup_tsumi: str | None = None
+) -> dict[str, Any]:
     """Aggregate top gainers, top losers, and news headlines for the Markets landing page.
 
     News is fetched for the top gainer's symbol (best-effort — there is no
     symbol-agnostic "general market" feed upstream); empty if no movers.
     """
     base = settings.tsumi_api_url.rstrip("/")
+    cookies = suite_cookies(cookie, stepup_tsumi=stepup_tsumi)
     async with httpx.AsyncClient() as client:
         # Single-fetch-pass movers endpoint: fetches the universe ONCE and
         # derives both gainers and losers from the same rows, avoiding the
@@ -112,7 +117,7 @@ async def fetch_overview(asset_class: str, *, cookie: str | None = None) -> dict
             client,
             f"{base}/api/screener/movers",
             {"asset_class": asset_class, "limit": 5},
-            cookie,
+            cookies,
             timeout=_SCREENER_TIMEOUT,
         )
         gainers = movers.get("gainers") if isinstance(movers, dict) else None
@@ -126,7 +131,7 @@ async def fetch_overview(asset_class: str, *, cookie: str | None = None) -> dict
                     client,
                     f"{base}/api/news/headlines",
                     {"symbol": top_symbol, "limit": 10},
-                    cookie,
+                    cookies,
                 )
 
     degraded = gainers is None or losers is None or news is None

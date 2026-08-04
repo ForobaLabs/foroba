@@ -14,7 +14,7 @@ def _memory_conn():
     return db_module.connect(":memory:")
 
 
-async def _fake_generate_notifications(conn, user_id, *, cookie=None):
+async def _fake_generate_notifications(conn, user_id, *, cookie=None, **_):
     return {
         "items": [
             {

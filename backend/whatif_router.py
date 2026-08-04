@@ -45,9 +45,15 @@ async def simulate(
     body: SimulateParams,
     _user: dict = Depends(require_feature(FEATURE_KEY)),
     suite_session: str | None = Cookie(default=None),
+    stepup_pazuru: str | None = Cookie(default=None),
+    stepup_tsumi: str | None = Cookie(default=None),
 ) -> dict:
     return await whatif_service.simulate(
-        body.model_dump(), body.horizon_months, owner_cookie=suite_session
+        body.model_dump(),
+        body.horizon_months,
+        owner_cookie=suite_session,
+        stepup_pazuru=stepup_pazuru,
+        stepup_tsumi=stepup_tsumi,
     )
 
 
@@ -109,6 +115,8 @@ async def get_scenario(
     user: dict = Depends(require_feature(FEATURE_KEY)),
     conn: sqlite3.Connection = Depends(get_conn),
     suite_session: str | None = Cookie(default=None),
+    stepup_pazuru: str | None = Cookie(default=None),
+    stepup_tsumi: str | None = Cookie(default=None),
 ) -> dict:
     row = db.get_whatif_scenario(
         conn, scenario_id, user_id=user["id"], household_id=user.get("household_id")
@@ -117,7 +125,11 @@ async def get_scenario(
         raise HTTPException(404, "Scenario not found")
     params = json.loads(row["params_json"])
     projection = await whatif_service.simulate(
-        params, row["horizon_months"], owner_cookie=suite_session
+        params,
+        row["horizon_months"],
+        owner_cookie=suite_session,
+        stepup_pazuru=stepup_pazuru,
+        stepup_tsumi=stepup_tsumi,
     )
     return {**_to_out(row).model_dump(), "projection": projection}
 

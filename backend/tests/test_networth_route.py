@@ -15,6 +15,8 @@ async def _fake_fetch_networth(
     days: int,
     *,
     cookie: str | None = None,
+    stepup_pazuru: str | None = None,
+    stepup_tsumi: str | None = None,
     include_manual_assets: bool = True,
     include_debts: bool = False,
 ) -> dict[str, Any]:
@@ -39,6 +41,8 @@ async def _fake_fetch_networth(
         "degraded": False,
         "disclaimer": ns.DISCLAIMER,
         "_cookie_seen": cookie,
+        "_stepup_pazuru_seen": stepup_pazuru,
+        "_stepup_tsumi_seen": stepup_tsumi,
     }
 
 
@@ -70,9 +74,16 @@ def test_networth_route_forwards_cookie(monkeypatch):
     app.dependency_overrides[get_current_user] = lambda: {"id": 1, "email": "u1@test.local"}
     try:
         client = TestClient(app)
-        resp = client.get("/networth/summary", cookies={"suite_session": "tok-99"})
+        resp = client.get(
+            "/networth/summary",
+            cookies={"suite_session": "tok-99", "stepup_pazuru": "sp-99", "stepup_tsumi": "st-99"},
+        )
         assert resp.status_code == 200
-        assert resp.json()["_cookie_seen"] == "tok-99"
+        body = resp.json()
+        assert body["_cookie_seen"] == "tok-99"
+        # foroba#206: both per-app stepup cookies must be forwarded.
+        assert body["_stepup_pazuru_seen"] == "sp-99"
+        assert body["_stepup_tsumi_seen"] == "st-99"
     finally:
         app.dependency_overrides.pop(get_current_user, None)
 
@@ -81,7 +92,7 @@ def test_networth_route_forwards_include_manual_assets_flag(monkeypatch):
     captured = {}
 
     async def _capturing_fetch(
-        days, *, cookie=None, include_manual_assets=True, include_debts=False
+        days, *, cookie=None, include_manual_assets=True, include_debts=False, **_
     ):
         captured["include_manual_assets"] = include_manual_assets
         return await _fake_fetch_networth(days, cookie=cookie)
@@ -101,7 +112,7 @@ def test_networth_route_forwards_include_debts_flag(monkeypatch):
     captured = {}
 
     async def _capturing_fetch(
-        days, *, cookie=None, include_manual_assets=True, include_debts=False
+        days, *, cookie=None, include_manual_assets=True, include_debts=False, **_
     ):
         captured["include_debts"] = include_debts
         return await _fake_fetch_networth(days, cookie=cookie)

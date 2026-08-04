@@ -11,6 +11,7 @@ from pathlib import Path
 import httpx
 
 from config import settings
+from suite_cookies import suite_cookies
 
 logger = logging.getLogger(__name__)
 
@@ -64,11 +65,10 @@ def _expertise_description(value: int) -> str:
 
 
 async def _fetch_context(
-    client: httpx.AsyncClient, url: str, label: str, cookie: str | None
+    client: httpx.AsyncClient, url: str, label: str, cookies: dict[str, str] | None
 ) -> str:
     try:
-        headers = {"Cookie": f"suite_session={cookie}"} if cookie else {}
-        resp = await client.get(url, timeout=3.0, headers=headers)
+        resp = await client.get(url, timeout=3.0, cookies=cookies)
         resp.raise_for_status()
         data = resp.json()
         return json.dumps(data, indent=2)
@@ -78,14 +78,21 @@ async def _fetch_context(
 
 
 async def gather_context(
-    pazuru_url: str, tsumi_url: str, cookie: str | None = None
+    pazuru_url: str,
+    tsumi_url: str,
+    cookie: str | None = None,
+    *,
+    stepup_pazuru: str | None = None,
+    stepup_tsumi: str | None = None,
 ) -> tuple[str, str]:
     """Gather Pazuru + Tsumi /jeli/context, forwarding the caller's suite_session
-    cookie (FB-5) so both apps scope the returned data to the caller's own
-    (or shared household) portfolio/accounts instead of 401ing."""
+    cookie (FB-5) plus the per-app stepup_<app> cookie (foroba#199, foroba#206) so
+    both apps scope the returned data to the caller's own (or shared household)
+    portfolio/accounts instead of 401ing/428ing."""
+    cookies = suite_cookies(cookie, stepup_pazuru=stepup_pazuru, stepup_tsumi=stepup_tsumi)
     async with httpx.AsyncClient() as client:
-        pazuru_task = _fetch_context(client, f"{pazuru_url}/jeli/context", "Pazuru", cookie)
-        tsumi_task = _fetch_context(client, f"{tsumi_url}/jeli/context", "Tsumi", cookie)
+        pazuru_task = _fetch_context(client, f"{pazuru_url}/jeli/context", "Pazuru", cookies)
+        tsumi_task = _fetch_context(client, f"{tsumi_url}/jeli/context", "Tsumi", cookies)
         pazuru_ctx, tsumi_ctx = await asyncio.gather(pazuru_task, tsumi_task)
     return pazuru_ctx, tsumi_ctx
 

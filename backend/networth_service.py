@@ -32,6 +32,7 @@ from typing import Any
 import httpx
 
 from config import settings
+from suite_cookies import suite_cookies
 
 logger = logging.getLogger(__name__)
 
@@ -46,10 +47,9 @@ async def _get_json(
     client: httpx.AsyncClient,
     url: str,
     params: dict[str, Any],
-    cookie: str | None,
+    cookies: dict[str, str] | None,
 ) -> Any | None:
     """GET one upstream endpoint, returning parsed JSON or None on any failure."""
-    cookies = {"suite_session": cookie} if cookie else None
     try:
         resp = await client.get(url, params=params, cookies=cookies, timeout=_TIMEOUT)
         resp.raise_for_status()
@@ -105,6 +105,8 @@ async def fetch_networth(
     days: int = 365,
     *,
     cookie: str | None = None,
+    stepup_pazuru: str | None = None,
+    stepup_tsumi: str | None = None,
     include_manual_assets: bool = True,
     include_debts: bool = False,
 ) -> dict[str, Any]:
@@ -117,12 +119,13 @@ async def fetch_networth(
     """
     pazuru_base = settings.pazuru_api_url.rstrip("/")
     tsumi_base = settings.tsumi_api_url.rstrip("/")
+    cookies = suite_cookies(cookie, stepup_pazuru=stepup_pazuru, stepup_tsumi=stepup_tsumi)
 
     async with httpx.AsyncClient() as client:
         fetches = [
-            _get_json(client, f"{pazuru_base}/api/accounts/net-worth", {"days": days}, cookie),
-            _get_json(client, f"{tsumi_base}/api/portfolio/summary", {}, cookie),
-            _get_json(client, f"{tsumi_base}/api/portfolio/history", {"days": days}, cookie),
+            _get_json(client, f"{pazuru_base}/api/accounts/net-worth", {"days": days}, cookies),
+            _get_json(client, f"{tsumi_base}/api/portfolio/summary", {}, cookies),
+            _get_json(client, f"{tsumi_base}/api/portfolio/history", {"days": days}, cookies),
         ]
         if include_manual_assets:
             fetches.append(
@@ -130,11 +133,11 @@ async def fetch_networth(
                     client,
                     f"{tsumi_base}/api/manual-assets/net-worth-history",
                     {"days": days},
-                    cookie,
+                    cookies,
                 )
             )
         if include_debts:
-            fetches.append(_get_json(client, f"{pazuru_base}/api/debts/net-worth", {}, cookie))
+            fetches.append(_get_json(client, f"{pazuru_base}/api/debts/net-worth", {}, cookies))
         results = await asyncio.gather(*fetches)
 
     bank, investments_summary, investments_history = results[0], results[1], results[2]

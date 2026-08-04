@@ -11,7 +11,7 @@ import markets_service as ms
 
 
 async def _fake_snapshot(
-    symbol: str, asset_class: str, *, cookie: str | None = None
+    symbol: str, asset_class: str, *, cookie: str | None = None, stepup_tsumi: str | None = None
 ) -> dict[str, Any]:
     return {
         "symbol": symbol,
@@ -22,6 +22,7 @@ async def _fake_snapshot(
         "degraded": False,
         "disclaimer": ms.DISCLAIMER,
         "_cookie_seen": cookie,
+        "_stepup_tsumi_seen": stepup_tsumi,
     }
 
 
@@ -52,13 +53,19 @@ def test_snapshot_route_forwards_cookie(monkeypatch):
     resp = client.get(
         "/markets/snapshot",
         params={"symbol": "BTCUSDT"},
-        cookies={"suite_session": "tok-99"},
+        cookies={"suite_session": "tok-99", "stepup_tsumi": "su-99"},
     )
     assert resp.status_code == 200
-    assert resp.json()["_cookie_seen"] == "tok-99"
+    body = resp.json()
+    assert body["_cookie_seen"] == "tok-99"
+    # foroba#206: stepup_tsumi must be forwarded, since Tsumi's require_auth
+    # (foroba#199) rejects requests carrying only suite_session with a 428.
+    assert body["_stepup_tsumi_seen"] == "su-99"
 
 
-async def _fake_overview(asset_class: str, *, cookie: str | None = None) -> dict[str, Any]:
+async def _fake_overview(
+    asset_class: str, *, cookie: str | None = None, stepup_tsumi: str | None = None
+) -> dict[str, Any]:
     return {
         "asset_class": asset_class,
         "gainers": [{"symbol": "BTCUSDT", "change_pct": 12.0}],
@@ -67,6 +74,7 @@ async def _fake_overview(asset_class: str, *, cookie: str | None = None) -> dict
         "degraded": False,
         "disclaimer": ms.DISCLAIMER,
         "_cookie_seen": cookie,
+        "_stepup_tsumi_seen": stepup_tsumi,
     }
 
 
@@ -97,7 +105,9 @@ def test_overview_route_forwards_cookie(monkeypatch):
     resp = client.get(
         "/markets/overview",
         params={"asset_class": "crypto"},
-        cookies={"suite_session": "tok-99"},
+        cookies={"suite_session": "tok-99", "stepup_tsumi": "su-99"},
     )
     assert resp.status_code == 200
-    assert resp.json()["_cookie_seen"] == "tok-99"
+    body = resp.json()
+    assert body["_cookie_seen"] == "tok-99"
+    assert body["_stepup_tsumi_seen"] == "su-99"

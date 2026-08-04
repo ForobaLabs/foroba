@@ -40,6 +40,8 @@ async def lab_chat(
     user: dict = Depends(get_current_user),
     conn=Depends(get_conn),
     suite_session: str | None = Cookie(default=None),
+    stepup_pazuru: str | None = Cookie(default=None),
+    stepup_tsumi: str | None = Cookie(default=None),
 ):
     user_id = str(user["id"])
 
@@ -77,7 +79,11 @@ async def lab_chat(
         return StreamingResponse(_disabled_stream(), media_type="application/x-ndjson")
 
     dataframes = await gather_dataframes(
-        settings.pazuru_api_url, settings.tsumi_api_url, cookie=suite_session
+        settings.pazuru_api_url,
+        settings.tsumi_api_url,
+        cookie=suite_session,
+        stepup_pazuru=stepup_pazuru,
+        stepup_tsumi=stepup_tsumi,
     )
     history = get_sandbox_history(conn, user_id, body.session_id)
     context = get_sandbox_user_context(conn, user_id)

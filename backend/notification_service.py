@@ -37,6 +37,7 @@ import httpx
 import db
 import settings_store
 from config import settings
+from suite_cookies import suite_cookies
 
 logger = logging.getLogger(__name__)
 
@@ -47,9 +48,8 @@ RECURRING_INCREASE_THRESHOLD = 1.10
 
 
 async def _get_json(
-    client: httpx.AsyncClient, url: str, params: dict[str, Any], cookie: str | None
+    client: httpx.AsyncClient, url: str, params: dict[str, Any], cookies: dict[str, str] | None
 ) -> Any | None:
-    cookies = {"suite_session": cookie} if cookie else None
     try:
         resp = await client.get(url, params=params, cookies=cookies, timeout=_TIMEOUT)
         resp.raise_for_status()
@@ -159,18 +159,23 @@ def _check_transaction_anomalies(transactions: list[dict[str, Any]]) -> list[dic
 
 
 async def generate_notifications(
-    conn: sqlite3.Connection, user_id: int, *, cookie: str | None = None
+    conn: sqlite3.Connection,
+    user_id: int,
+    *,
+    cookie: str | None = None,
+    stepup_pazuru: str | None = None,
 ) -> dict[str, Any]:
     """Compute active (non-dismissed) alerts for one user. Never raises."""
     pazuru_base = settings.pazuru_api_url.rstrip("/")
     threshold_cents = int(settings_store.get_all(conn).get("low_balance_threshold_cents", "10000"))
+    cookies = suite_cookies(cookie, stepup_pazuru=stepup_pazuru)
 
     async with httpx.AsyncClient() as client:
         accounts, goals, recurring, transactions = await asyncio.gather(
-            _get_json(client, f"{pazuru_base}/api/accounts", {}, cookie),
-            _get_json(client, f"{pazuru_base}/api/goals", {}, cookie),
-            _get_json(client, f"{pazuru_base}/api/recurring", {}, cookie),
-            _get_json(client, f"{pazuru_base}/api/transactions", {"page_size": 200}, cookie),
+            _get_json(client, f"{pazuru_base}/api/accounts", {}, cookies),
+            _get_json(client, f"{pazuru_base}/api/goals", {}, cookies),
+            _get_json(client, f"{pazuru_base}/api/recurring", {}, cookies),
+            _get_json(client, f"{pazuru_base}/api/transactions", {"page_size": 200}, cookies),
         )
 
     degraded = any(x is None for x in (accounts, goals, recurring, transactions))

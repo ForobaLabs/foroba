@@ -202,25 +202,31 @@ async def markets_snapshot(
     symbol: str = Query(..., min_length=1, max_length=32),
     asset_class: str = Query("crypto"),
     suite_session: str | None = Cookie(default=None),
+    stepup_tsumi: str | None = Cookie(default=None),
 ) -> dict:
     """Aggregate Tsumi rating + sentiment + top movers for one symbol.
 
     Read-only superapp surface. Degrades gracefully if Tsumi is offline:
     failed sections are null and `degraded` is true; never returns 500.
     """
-    return await markets_service.fetch_snapshot(symbol, asset_class, cookie=suite_session)
+    return await markets_service.fetch_snapshot(
+        symbol, asset_class, cookie=suite_session, stepup_tsumi=stepup_tsumi
+    )
 
 
 @app.get("/markets/overview")
 async def markets_overview(
     asset_class: str = Query("crypto"),
     suite_session: str | None = Cookie(default=None),
+    stepup_tsumi: str | None = Cookie(default=None),
 ) -> dict:
     """Top gainers/losers + news for the Markets landing page (FB-3).
 
     Read-only superapp surface. Degrades gracefully if Tsumi is offline.
     """
-    return await markets_service.fetch_overview(asset_class, cookie=suite_session)
+    return await markets_service.fetch_overview(
+        asset_class, cookie=suite_session, stepup_tsumi=stepup_tsumi
+    )
 
 
 @app.get("/networth/summary")
@@ -230,6 +236,8 @@ async def networth_summary(
     include_debts: bool = False,
     _: dict = Depends(get_current_user),
     suite_session: str | None = Cookie(default=None),
+    stepup_pazuru: str | None = Cookie(default=None),
+    stepup_tsumi: str | None = Cookie(default=None),
 ) -> dict:
     """Aggregate bank net worth (Pazuru) + investment portfolio (Tsumi), optionally
     including manual assets (foroba#157, extended foroba#164) and manual debts
@@ -240,6 +248,8 @@ async def networth_summary(
     return await networth_service.fetch_networth(
         days,
         cookie=suite_session,
+        stepup_pazuru=stepup_pazuru,
+        stepup_tsumi=stepup_tsumi,
         include_manual_assets=include_manual_assets,
         include_debts=include_debts,
     )
@@ -250,12 +260,15 @@ async def list_notifications(
     user: dict = Depends(get_current_user),
     conn: sqlite3.Connection = Depends(get_conn),
     suite_session: str | None = Cookie(default=None),
+    stepup_pazuru: str | None = Cookie(default=None),
 ) -> dict:
     """Active (non-dismissed) alerts for the current user (foroba#158):
     low balance, goal reached, recurring payment increased, unusual
     transaction. Deterministic checks over Pazuru data — never LLM-based.
     Degrades gracefully if Pazuru is offline (empty items, degraded=true)."""
-    return await notification_service.generate_notifications(conn, user["id"], cookie=suite_session)
+    return await notification_service.generate_notifications(
+        conn, user["id"], cookie=suite_session, stepup_pazuru=stepup_pazuru
+    )
 
 
 @app.post("/notifications/{notif_key}/dismiss")
@@ -274,6 +287,8 @@ async def jeli_chat(
     req: ChatRequest,
     _: dict = Depends(get_current_user),
     suite_session: str | None = Cookie(default=None),
+    stepup_pazuru: str | None = Cookie(default=None),
+    stepup_tsumi: str | None = Cookie(default=None),
 ) -> StreamingResponse:
     """Stream a Jeli response for the given message.
 
@@ -284,6 +299,8 @@ async def jeli_chat(
         settings.pazuru_api_url,
         settings.tsumi_api_url,
         cookie=suite_session,
+        stepup_pazuru=stepup_pazuru,
+        stepup_tsumi=stepup_tsumi,
     )
     system_prompt = build_system_prompt(
         pazuru_context=pazuru_ctx,

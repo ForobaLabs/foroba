@@ -23,6 +23,7 @@ from typing import Any
 import httpx
 
 from config import settings
+from suite_cookies import suite_cookies
 
 logger = logging.getLogger(__name__)
 
@@ -109,9 +110,8 @@ async def _get_json(
     client: httpx.AsyncClient,
     url: str,
     params: dict[str, Any] | None,
-    cookie: str | None,
+    cookies: dict[str, str] | None,
 ) -> Any | None:
-    cookies = {"suite_session": cookie} if cookie else None
     try:
         resp = await client.get(url, params=params or {}, cookies=cookies, timeout=_TIMEOUT)
         resp.raise_for_status()
@@ -125,9 +125,8 @@ async def _post_json(
     client: httpx.AsyncClient,
     url: str,
     body: dict[str, Any],
-    cookie: str | None,
+    cookies: dict[str, str] | None,
 ) -> Any | None:
-    cookies = {"suite_session": cookie} if cookie else None
     try:
         resp = await client.post(url, json=body, cookies=cookies, timeout=_TIMEOUT)
         resp.raise_for_status()
@@ -140,7 +139,7 @@ async def _post_json(
 async def _goal_impacts(
     client: httpx.AsyncClient,
     pazuru_base: str,
-    cookie: str | None,
+    cookies: dict[str, str] | None,
     goals: list[dict[str, Any]],
     goal_contributions: list[dict[str, Any]],
 ) -> list[dict[str, Any]]:
@@ -159,7 +158,7 @@ async def _goal_impacts(
                 "monthly_contribution_cents": g["monthly_contribution_cents"] + extra,
                 "deadline": g["deadline"],
             },
-            cookie,
+            cookies,
         )
         impacts.append(
             {
@@ -177,6 +176,8 @@ async def simulate(
     horizon_months: int,
     *,
     owner_cookie: str | None,
+    stepup_pazuru: str | None = None,
+    stepup_tsumi: str | None = None,
 ) -> dict[str, Any]:
     """Fetch current household state from Pazuru+Tsumi and compute the
     projection for the given scenario parameters. Always returns a dict —
@@ -184,6 +185,7 @@ async def simulate(
     a hard error (same policy as networth_service.fetch_networth)."""
     pazuru_base = settings.pazuru_api_url.rstrip("/")
     tsumi_base = settings.tsumi_api_url.rstrip("/")
+    cookies = suite_cookies(owner_cookie, stepup_pazuru=stepup_pazuru, stepup_tsumi=stepup_tsumi)
 
     async with httpx.AsyncClient() as client:
         (
@@ -193,10 +195,10 @@ async def simulate(
             what_if_baseline,
             what_if_adjusted,
         ) = await asyncio.gather(
-            _get_json(client, f"{pazuru_base}/api/accounts/net-worth", {"days": 90}, owner_cookie),
-            _get_json(client, f"{tsumi_base}/api/portfolio/summary", {}, owner_cookie),
-            _get_json(client, f"{pazuru_base}/api/goals", {}, owner_cookie),
-            _post_json(client, f"{pazuru_base}/api/forecasts/what-if", {}, owner_cookie),
+            _get_json(client, f"{pazuru_base}/api/accounts/net-worth", {"days": 90}, cookies),
+            _get_json(client, f"{tsumi_base}/api/portfolio/summary", {}, cookies),
+            _get_json(client, f"{pazuru_base}/api/goals", {}, cookies),
+            _post_json(client, f"{pazuru_base}/api/forecasts/what-if", {}, cookies),
             _post_json(
                 client,
                 f"{pazuru_base}/api/forecasts/what-if",
@@ -204,7 +206,7 @@ async def simulate(
                     "eliminate_categories": params.get("eliminate_categories"),
                     "reduce_merchant_pct": params.get("reduce_merchant_pct"),
                 },
-                owner_cookie,
+                cookies,
             ),
         )
 
@@ -228,7 +230,7 @@ async def simulate(
         )
 
         goal_impacts = await _goal_impacts(
-            client, pazuru_base, owner_cookie, goals or [], params.get("goal_contributions") or []
+            client, pazuru_base, cookies, goals or [], params.get("goal_contributions") or []
         )
 
     points = compute_projection(

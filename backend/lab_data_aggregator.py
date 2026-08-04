@@ -15,13 +15,14 @@ import logging
 import httpx
 import pandas as pd
 
+from suite_cookies import suite_cookies
+
 logger = logging.getLogger(__name__)
 
 
 async def _fetch_export(
-    client: httpx.AsyncClient, url: str, prefix: str, cookie: str | None
+    client: httpx.AsyncClient, url: str, prefix: str, cookies: dict[str, str] | None
 ) -> dict[str, pd.DataFrame]:
-    cookies = {"suite_session": cookie} if cookie else None
     try:
         resp = await client.get(url, cookies=cookies, timeout=5.0)
         resp.raise_for_status()
@@ -36,10 +37,16 @@ async def _fetch_export(
 
 
 async def gather_dataframes(
-    pazuru_url: str, tsumi_url: str, cookie: str | None
+    pazuru_url: str,
+    tsumi_url: str,
+    cookie: str | None,
+    *,
+    stepup_pazuru: str | None = None,
+    stepup_tsumi: str | None = None,
 ) -> dict[str, pd.DataFrame]:
+    cookies = suite_cookies(cookie, stepup_pazuru=stepup_pazuru, stepup_tsumi=stepup_tsumi)
     async with httpx.AsyncClient() as client:
-        pazuru_task = _fetch_export(client, f"{pazuru_url}/api/lab/export", "pazuru", cookie)
-        tsumi_task = _fetch_export(client, f"{tsumi_url}/api/lab/export", "tsumi", cookie)
+        pazuru_task = _fetch_export(client, f"{pazuru_url}/api/lab/export", "pazuru", cookies)
+        tsumi_task = _fetch_export(client, f"{tsumi_url}/api/lab/export", "tsumi", cookies)
         pazuru_dfs, tsumi_dfs = await asyncio.gather(pazuru_task, tsumi_task)
     return {**pazuru_dfs, **tsumi_dfs}

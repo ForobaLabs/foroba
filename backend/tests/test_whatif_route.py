@@ -31,7 +31,7 @@ _FREE_USER = {
 }
 
 
-async def _fake_simulate(params, horizon_months, *, owner_cookie=None):
+async def _fake_simulate(params, horizon_months, *, owner_cookie=None, **_):
     return {
         "points": [
             {
