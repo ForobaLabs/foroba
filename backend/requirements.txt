@@ -3,15 +3,16 @@ uvicorn[standard]>=0.32.0
 httpx>=0.28.0
 python-multipart>=0.0.9  # UploadFile support (admin_router.py backup endpoints — TI-A, foroba#151)
 pydantic>=2.10.0
-pydantic-settings>=2.7.0
+pydantic-settings>=2.14.2  # CVE fix (GHSA-4xgf-cpjx-pc3j, foroba#211)
 python-dotenv>=1.0.0
 argon2-cffi>=23.1.0
 bcrypt>=4.0.1
-cryptography>=43.0.0
+cryptography>=50.0.0
 pyjwt==2.13.0
 email-validator==2.2.0
 pyotp==2.9.0
 qrcode[pil]==7.4.2
+pillow>=12.3.0  # CVE fix (19x PYSEC-2026-*, foroba#211) -- transitive via qrcode[pil], pinned explicitly
 slowapi>=0.1.9
 limits>=3.7
 pytest>=8.3.0
