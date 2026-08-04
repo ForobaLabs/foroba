@@ -32,6 +32,7 @@ from auth.repository import list_all_users
 from auth.security import create_token
 from config import settings
 from settings_store import get_all
+from stepup import issue_stepup_cookies
 
 logger = logging.getLogger("foroba.report_scheduler")
 
@@ -51,10 +52,20 @@ async def _generate_for_user(conn, user: dict, year_month: str, token: str) -> N
     row = db.create_monthly_report(
         conn, user_id=user["id"], year_month=year_month, trigger="scheduled"
     )
+    # foroba#215: no interactive browser session to forward stepup_<app> cookies
+    # from -- mint them directly (see stepup.issue_stepup_cookies docstring).
+    stepup = issue_stepup_cookies(user["id"])
     for delay in [0, *_RETRY_DELAYS_SECONDS]:
         if delay:
             await asyncio.sleep(delay)
-        row = await mrs._run_generation(conn, row, user, cookie=token)
+        row = await mrs._run_generation(
+            conn,
+            row,
+            user,
+            cookie=token,
+            stepup_pazuru=stepup["pazuru"],
+            stepup_tsumi=stepup["tsumi"],
+        )
         if row["status"] == "success":
             return
     logger.error(

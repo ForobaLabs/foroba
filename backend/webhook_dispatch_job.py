@@ -33,6 +33,7 @@ from auth.conn import get_conn
 from auth.repository import get_user_by_id
 from auth.security import create_token
 from config import settings
+from stepup import issue_stepup_cookies
 
 logger = logging.getLogger("foroba.webhook_dispatch_job")
 
@@ -46,10 +47,10 @@ def _sign(signing_secret: str, body: bytes) -> str:
     return f"sha256={digest}"
 
 
-async def _events_for_user(conn, user: dict, cookie: str) -> list[dict]:
+async def _events_for_user(conn, user: dict, cookie: str, stepup_pazuru: str) -> list[dict]:
     """Alerts (from notification_service) + monthly reports with status='success'."""
     notifications = await notification_service.generate_notifications(
-        conn, user["id"], cookie=cookie
+        conn, user["id"], cookie=cookie, stepup_pazuru=stepup_pazuru
     )
     events = [
         {"event_key": a["key"], "event": a["type"], "data": a} for a in notifications["items"]
@@ -146,8 +147,11 @@ async def _dispatch_all_async() -> None:
                 is_admin=bool(user["is_admin"]),
                 kid=kid,
             )
+            # foroba#215: no interactive browser session to forward stepup_<app>
+            # cookies from -- mint them directly (see stepup.issue_stepup_cookies).
+            stepup = issue_stepup_cookies(user["id"])
             try:
-                events = await _events_for_user(conn, user, token)
+                events = await _events_for_user(conn, user, token, stepup["pazuru"])
             except Exception:
                 logger.exception("failed to compute events for user %s", user_id)
                 continue

@@ -63,7 +63,9 @@ def test_generate_requires_premium():
 def test_generate_returns_report(monkeypatch):
     _override_user(_PREMIUM_USER)
 
-    async def fake_generate(conn_, user, year_month, trigger, *, cookie):
+    async def fake_generate(
+        conn_, user, year_month, trigger, *, cookie, stepup_pazuru=None, stepup_tsumi=None
+    ):
         return db.create_monthly_report(
             conn_, user_id=user["id"], year_month=year_month, trigger=trigger
         )
@@ -81,7 +83,9 @@ def test_generate_returns_report(monkeypatch):
 def test_generate_returns_429_on_quota_exceeded(monkeypatch):
     _override_user(_PREMIUM_USER)
 
-    async def fake_generate(conn_, user, year_month, trigger, *, cookie):
+    async def fake_generate(
+        conn_, user, year_month, trigger, *, cookie, stepup_pazuru=None, stepup_tsumi=None
+    ):
         raise mrs.QuotaExceededError(6)
 
     monkeypatch.setattr(mrs, "generate_new_report", fake_generate)
@@ -96,7 +100,7 @@ def test_generate_returns_429_on_quota_exceeded(monkeypatch):
 def test_retry_returns_409_on_invalid_retry(monkeypatch):
     _override_user(_PREMIUM_USER)
 
-    async def fake_retry(conn_, user, report_id, *, cookie):
+    async def fake_retry(conn_, user, report_id, *, cookie, stepup_pazuru=None, stepup_tsumi=None):
         raise mrs.InvalidRetryError("success")
 
     monkeypatch.setattr(mrs, "retry_report", fake_retry)

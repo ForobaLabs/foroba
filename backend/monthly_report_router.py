@@ -71,10 +71,18 @@ async def generate(
     user: dict = Depends(require_feature(FEATURE_KEY)),
     conn: sqlite3.Connection = Depends(get_conn),
     suite_session: str | None = Cookie(default=None),
+    stepup_pazuru: str | None = Cookie(default=None),
+    stepup_tsumi: str | None = Cookie(default=None),
 ) -> ReportOut:
     try:
         row = await mrs.generate_new_report(
-            conn, user, body.year_month, trigger="manual", cookie=suite_session
+            conn,
+            user,
+            body.year_month,
+            trigger="manual",
+            cookie=suite_session,
+            stepup_pazuru=stepup_pazuru,
+            stepup_tsumi=stepup_tsumi,
         )
     except mrs.QuotaExceededError as exc:
         raise HTTPException(429, {"error": "monthly_limit_reached", "limit": exc.limit}) from exc
@@ -99,9 +107,18 @@ async def retry(
     user: dict = Depends(require_feature(FEATURE_KEY)),
     conn: sqlite3.Connection = Depends(get_conn),
     suite_session: str | None = Cookie(default=None),
+    stepup_pazuru: str | None = Cookie(default=None),
+    stepup_tsumi: str | None = Cookie(default=None),
 ) -> ReportOut:
     try:
-        row = await mrs.retry_report(conn, user, report_id, cookie=suite_session)
+        row = await mrs.retry_report(
+            conn,
+            user,
+            report_id,
+            cookie=suite_session,
+            stepup_pazuru=stepup_pazuru,
+            stepup_tsumi=stepup_tsumi,
+        )
     except mrs.ReportNotFoundError as exc:
         raise HTTPException(404, "Report not found") from exc
     except mrs.InvalidRetryError as exc:

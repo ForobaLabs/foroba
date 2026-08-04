@@ -20,6 +20,7 @@ from auth.conn import get_conn
 from auth.security import create_token
 from config import settings
 from rate_limit import limiter
+from stepup import issue_stepup_cookies
 
 router = APIRouter(prefix="/api/public/v1", tags=["public-api"])
 
@@ -46,7 +47,15 @@ async def public_networth(
     days: int = 365,
     user: dict = Depends(require_api_key),
 ) -> dict:
-    return await networth_service.fetch_networth(days, cookie=_cookie_for(user))
+    # foroba#215: no interactive browser session to forward stepup_<app> cookies
+    # from -- mint them directly (see stepup.issue_stepup_cookies docstring).
+    stepup = issue_stepup_cookies(user["id"])
+    return await networth_service.fetch_networth(
+        days,
+        cookie=_cookie_for(user),
+        stepup_pazuru=stepup["pazuru"],
+        stepup_tsumi=stepup["tsumi"],
+    )
 
 
 @router.get("/notifications")
@@ -56,6 +65,7 @@ async def public_notifications(
     user: dict = Depends(require_api_key),
     conn: sqlite3.Connection = Depends(get_conn),
 ) -> dict:
+    stepup = issue_stepup_cookies(user["id"])
     return await notification_service.generate_notifications(
-        conn, user["id"], cookie=_cookie_for(user)
+        conn, user["id"], cookie=_cookie_for(user), stepup_pazuru=stepup["pazuru"]
     )

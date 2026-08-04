@@ -34,7 +34,7 @@ def _seed_user_and_key(conn, *, tier="premium", audience="base") -> str:
     return f"{prefix}.{secret}"
 
 
-async def _fake_fetch_networth(days, *, cookie=None):
+async def _fake_fetch_networth(days, *, cookie=None, stepup_pazuru=None, stepup_tsumi=None):
     return {
         "bank": None,
         "investments": None,
@@ -45,7 +45,7 @@ async def _fake_fetch_networth(days, *, cookie=None):
     }
 
 
-async def _fake_generate_notifications(conn, user_id, *, cookie=None):
+async def _fake_generate_notifications(conn, user_id, *, cookie=None, stepup_pazuru=None):
     return {"items": [], "degraded": False}
 
 

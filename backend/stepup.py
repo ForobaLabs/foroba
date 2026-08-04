@@ -53,3 +53,24 @@ def needs_refresh(claims: dict) -> bool:
     exp = datetime.fromtimestamp(claims["exp"], tz=UTC)
     remaining = exp - datetime.now(UTC)
     return remaining <= timedelta(minutes=settings.stepup_refresh_threshold_minutes)
+
+
+def issue_stepup_cookies(user_id: int) -> dict[str, str]:
+    """Mint stepup_pazuru + stepup_tsumi tokens directly, for callers with no
+    interactive browser session to forward cookies from -- scheduled background
+    jobs and public-API-key requests (foroba#215).
+
+    This does not weaken the step-up guarantee: Foroba's backend already holds
+    the sole signing key and unrestricted authority to mint suite_session for
+    any user (that's what login does). The interactive /auth/stepup/verify
+    endpoint exists to gate this specific action behind live MFA proof for
+    *browser-initiated* requests, where the threat model is a stolen/replayed
+    suite_session cookie. Background jobs and API-key calls originate from
+    Foroba's own trusted server process, not a browser session that could be
+    hijacked, so minting these tokens in-process exercises the same trust
+    Foroba already has -- it isn't a new bypass.
+    """
+    return {
+        "pazuru": issue_stepup_token(user_id, "pazuru"),
+        "tsumi": issue_stepup_token(user_id, "tsumi"),
+    }

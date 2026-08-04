@@ -2,6 +2,7 @@ import pytest
 
 from stepup import (
     StepupTokenError,
+    issue_stepup_cookies,
     issue_stepup_token,
     needs_refresh,
     verify_stepup_token,
@@ -40,3 +41,14 @@ def test_needs_refresh_false_when_freshly_issued():
     token = issue_stepup_token(user_id=42, app="pazuru")
     claims = verify_stepup_token(token, expected_app="pazuru")
     assert needs_refresh(claims) is False
+
+
+def test_issue_stepup_cookies_mints_both_apps():
+    """foroba#215: callers with no interactive session (background jobs, API-key
+    requests) mint both stepup cookies directly."""
+    cookies = issue_stepup_cookies(user_id=42)
+    assert set(cookies) == {"pazuru", "tsumi"}
+    pazuru_claims = verify_stepup_token(cookies["pazuru"], expected_app="pazuru")
+    tsumi_claims = verify_stepup_token(cookies["tsumi"], expected_app="tsumi")
+    assert pazuru_claims["sub"] == "42"
+    assert tsumi_claims["sub"] == "42"

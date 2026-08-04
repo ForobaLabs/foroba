@@ -44,6 +44,8 @@ async def _run_generation(
     user: dict,
     *,
     cookie: str | None,
+    stepup_pazuru: str | None = None,
+    stepup_tsumi: str | None = None,
 ) -> sqlite3.Row:
     """Run one generation attempt against an existing row, update it in place with
     the result, and return the updated row. Never raises — always leaves the row in
@@ -54,6 +56,8 @@ async def _run_generation(
             settings.pazuru_api_url.rstrip("/"),
             settings.tsumi_api_url.rstrip("/"),
             cookie,
+            stepup_pazuru=stepup_pazuru,
+            stepup_tsumi=stepup_tsumi,
         )
         system_prompt = PROMPT_TEMPLATE.format(
             user_name=user.get("name") or "the user",
@@ -102,6 +106,8 @@ async def generate_new_report(
     trigger: str,
     *,
     cookie: str | None,
+    stepup_pazuru: str | None = None,
+    stepup_tsumi: str | None = None,
 ) -> sqlite3.Row:
     """Create a new report row and run generation once. Consumes quota — raises
     QuotaExceededError if the (user, year_month) cap is already reached."""
@@ -109,7 +115,9 @@ async def generate_new_report(
     if count >= MONTHLY_REPORT_LIMIT:
         raise QuotaExceededError(MONTHLY_REPORT_LIMIT)
     row = db.create_monthly_report(conn, user_id=user["id"], year_month=year_month, trigger=trigger)
-    return await _run_generation(conn, row, user, cookie=cookie)
+    return await _run_generation(
+        conn, row, user, cookie=cookie, stepup_pazuru=stepup_pazuru, stepup_tsumi=stepup_tsumi
+    )
 
 
 async def retry_report(
@@ -118,6 +126,8 @@ async def retry_report(
     report_id: int,
     *,
     cookie: str | None,
+    stepup_pazuru: str | None = None,
+    stepup_tsumi: str | None = None,
 ) -> sqlite3.Row:
     """Retry a failed report in place — never consumes quota."""
     row = db.get_monthly_report(conn, report_id, user_id=user["id"])
@@ -125,4 +135,6 @@ async def retry_report(
         raise ReportNotFoundError(report_id)
     if row["status"] != "failed":
         raise InvalidRetryError(row["status"])
-    return await _run_generation(conn, row, user, cookie=cookie)
+    return await _run_generation(
+        conn, row, user, cookie=cookie, stepup_pazuru=stepup_pazuru, stepup_tsumi=stepup_tsumi
+    )

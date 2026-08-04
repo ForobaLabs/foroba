@@ -55,7 +55,7 @@ async def test_generate_for_user_retries_with_backoff_then_gives_up(monkeypatch,
     async def fake_sleep(seconds):
         sleeps.append(seconds)
 
-    async def failing_run(conn_, row, user, *, cookie):
+    async def failing_run(conn_, row, user, *, cookie, stepup_pazuru=None, stepup_tsumi=None):
         return db.update_monthly_report_result(
             conn_,
             row["id"],
@@ -85,7 +85,7 @@ async def test_generate_for_user_stops_retrying_on_success(monkeypatch, conn):
 
     calls = []
 
-    async def flaky_run(conn_, row, user, *, cookie):
+    async def flaky_run(conn_, row, user, *, cookie, stepup_pazuru=None, stepup_tsumi=None):
         calls.append(1)
         if len(calls) < 2:
             return db.update_monthly_report_result(
