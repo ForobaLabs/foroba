@@ -267,6 +267,39 @@ def get_consents(conn: sqlite3.Connection, user_id: int) -> list[dict]:
     return [dict(r) for r in rows]
 
 
+def delete_user(conn: sqlite3.Connection, user_id: int) -> None:
+    """foroba#183 — GDPR Art. 17 erasure: hard-delete every row this app holds for
+    user_id. fx_rates is excluded — it's global/shared cached reference data, not
+    personal data. household_id is just a shared string other members' own rows
+    keep independently, so deleting this user's own row needs no extra cleanup on
+    their side (mirrors what /auth/household/leave already does for that user)."""
+    webhook_ids = [
+        row[0]
+        for row in conn.execute("SELECT id FROM webhooks WHERE user_id = ?", (user_id,)).fetchall()
+    ]
+    if webhook_ids:
+        placeholders = ", ".join("?" * len(webhook_ids))
+        conn.execute(
+            f"DELETE FROM webhook_deliveries WHERE webhook_id IN ({placeholders})", webhook_ids
+        )
+    conn.execute("DELETE FROM webhooks WHERE user_id = ?", (user_id,))
+    conn.execute("DELETE FROM api_keys WHERE user_id = ?", (user_id,))
+    conn.execute("DELETE FROM monthly_reports WHERE user_id = ?", (user_id,))
+    conn.execute("DELETE FROM whatif_scenarios WHERE created_by_user_id = ?", (user_id,))
+    conn.execute("DELETE FROM recurring_amount_baselines WHERE user_id = ?", (user_id,))
+    conn.execute("DELETE FROM notification_dismissals WHERE user_id = ?", (user_id,))
+    conn.execute("DELETE FROM sandbox_user_context WHERE user_id = ?", (str(user_id),))
+    conn.execute("DELETE FROM sandbox_conversations WHERE user_id = ?", (str(user_id),))
+    conn.execute("DELETE FROM consents WHERE user_id = ?", (user_id,))
+    conn.execute("DELETE FROM webauthn_challenges WHERE user_id = ?", (user_id,))
+    conn.execute("DELETE FROM webauthn_credentials WHERE user_id = ?", (user_id,))
+    conn.execute("DELETE FROM email_otp_codes WHERE user_id = ?", (user_id,))
+    conn.execute("DELETE FROM recovery_codes WHERE user_id = ?", (user_id,))
+    conn.execute("DELETE FROM share_preferences WHERE user_id = ?", (user_id,))
+    conn.execute("DELETE FROM users WHERE id = ?", (user_id,))
+    conn.commit()
+
+
 def get_visible_owner_ids(conn: sqlite3.Connection, user_id: int, resource_type: str) -> list[int]:
     """Return [user_id, ...household mates who opted to share this resource_type].
 

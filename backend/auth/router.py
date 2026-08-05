@@ -5,7 +5,18 @@ from __future__ import annotations
 import sqlite3
 import uuid
 
-from fastapi import APIRouter, Depends, File, HTTPException, Request, Response, UploadFile, status
+import httpx
+from fastapi import (
+    APIRouter,
+    Cookie,
+    Depends,
+    File,
+    HTTPException,
+    Request,
+    Response,
+    UploadFile,
+    status,
+)
 from pydantic import BaseModel
 
 from auth import keys
@@ -15,6 +26,7 @@ from auth.conn import get_conn  # re-exported for tests that import it from here
 from auth.dependencies import get_current_user
 from auth.models import (
     ConsentRecord,
+    DeleteAccountRequest,
     DisplayCurrencyRequest,
     EmailOtpSendRequest,
     HouseholdJoinRequest,
@@ -36,6 +48,8 @@ from passkeys.service import authentication_options_for_user
 from passkeys.service import verify_authentication as verify_webauthn_authentication
 from rate_limit import limiter
 from recovery_codes import verify_and_consume as verify_recovery_code
+from stepup import issue_stepup_cookies
+from suite_cookies import suite_cookies
 from twofa.totp import verify_code
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -282,6 +296,54 @@ def _enabled_methods(user: dict) -> list[str]:
 
 @router.post("/logout", status_code=204)
 def logout(response: Response) -> None:
+    response.delete_cookie("suite_session")
+
+
+@router.delete("/account", status_code=204)
+@limiter.limit("5/minute")
+async def delete_account(
+    request: Request,
+    req: DeleteAccountRequest,
+    response: Response,
+    user: dict = Depends(get_current_user),
+    conn: sqlite3.Connection = Depends(get_conn),
+    suite_session: str | None = Cookie(default=None),
+) -> None:
+    """foroba#183 — GDPR Art. 17 erasure, triggered by the user themselves. All-or-
+    nothing across the 3 apps: aborts before touching Foroba's own tables if either
+    Pazuru's or Tsumi's erasure call fails, so we never delete Foroba's copy while
+    the other apps still hold the user's data.
+
+    Mints stepup_pazuru/stepup_tsumi directly (stepup.issue_stepup_cookies, same
+    pattern as foroba#215's background jobs/API-key callers) rather than forwarding
+    the browser's own stepup_<app> cookies -- those are only set once the user has
+    actually visited Pazuru/Tsumi and expire after a short TTL, so a user who never
+    (or long ago) visited those apps would otherwise always fail this all-or-nothing
+    erasure with a 428 forwarded as 502. The password re-verification just above is
+    already a stronger proof of identity than a step-up cookie."""
+    if not verify_password(req.password, user["password_hash"]):
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid password")
+
+    stepup = issue_stepup_cookies(user["id"])
+    cookies = suite_cookies(
+        suite_session, stepup_pazuru=stepup["pazuru"], stepup_tsumi=stepup["tsumi"]
+    )
+    pazuru_base = settings.pazuru_api_url.rstrip("/")
+    tsumi_base = settings.tsumi_api_url.rstrip("/")
+    try:
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            pazuru_resp = await client.delete(f"{pazuru_base}/account/erase", cookies=cookies)
+            tsumi_resp = await client.delete(f"{tsumi_base}/account/erase", cookies=cookies)
+    except httpx.HTTPError as exc:
+        raise HTTPException(
+            status.HTTP_502_BAD_GATEWAY, "Account deletion failed — please try again"
+        ) from exc
+    if pazuru_resp.status_code >= 300 or tsumi_resp.status_code >= 300:
+        raise HTTPException(
+            status.HTTP_502_BAD_GATEWAY, "Account deletion failed — please try again"
+        )
+
+    repo.delete_user(conn, user["id"])
     response.delete_cookie("suite_session")
 
 

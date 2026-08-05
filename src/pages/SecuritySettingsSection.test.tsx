@@ -179,4 +179,94 @@ describe("SecuritySettingsSection", () => {
     expect(screen.getByText("Privacy Policy")).toBeInTheDocument();
     expect(screen.getAllByText(/Accepted v2026-07-31/)).toHaveLength(2);
   });
+
+  describe("delete account", () => {
+    function mockMethods() {
+      mockFetchByUrl({
+        "/auth/2fa/methods": () =>
+          new Response(
+            JSON.stringify({
+              totp_enabled: true,
+              email_otp_enabled: false,
+              webauthn_enabled: false,
+              recovery_codes_remaining: 10,
+            }),
+            { status: 200 },
+          ),
+        "/auth/consents": () => new Response(JSON.stringify([]), { status: 200 }),
+      });
+    }
+
+    it("keeps the confirm button disabled until password and DELETE phrase are both filled", async () => {
+      const user = userEvent.setup();
+      mockMethods();
+      renderSection();
+      await waitFor(() => screen.getByRole("button", { name: "Delete account" }));
+      await user.click(screen.getByRole("button", { name: "Delete account" }));
+
+      const confirmBtn = screen.getByRole("button", { name: "Delete account" });
+      expect(confirmBtn).toBeDisabled();
+
+      await user.type(screen.getByLabelText(/Confirm your password/), "mypassword");
+      expect(confirmBtn).toBeDisabled();
+
+      await user.type(screen.getByLabelText(/Type DELETE to confirm/), "DELETE");
+      expect(confirmBtn).toBeEnabled();
+    });
+
+    it("redirects to /login on success", async () => {
+      const user = userEvent.setup();
+      mockFetchByUrl({
+        "/auth/2fa/methods": () =>
+          new Response(
+            JSON.stringify({
+              totp_enabled: true,
+              email_otp_enabled: false,
+              webauthn_enabled: false,
+              recovery_codes_remaining: 10,
+            }),
+            { status: 200 },
+          ),
+        "/auth/consents": () => new Response(JSON.stringify([]), { status: 200 }),
+        "/auth/account": () => new Response(null, { status: 204 }),
+      });
+      Object.defineProperty(window, "location", { writable: true, value: { href: "" } });
+      renderSection();
+      await waitFor(() => screen.getByRole("button", { name: "Delete account" }));
+      await user.click(screen.getByRole("button", { name: "Delete account" }));
+      await user.type(screen.getByLabelText(/Confirm your password/), "mypassword");
+      await user.type(screen.getByLabelText(/Type DELETE to confirm/), "DELETE");
+      await user.click(screen.getByRole("button", { name: "Delete account" }));
+
+      await waitFor(() => expect(window.location.href).toBe("/login"));
+    });
+
+    it("shows an inline error and keeps the dialog open on failure", async () => {
+      const user = userEvent.setup();
+      mockFetchByUrl({
+        "/auth/2fa/methods": () =>
+          new Response(
+            JSON.stringify({
+              totp_enabled: true,
+              email_otp_enabled: false,
+              webauthn_enabled: false,
+              recovery_codes_remaining: 10,
+            }),
+            { status: 200 },
+          ),
+        "/auth/consents": () => new Response(JSON.stringify([]), { status: 200 }),
+        "/auth/account": () =>
+          new Response(JSON.stringify({ detail: "Invalid password" }), { status: 401 }),
+      });
+      renderSection();
+      await waitFor(() => screen.getByRole("button", { name: "Delete account" }));
+      await user.click(screen.getByRole("button", { name: "Delete account" }));
+      await user.type(screen.getByLabelText(/Confirm your password/), "wrongpassword");
+      await user.type(screen.getByLabelText(/Type DELETE to confirm/), "DELETE");
+      await user.click(screen.getByRole("button", { name: "Delete account" }));
+
+      await waitFor(() => screen.getByText("Invalid password"));
+      expect(screen.getByLabelText(/Confirm your password/)).toBeInTheDocument();
+    });
+  });
 });

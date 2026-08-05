@@ -1,5 +1,6 @@
 import sqlite3
 
+import httpx
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
@@ -233,3 +234,116 @@ def test_login_cookie_domain_attribute_present(client, monkeypatch):
     else:
         raw_cookie_headers = [resp.headers.get("set-cookie", "")]
     assert any("Domain=.pfh.example.com" in h for h in raw_cookie_headers)
+
+
+# ---------------------------------------------------------------------------
+# foroba#183 — DELETE /auth/account (GDPR erasure orchestrator)
+# ---------------------------------------------------------------------------
+
+
+class _FakeResponse:
+    def __init__(self, status_code: int):
+        self.status_code = status_code
+
+
+class _FakeAsyncClient:
+    """Stand-in for httpx.AsyncClient — fakes Pazuru/Tsumi's /account/erase
+    response so this test never makes a real network call."""
+
+    def __init__(self, *args, status_code: int = 204, raise_error: bool = False, **kwargs):
+        self._status_code = status_code
+        self._raise_error = raise_error
+
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, *exc_info):
+        return False
+
+    async def delete(self, url, cookies=None):
+        if self._raise_error:
+            raise httpx.ConnectError("simulated upstream failure")
+        return _FakeResponse(self._status_code)
+
+
+def _client_with_conn():
+    conn = sqlite3.connect(":memory:", check_same_thread=False)
+    conn.row_factory = sqlite3.Row
+    init_schema(conn)
+    app = FastAPI()
+    app.dependency_overrides[get_conn] = lambda: conn
+    app.include_router(router)
+    return TestClient(app), conn
+
+
+def _register(client, email="delete-me@y.com", password="password123"):
+    r = client.post(
+        "/auth/register",
+        json={
+            "email": email,
+            "email_confirm": email,
+            "name": "Delete Me",
+            "password": password,
+            "password_confirm": password,
+            "tos_accepted": True,
+        },
+    )
+    assert r.status_code == 201, r.text
+    return r.json()
+
+
+def test_delete_account_wrong_password_401(monkeypatch):
+    client, conn = _client_with_conn()
+    _register(client, email="wrongpw@y.com")
+    monkeypatch.setattr(
+        "auth.router.httpx.AsyncClient", lambda *a, **kw: _FakeAsyncClient(status_code=204)
+    )
+    r = client.request("DELETE", "/auth/account", json={"password": "not-the-password"})
+    assert r.status_code == 401
+    row = conn.execute("SELECT count(*) FROM users WHERE email = ?", ("wrongpw@y.com",)).fetchone()
+    assert row[0] == 1
+
+
+def test_delete_account_success_204_clears_cookie_and_removes_user(monkeypatch):
+    client, conn = _client_with_conn()
+    _register(client, email="gone@y.com")
+    monkeypatch.setattr(
+        "auth.router.httpx.AsyncClient", lambda *a, **kw: _FakeAsyncClient(status_code=204)
+    )
+    r = client.request("DELETE", "/auth/account", json={"password": "password123"})
+    assert r.status_code == 204, r.text
+    raw = (
+        r.headers.get_list("set-cookie")
+        if hasattr(r.headers, "get_list")
+        else [r.headers.get("set-cookie", "")]
+    )
+    assert any("suite_session=" in h and "Max-Age=0" in h for h in raw)
+    assert conn.execute("SELECT count(*) FROM users WHERE email = ?", ("gone@y.com",)).fetchone()[
+        0
+    ] == 0
+
+
+def test_delete_account_upstream_failure_502_leaves_user_row_untouched(monkeypatch):
+    client, conn = _client_with_conn()
+    _register(client, email="stay@y.com")
+    monkeypatch.setattr(
+        "auth.router.httpx.AsyncClient", lambda *a, **kw: _FakeAsyncClient(status_code=500)
+    )
+    r = client.request("DELETE", "/auth/account", json={"password": "password123"})
+    assert r.status_code == 502
+    assert conn.execute("SELECT count(*) FROM users WHERE email = ?", ("stay@y.com",)).fetchone()[
+        0
+    ] == 1
+
+
+def test_delete_account_upstream_connection_error_502(monkeypatch):
+    client, conn = _client_with_conn()
+    _register(client, email="staytoo@y.com")
+    monkeypatch.setattr(
+        "auth.router.httpx.AsyncClient", lambda *a, **kw: _FakeAsyncClient(raise_error=True)
+    )
+    r = client.request("DELETE", "/auth/account", json={"password": "password123"})
+    assert r.status_code == 502
+    assert conn.execute(
+        "SELECT count(*) FROM users WHERE email = ?", ("staytoo@y.com",)
+    ).fetchone()[0] == 1

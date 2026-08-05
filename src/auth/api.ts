@@ -86,6 +86,19 @@ export async function logout(): Promise<void> {
   await fetch("/jeli/auth/logout", { ...opts, method: "POST" });
 }
 
+export async function deleteAccount(password: string): Promise<void> {
+  const r = await fetch("/jeli/auth/account", {
+    ...opts,
+    method: "DELETE",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ password }),
+  });
+  if (!r.ok) {
+    const body = await r.json().catch(() => null);
+    throw new Error(body?.detail ?? "Failed to delete account. Please try again.");
+  }
+}
+
 export interface HouseholdMember {
   id: number;
   email: string;

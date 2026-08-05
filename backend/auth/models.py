@@ -116,6 +116,10 @@ class RecoveryCodesResponse(BaseModel):
     codes: list[str]
 
 
+class DeleteAccountRequest(BaseModel):
+    password: str
+
+
 class ConsentRecord(BaseModel):
     document_type: Literal["terms_of_service", "privacy_policy"]
     document_version: str

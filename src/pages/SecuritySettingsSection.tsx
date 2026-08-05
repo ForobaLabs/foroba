@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { startRegistration } from "@simplewebauthn/browser";
-import { Button, Input } from "@foroba/ui";
+import { Button, Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Input } from "@foroba/ui";
 import {
+  deleteAccount,
   enrollTotp,
   fetchConsents,
   fetchMfaMethods,
@@ -14,6 +15,8 @@ import {
   verifyEmailOtp,
   verifyTotp,
 } from "../auth/api";
+
+const DELETE_CONFIRM_PHRASE = "DELETE";
 
 const CONSENT_LABELS: Record<string, string> = {
   terms_of_service: "Terms of Service",
@@ -39,6 +42,11 @@ export function SecuritySettingsSection() {
   const [addingMethod, setAddingMethod] = useState<MethodKey | null>(null);
   const [addCode, setAddCode] = useState("");
   const [totpQr, setTotpQr] = useState<string | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deletePassword, setDeletePassword] = useState("");
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   if (!mfa) return null;
 
@@ -118,6 +126,25 @@ export function SecuritySettingsSection() {
       setMfaError(err instanceof Error ? err.message : "Failed to regenerate codes.");
     } finally {
       setSavingKey(null);
+    }
+  }
+
+  function closeDeleteDialog() {
+    setDeleteDialogOpen(false);
+    setDeletePassword("");
+    setDeleteConfirmText("");
+    setDeleteError(null);
+  }
+
+  async function handleDeleteAccount() {
+    setDeleting(true);
+    setDeleteError(null);
+    try {
+      await deleteAccount(deletePassword);
+      window.location.href = "/login";
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : "Failed to delete account.");
+      setDeleting(false);
     }
   }
 
@@ -254,6 +281,82 @@ export function SecuritySettingsSection() {
           {mfaError}
         </p>
       )}
+
+      <h2 className="mt-3 px-0.5 text-xs font-bold uppercase tracking-wide text-[var(--color-negative)]">
+        Danger zone
+      </h2>
+      <div className="flex items-center justify-between gap-3 rounded-lg border border-[var(--color-negative)] bg-[var(--color-bg-surface)] px-4.5 py-3.5">
+        <div className="flex flex-col gap-0.5">
+          <span className="text-sm font-medium text-[var(--color-text-primary)]">
+            Delete my account
+          </span>
+          <span className="text-xs text-[var(--color-text-secondary)]">
+            Permanently erases your data across the whole suite. This cannot be undone.
+          </span>
+        </div>
+        <Button
+          variant="destructive"
+          onClick={() => setDeleteDialogOpen(true)}
+        >
+          Delete account
+        </Button>
+      </div>
+
+      <Dialog open={deleteDialogOpen} onOpenChange={(open) => (open ? setDeleteDialogOpen(true) : closeDeleteDialog())}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete your account</DialogTitle>
+            <DialogDescription>
+              This permanently erases your data in Foroba, Pazuru, and Tsumi — accounts,
+              transactions, portfolio, budgets, goals, and everything else tied to your
+              account. This cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-3">
+            <label className="flex flex-col gap-1 text-xs text-[var(--color-text-secondary)]">
+              Confirm your password
+              <Input
+                type="password"
+                value={deletePassword}
+                onChange={(e) => setDeletePassword(e.target.value)}
+                autoComplete="current-password"
+              />
+            </label>
+            <label className="flex flex-col gap-1 text-xs text-[var(--color-text-secondary)]">
+              Type {DELETE_CONFIRM_PHRASE} to confirm
+              <Input
+                value={deleteConfirmText}
+                onChange={(e) => setDeleteConfirmText(e.target.value)}
+              />
+            </label>
+            {deleteError && (
+              <p role="alert" className="text-xs text-[var(--color-negative)]">
+                {deleteError}
+              </p>
+            )}
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={closeDeleteDialog}
+                className="text-xs font-semibold text-[var(--color-text-secondary)]"
+              >
+                Cancel
+              </button>
+              <Button
+                variant="destructive"
+                disabled={
+                  deleting ||
+                  deletePassword.length === 0 ||
+                  deleteConfirmText !== DELETE_CONFIRM_PHRASE
+                }
+                onClick={handleDeleteAccount}
+              >
+                {deleting ? "Deleting…" : "Delete account"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
