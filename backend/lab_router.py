@@ -19,7 +19,7 @@ from db import (
 )
 from lab_data_aggregator import gather_dataframes
 from lab_service import run_lab_turn
-from rate_limit import limiter
+from rate_limit import limiter, session_rate_limit_key
 from searxng_client import search_web
 from settings_store import get_all
 
@@ -33,7 +33,7 @@ class LabChatRequest(BaseModel):
 
 
 @router.post("/chat")
-@limiter.limit("10/minute")
+@limiter.limit("10/minute", key_func=session_rate_limit_key)
 async def lab_chat(
     request: Request,
     body: LabChatRequest,
@@ -46,8 +46,8 @@ async def lab_chat(
     user_id = str(user["id"])
 
     # Even in hosted mode, Jeli Lab needs an explicit opt-in (lab_hosted_enabled) on top
-    # of deployment_mode=="hosted" — see config.py. The per-IP rate limit above and the
-    # global sandbox concurrency cap in lab_service.py are what make that opt-in safe.
+    # of deployment_mode=="hosted" — see config.py. The per-user rate limit above (foroba#176)
+    # and the global sandbox concurrency cap in lab_service.py are what make that opt-in safe.
     if settings.deployment_mode == "hosted" and not settings.lab_hosted_enabled:
 
         async def _hosted_disabled_stream():

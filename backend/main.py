@@ -49,7 +49,7 @@ from observability import init_error_tracking
 from onboarding.router import router as onboarding_router
 from passkeys.router import router as passkeys_router
 from public_api_router import router as public_api_router
-from rate_limit import limiter
+from rate_limit import limiter, session_rate_limit_key
 from report_scheduler import start_report_scheduler
 from settings_store import init_settings
 from stepup_router import router as stepup_router
@@ -283,7 +283,9 @@ async def dismiss_notification(
 
 
 @app.post("/chat")
+@limiter.limit("20/minute", key_func=session_rate_limit_key)
 async def jeli_chat(
+    request: Request,
     req: ChatRequest,
     _: dict = Depends(get_current_user),
     suite_session: str | None = Cookie(default=None),
