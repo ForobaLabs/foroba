@@ -181,28 +181,44 @@ function AdminInvitesPanel(): React.ReactElement {
       {codes.length === 0 ? (
         <p>No invite codes yet.</p>
       ) : (
-        <table aria-label="Invite codes">
+        <table aria-label="Invite codes" className="w-full border-collapse text-sm">
           <thead>
-            <tr>
-              <th>Code</th>
-              <th>Note</th>
-              <th>Uses</th>
-              <th>Expires</th>
-              <th>Status</th>
-              <th>Action</th>
+            <tr className="border-b border-[var(--color-border)] text-left text-xs uppercase tracking-wide text-[var(--color-text-secondary)]">
+              <th className="py-2 pr-4">Code</th>
+              <th className="py-2 pr-4">Note</th>
+              <th className="py-2 pr-4">Uses</th>
+              <th className="py-2 pr-4">Expires</th>
+              <th className="py-2 pr-4">Status</th>
+              <th className="py-2 pr-4">Action</th>
             </tr>
           </thead>
           <tbody>
             {codes.map((c) => (
-              <tr key={c.id}>
-                <td><code>{c.code}</code></td>
-                <td>{c.note ?? '—'}</td>
-                <td>{c.uses_count}/{c.max_uses}</td>
-                <td>{c.expires_at ?? 'Never'}</td>
-                <td>{c.revoked_at ? 'Revoked' : 'Active'}</td>
-                <td>
+              <tr key={c.id} className="border-b border-[var(--color-border)] text-[var(--color-text-primary)]">
+                <td className="py-2 pr-4">
+                  <code className="rounded bg-black/20 px-1.5 py-0.5">{c.code}</code>
+                </td>
+                <td className="py-2 pr-4">{c.note ?? '—'}</td>
+                <td className="py-2 pr-4 tabular-nums">{c.uses_count}/{c.max_uses}</td>
+                <td className="py-2 pr-4">{c.expires_at ?? 'Never'}</td>
+                <td className="py-2 pr-4">
+                  <span
+                    className={
+                      c.revoked_at
+                        ? 'text-[var(--color-negative)]'
+                        : 'text-[var(--color-positive)]'
+                    }
+                  >
+                    {c.revoked_at ? 'Revoked' : 'Active'}
+                  </span>
+                </td>
+                <td className="py-2 pr-4">
                   {!c.revoked_at && (
-                    <button type="button" onClick={() => handleRevoke(c.id)}>
+                    <button
+                      type="button"
+                      onClick={() => handleRevoke(c.id)}
+                      className="text-[var(--color-negative)] underline underline-offset-2"
+                    >
                       Revoke
                     </button>
                   )}
