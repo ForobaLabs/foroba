@@ -178,3 +178,69 @@ def test_import_backup_wrong_passphrase_returns_400(setup, monkeypatch):
         files={"file": ("backup.pfhbak", b"x", "application/octet-stream")},
     )
     assert resp.status_code == 400
+
+
+# ---------------------------------------------------------------------------
+# foroba#185 — GL-10.1: KPIs + invite-code management
+# ---------------------------------------------------------------------------
+
+
+def test_get_kpis_requires_admin(setup):
+    tc, _conn, _, regular = setup
+    tc.app.dependency_overrides[get_current_user] = lambda: regular
+    resp = tc.get("/admin/kpis")
+    assert resp.status_code == 403
+
+
+def test_get_kpis_returns_counts(setup):
+    tc, _conn, admin, _ = setup
+    tc.app.dependency_overrides[get_current_user] = lambda: admin
+    resp = tc.get("/admin/kpis")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["total_users"] >= 4  # 4 seeded mock users
+    assert "free" in body["users_by_tier"]
+    assert body["admins"] >= 1
+
+
+def test_create_invite_code_requires_admin(setup):
+    tc, _conn, _, regular = setup
+    tc.app.dependency_overrides[get_current_user] = lambda: regular
+    resp = tc.post("/admin/invite-codes", json={})
+    assert resp.status_code == 403
+
+
+def test_create_and_list_invite_codes(setup):
+    tc, _conn, admin, _ = setup
+    tc.app.dependency_overrides[get_current_user] = lambda: admin
+    resp = tc.post("/admin/invite-codes", json={"note": "beta batch 1", "max_uses": 5})
+    assert resp.status_code == 201
+    created = resp.json()
+    assert created["note"] == "beta batch 1"
+    assert created["max_uses"] == 5
+    assert created["uses_count"] == 0
+    assert "-" in created["code"]
+
+    resp2 = tc.get("/admin/invite-codes")
+    assert resp2.status_code == 200
+    assert any(c["id"] == created["id"] for c in resp2.json())
+
+
+def test_revoke_invite_code(setup):
+    tc, _conn, admin, _ = setup
+    tc.app.dependency_overrides[get_current_user] = lambda: admin
+    created = tc.post("/admin/invite-codes", json={}).json()
+
+    resp = tc.delete(f"/admin/invite-codes/{created['id']}")
+    assert resp.status_code == 204
+
+    codes = tc.get("/admin/invite-codes").json()
+    revoked = next(c for c in codes if c["id"] == created["id"])
+    assert revoked["revoked_at"] is not None
+
+
+def test_revoke_unknown_invite_code_returns_404(setup):
+    tc, _conn, admin, _ = setup
+    tc.app.dependency_overrides[get_current_user] = lambda: admin
+    resp = tc.delete("/admin/invite-codes/999999")
+    assert resp.status_code == 404

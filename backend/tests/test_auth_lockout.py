@@ -8,6 +8,7 @@ from auth import repository as repo
 from auth.router import get_conn, router
 from db import init_schema
 from rate_limit import limiter
+from settings_store import init_settings
 
 
 @pytest.fixture(autouse=True)
@@ -25,6 +26,7 @@ def client():
     conn = sqlite3.connect(":memory:", check_same_thread=False)
     conn.row_factory = sqlite3.Row
     init_schema(conn)
+    init_settings(conn)
     app = FastAPI()
     app.dependency_overrides[get_conn] = lambda: conn
     app.include_router(router)

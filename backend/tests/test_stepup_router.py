@@ -8,6 +8,7 @@ from auth.conn import get_conn
 from auth.router import router as auth_router
 from db import init_schema, seed_mock_users
 from rate_limit import limiter
+from settings_store import init_settings
 from stepup_router import router as stepup_router
 from twofa.router import router as twofa_router
 
@@ -24,6 +25,7 @@ def client():
     conn = sqlite3.connect(":memory:", check_same_thread=False)
     conn.row_factory = sqlite3.Row
     init_schema(conn)
+    init_settings(conn)
     seed_mock_users(conn)
     app = FastAPI()
     app.dependency_overrides[get_conn] = lambda: conn

@@ -48,6 +48,7 @@ from passkeys.service import authentication_options_for_user
 from passkeys.service import verify_authentication as verify_webauthn_authentication
 from rate_limit import limiter
 from recovery_codes import verify_and_consume as verify_recovery_code
+from settings_store import get_all as get_settings
 from stepup import issue_stepup_cookies
 from suite_cookies import suite_cookies
 from twofa.totp import verify_code
@@ -87,6 +88,11 @@ def register(
 ) -> dict:
     if repo.get_user_by_email(conn, req.email):
         raise HTTPException(status.HTTP_409_CONFLICT, "Email already registered")
+    # GL-10.1 (foroba#185): invite-only gating is opt-in via the require_invite_code
+    # runtime setting, off by default — self-host deployments keep open registration.
+    if get_settings(conn).get("require_invite_code") == "true":
+        if not req.invite_code or not repo.redeem_invite_code(conn, req.invite_code):
+            raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Invalid invite code")
     user = repo.create_user(
         conn,
         email=req.email,

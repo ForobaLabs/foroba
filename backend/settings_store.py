@@ -18,6 +18,10 @@ DEFAULT_SETTINGS: dict[str, str] = {
     # fires (foroba#158, notification_service.py). Not a toggle but reuses
     # this same key/value store rather than adding a new table.
     "low_balance_threshold_cents": "10000",
+    # GL-10.1 (foroba#185): when true, /auth/register requires a valid,
+    # unexpired, unrevoked invite code (see invite_codes table). Off by
+    # default so self-host deployments keep open registration unchanged.
+    "require_invite_code": "false",
 }
 
 

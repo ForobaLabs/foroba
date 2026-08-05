@@ -209,6 +209,23 @@ CREATE TABLE IF NOT EXISTS consents (
     accepted_at TEXT NOT NULL DEFAULT (datetime('now')),
     ip_address TEXT
 );
+
+-- Admin-generated invite codes (GL-10.1, foroba#185). Redemption is only enforced at
+-- registration when the `require_invite_code` runtime setting is true (settings_store.py) —
+-- off by default, so self-host deployments are unaffected. uses_count is incremented
+-- atomically on each successful redemption; a code is valid while not revoked, not expired,
+-- and uses_count < max_uses.
+CREATE TABLE IF NOT EXISTS invite_codes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    code TEXT NOT NULL UNIQUE,
+    note TEXT,
+    max_uses INTEGER NOT NULL DEFAULT 1,
+    uses_count INTEGER NOT NULL DEFAULT 0,
+    expires_at TEXT,
+    revoked_at TEXT,
+    created_by_user_id INTEGER NOT NULL REFERENCES users(id),
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
 """
 
 

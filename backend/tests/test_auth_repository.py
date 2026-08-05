@@ -326,3 +326,98 @@ def test_delete_user_removes_only_target_users_rows_and_never_touches_fx_rates(c
     ).fetchone()[0] == 1
     assert conn.execute("SELECT count(*) FROM webhook_deliveries").fetchone()[0] == 0
     assert conn.execute("SELECT count(*) FROM fx_rates").fetchone()[0] == 1
+
+
+# ---------------------------------------------------------------------------
+# foroba#185 — GL-10.1: invite codes + admin KPIs
+# ---------------------------------------------------------------------------
+
+
+def test_create_and_list_invite_codes(conn):
+    admin = repo.create_user(
+        conn, email="admin-invite@example.com", name="Admin", password_hash="x"
+    )
+    created = repo.create_invite_code(
+        conn,
+        code="ABCD-1234",
+        note="beta batch",
+        max_uses=3,
+        expires_at=None,
+        created_by_user_id=admin["id"],
+    )
+    assert created["code"] == "ABCD-1234"
+    assert created["uses_count"] == 0
+
+    codes = repo.list_invite_codes(conn)
+    assert any(c["id"] == created["id"] for c in codes)
+
+
+def test_revoke_invite_code_marks_revoked_and_is_idempotently_false(conn):
+    admin = repo.create_user(
+        conn, email="admin-revoke@example.com", name="Admin", password_hash="x"
+    )
+    created = repo.create_invite_code(
+        conn, code="WXYZ-9999", note=None, max_uses=1, expires_at=None,
+        created_by_user_id=admin["id"],
+    )
+    assert repo.revoke_invite_code(conn, created["id"]) is True
+    assert repo.revoke_invite_code(conn, created["id"]) is False
+    assert repo.revoke_invite_code(conn, 999999) is False
+
+
+def test_redeem_invite_code_respects_max_uses_and_revocation(conn):
+    admin = repo.create_user(
+        conn, email="admin-redeem@example.com", name="Admin", password_hash="x"
+    )
+    repo.create_invite_code(
+        conn, code="LIMIT-0001", note=None, max_uses=2, expires_at=None,
+        created_by_user_id=admin["id"],
+    )
+    assert repo.redeem_invite_code(conn, "LIMIT-0001") is True
+    assert repo.redeem_invite_code(conn, "LIMIT-0001") is True
+    assert repo.redeem_invite_code(conn, "LIMIT-0001") is False  # exhausted
+    assert repo.redeem_invite_code(conn, "NOSUCH-CODE") is False
+
+    single = repo.create_invite_code(
+        conn, code="REVOKE-0001", note=None, max_uses=5, expires_at=None,
+        created_by_user_id=admin["id"],
+    )
+    repo.revoke_invite_code(conn, single["id"])
+    assert repo.redeem_invite_code(conn, "REVOKE-0001") is False
+
+
+def test_redeem_invite_code_respects_expiry(conn):
+    admin = repo.create_user(
+        conn, email="admin-expiry@example.com", name="Admin", password_hash="x"
+    )
+    repo.create_invite_code(
+        conn, code="EXPIRED-01", note=None, max_uses=5, expires_at="2000-01-01T00:00:00",
+        created_by_user_id=admin["id"],
+    )
+    assert repo.redeem_invite_code(conn, "EXPIRED-01") is False
+
+
+def test_get_admin_kpis_counts(conn):
+    admin = repo.create_user(
+        conn, email="kpi-admin@example.com", name="Admin", password_hash="x"
+    )
+    conn.execute("UPDATE users SET is_admin = 1 WHERE id = ?", (admin["id"],))
+    conn.commit()
+    repo.create_user(
+        conn, email="kpi-free@example.com", name="Free", password_hash="x",
+        tier="free", audience="base",
+    )
+    repo.create_user(
+        conn, email="kpi-premium@example.com", name="Premium", password_hash="x",
+        tier="premium", audience="expert",
+    )
+    kpis = repo.get_admin_kpis(conn)
+    assert kpis["total_users"] == 3
+    assert kpis["admins"] == 1
+    assert kpis["users_by_tier"]["free"] == 2
+    assert kpis["users_by_tier"]["premium"] == 1
+    assert kpis["users_by_audience"]["base"] == 2
+    assert kpis["users_by_audience"]["expert"] == 1
+    assert kpis["signups_last_7d"] == 3
+    assert kpis["signups_last_30d"] == 3
+    assert kpis["accounts_disabled"] == 0

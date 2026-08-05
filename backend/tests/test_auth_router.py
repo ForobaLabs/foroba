@@ -11,6 +11,7 @@ from auth.router import get_conn, router
 from auth.security import hash_password
 from db import init_schema
 from rate_limit import limiter
+from settings_store import init_settings
 
 
 @pytest.fixture(autouse=True)
@@ -28,6 +29,7 @@ def client():
     conn = sqlite3.connect(":memory:", check_same_thread=False)
     conn.row_factory = sqlite3.Row
     init_schema(conn)
+    init_settings(conn)
     app = FastAPI()
     app.dependency_overrides[get_conn] = lambda: conn
     app.include_router(router)
@@ -87,6 +89,84 @@ def test_register_requires_tos_acceptance(client):
         },
     )
     assert r.status_code == 422
+
+
+def test_register_without_invite_code_when_flag_off_succeeds(client):
+    r = client.post(
+        "/auth/register",
+        json={
+            "email": "openreg@y.com",
+            "email_confirm": "openreg@y.com",
+            "name": "Open Reg",
+            "password": "password123",
+            "password_confirm": "password123",
+            "tos_accepted": True,
+        },
+    )
+    assert r.status_code == 201
+
+
+def test_register_requires_valid_invite_code_when_flag_on(client):
+    from settings_store import set_value
+
+    conn = client.app.dependency_overrides[get_conn]()
+    set_value(conn, "require_invite_code", "true")
+
+    r = client.post(
+        "/auth/register",
+        json={
+            "email": "noinvite@y.com",
+            "email_confirm": "noinvite@y.com",
+            "name": "No Invite",
+            "password": "password123",
+            "password_confirm": "password123",
+            "tos_accepted": True,
+        },
+    )
+    assert r.status_code == 422
+
+    r2 = client.post(
+        "/auth/register",
+        json={
+            "email": "badinvite@y.com",
+            "email_confirm": "badinvite@y.com",
+            "name": "Bad Invite",
+            "password": "password123",
+            "password_confirm": "password123",
+            "tos_accepted": True,
+            "invite_code": "BOGU-SCOD",
+        },
+    )
+    assert r2.status_code == 422
+
+    from invite_codes import generate_code
+
+    code = generate_code()
+    conn.execute(
+        "INSERT INTO invite_codes (code, note, max_uses, created_by_user_id) "
+        "VALUES (?, NULL, 1, 1)",
+        (code,),
+    )
+    conn.commit()
+
+    r3 = client.post(
+        "/auth/register",
+        json={
+            "email": "goodinvite@y.com",
+            "email_confirm": "goodinvite@y.com",
+            "name": "Good Invite",
+            "password": "password123",
+            "password_confirm": "password123",
+            "tos_accepted": True,
+            "invite_code": code,
+        },
+    )
+    assert r3.status_code == 201
+
+    row = conn.execute(
+        "SELECT uses_count FROM invite_codes WHERE code = ?", (code,)
+    ).fetchone()
+    assert row["uses_count"] == 1
 
 
 def test_register_records_consents_and_exposes_them(client):
@@ -290,6 +370,7 @@ def _client_with_conn():
     conn = sqlite3.connect(":memory:", check_same_thread=False)
     conn.row_factory = sqlite3.Row
     init_schema(conn)
+    init_settings(conn)
     app = FastAPI()
     app.dependency_overrides[get_conn] = lambda: conn
     app.include_router(router)

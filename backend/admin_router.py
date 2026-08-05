@@ -12,10 +12,11 @@ from pydantic import BaseModel
 
 import backup_orchestrator
 import backup_service
+import invite_codes as invite_codes_gen
 from auth import repository as repo
 from auth.conn import get_conn
 from auth.dependencies import require_admin
-from auth.models import UserPublic
+from auth.models import AdminKpis, InviteCode, InviteCodeCreateRequest, UserPublic
 from settings_store import DEFAULT_SETTINGS, get_all, set_value
 
 router = APIRouter(tags=["admin"])
@@ -82,8 +83,51 @@ def admin_set_account_disabled(
 
 @router.get("/jeli/admin/settings")
 def public_get_settings(conn: sqlite3.Connection = Depends(get_conn)) -> dict[str, str]:
-    """Unauthenticated read — for Pazuru/Tsumi SettingsCache polling."""
+    """Unauthenticated read — for Pazuru/Tsumi SettingsCache polling, and so
+    RegisterPage can check `require_invite_code` before rendering that field."""
     return get_all(conn)
+
+
+@router.get("/admin/kpis", response_model=AdminKpis)
+def admin_get_kpis(
+    conn: sqlite3.Connection = Depends(get_conn),
+    _: dict = Depends(require_admin),
+) -> dict:
+    return repo.get_admin_kpis(conn)
+
+
+@router.get("/admin/invite-codes", response_model=list[InviteCode])
+def admin_list_invite_codes(
+    conn: sqlite3.Connection = Depends(get_conn),
+    _: dict = Depends(require_admin),
+) -> list[dict]:
+    return repo.list_invite_codes(conn)
+
+
+@router.post("/admin/invite-codes", response_model=InviteCode, status_code=201)
+def admin_create_invite_code(
+    body: InviteCodeCreateRequest,
+    conn: sqlite3.Connection = Depends(get_conn),
+    admin: dict = Depends(require_admin),
+) -> dict:
+    return repo.create_invite_code(
+        conn,
+        code=invite_codes_gen.generate_code(),
+        note=body.note,
+        max_uses=body.max_uses,
+        expires_at=body.expires_at,
+        created_by_user_id=admin["id"],
+    )
+
+
+@router.delete("/admin/invite-codes/{code_id}", status_code=204)
+def admin_revoke_invite_code(
+    code_id: int,
+    conn: sqlite3.Connection = Depends(get_conn),
+    _: dict = Depends(require_admin),
+) -> None:
+    if not repo.revoke_invite_code(conn, code_id):
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Invite code not found or already revoked")
 
 
 @router.get("/admin/backup/export")

@@ -16,6 +16,7 @@ class RegisterRequest(BaseModel):
     birth_year: int | None = Field(default=None, ge=1900, le=2100)
     country: str | None = Field(default=None, min_length=2, max_length=2)
     tos_accepted: bool = False
+    invite_code: str | None = Field(default=None, max_length=40)
 
     @model_validator(mode="after")
     def _check_confirmations(self) -> RegisterRequest:
@@ -125,3 +126,32 @@ class ConsentRecord(BaseModel):
     document_type: Literal["terms_of_service", "privacy_policy"]
     document_version: str
     accepted_at: str
+
+
+class InviteCode(BaseModel):
+    id: int
+    code: str
+    note: str | None = None
+    max_uses: int
+    uses_count: int
+    expires_at: str | None = None
+    revoked_at: str | None = None
+    created_at: str
+
+
+class InviteCodeCreateRequest(BaseModel):
+    note: str | None = Field(default=None, max_length=200)
+    max_uses: int = Field(default=1, ge=1, le=10_000)
+    expires_at: str | None = None
+
+
+class AdminKpis(BaseModel):
+    total_users: int
+    users_by_tier: dict[str, int]
+    users_by_audience: dict[str, int]
+    signups_last_7d: int
+    signups_last_30d: int
+    mfa_enrolled: int
+    mfa_enrollment_pending: int
+    accounts_disabled: int
+    admins: int

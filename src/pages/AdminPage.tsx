@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import {
   AdminFlagsPanel,
   AdminUsersTable,
+  KpiCard,
   PageContainer,
   SectionHeader,
   StatusCard,
@@ -15,7 +16,16 @@ import { fetchPazuruHealthDetailed } from '../api/pazuru';
 import { fetchTsumiHealthDetailed } from '../api/tsumi';
 import { useAuth } from '../auth/AuthProvider';
 
-type Tab = 'flags' | 'users' | 'backup' | 'status';
+type Tab = 'flags' | 'users' | 'invites' | 'kpis' | 'backup' | 'status';
+
+const TABS: { id: Tab; label: string }[] = [
+  { id: 'flags', label: 'Flags' },
+  { id: 'users', label: 'Users' },
+  { id: 'invites', label: 'Invites' },
+  { id: 'kpis', label: 'KPIs' },
+  { id: 'backup', label: 'Backup' },
+  { id: 'status', label: 'Status' },
+];
 
 export default function AdminPage(): React.ReactElement {
   const [activeTab, setActiveTab] = useState<Tab>('flags');
@@ -33,46 +43,19 @@ export default function AdminPage(): React.ReactElement {
 
       {/* Tab bar */}
       <div className="flex gap-2 mb-6 border-b border-[var(--color-border)]">
-        <button
-          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-            activeTab === 'flags'
-              ? 'border-[var(--color-accent)] text-[var(--color-accent)]'
-              : 'border-transparent text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
-          }`}
-          onClick={() => setActiveTab('flags')}
-        >
-          Flags
-        </button>
-        <button
-          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-            activeTab === 'users'
-              ? 'border-[var(--color-accent)] text-[var(--color-accent)]'
-              : 'border-transparent text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
-          }`}
-          onClick={() => setActiveTab('users')}
-        >
-          Users
-        </button>
-        <button
-          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-            activeTab === 'backup'
-              ? 'border-[var(--color-accent)] text-[var(--color-accent)]'
-              : 'border-transparent text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
-          }`}
-          onClick={() => setActiveTab('backup')}
-        >
-          Backup
-        </button>
-        <button
-          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-            activeTab === 'status'
-              ? 'border-[var(--color-accent)] text-[var(--color-accent)]'
-              : 'border-transparent text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
-          }`}
-          onClick={() => setActiveTab('status')}
-        >
-          Status
-        </button>
+        {TABS.map((tab) => (
+          <button
+            key={tab.id}
+            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+              activeTab === tab.id
+                ? 'border-[var(--color-accent)] text-[var(--color-accent)]'
+                : 'border-transparent text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
+            }`}
+            onClick={() => setActiveTab(tab.id)}
+          >
+            {tab.label}
+          </button>
+        ))}
       </div>
 
       {/* Tab content */}
@@ -90,9 +73,195 @@ export default function AdminPage(): React.ReactElement {
           onSetAccountDisabled={setAccountDisabled}
         />
       )}
+      {activeTab === 'invites' && <AdminInvitesPanel />}
+      {activeTab === 'kpis' && <AdminKpisPanel />}
       {activeTab === 'backup' && <AdminBackupPanel />}
       {activeTab === 'status' && <AdminStatusPanel />}
     </PageContainer>
+  );
+}
+
+interface InviteCode {
+  id: number;
+  code: string;
+  note: string | null;
+  max_uses: number;
+  uses_count: number;
+  expires_at: string | null;
+  revoked_at: string | null;
+  created_at: string;
+}
+
+function AdminInvitesPanel(): React.ReactElement {
+  const [codes, setCodes] = useState<InviteCode[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [note, setNote] = useState('');
+  const [maxUses, setMaxUses] = useState(1);
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  async function refresh() {
+    const res = await fetch('/jeli/admin/invite-codes');
+    if (res.ok) setCodes(await res.json());
+  }
+
+  useEffect(() => {
+    fetch('/jeli/admin/invite-codes')
+      .then((r) => (r.ok ? r.json() : []))
+      .then((data: InviteCode[]) => setCodes(data))
+      .finally(() => setLoading(false));
+  }, []);
+
+  async function handleCreate() {
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await fetch('/jeli/admin/invite-codes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ note: note || undefined, max_uses: maxUses }),
+      });
+      if (!res.ok) throw new Error(`Failed to create invite code (${res.status})`);
+      setNote('');
+      setMaxUses(1);
+      await refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to create invite code');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleRevoke(id: number) {
+    setError(null);
+    try {
+      const res = await fetch(`/jeli/admin/invite-codes/${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error(`Failed to revoke invite code (${res.status})`);
+      await refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to revoke invite code');
+    }
+  }
+
+  if (loading) return <p>Loading…</p>;
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-end gap-2">
+        <div>
+          <label className="block text-xs text-[var(--color-text-secondary)] mb-1">Note</label>
+          <input
+            type="text"
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            placeholder="e.g. beta batch 1"
+            className="px-3 py-2 rounded border border-[var(--color-border)] bg-transparent text-[var(--color-text-primary)]"
+          />
+        </div>
+        <div>
+          <label className="block text-xs text-[var(--color-text-secondary)] mb-1">Max uses</label>
+          <input
+            type="number"
+            min={1}
+            value={maxUses}
+            onChange={(e) => setMaxUses(Number(e.target.value))}
+            className="w-24 px-3 py-2 rounded border border-[var(--color-border)] bg-transparent text-[var(--color-text-primary)]"
+          />
+        </div>
+        <button
+          onClick={handleCreate}
+          disabled={busy}
+          className="px-4 py-2 rounded bg-[var(--color-accent)] text-white text-sm font-medium disabled:opacity-50"
+        >
+          {busy ? 'Creating…' : 'Generate code'}
+        </button>
+      </div>
+      {error && <p role="alert" className="text-sm text-[var(--color-negative)]">{error}</p>}
+
+      {codes.length === 0 ? (
+        <p>No invite codes yet.</p>
+      ) : (
+        <table aria-label="Invite codes">
+          <thead>
+            <tr>
+              <th>Code</th>
+              <th>Note</th>
+              <th>Uses</th>
+              <th>Expires</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {codes.map((c) => (
+              <tr key={c.id}>
+                <td><code>{c.code}</code></td>
+                <td>{c.note ?? '—'}</td>
+                <td>{c.uses_count}/{c.max_uses}</td>
+                <td>{c.expires_at ?? 'Never'}</td>
+                <td>{c.revoked_at ? 'Revoked' : 'Active'}</td>
+                <td>
+                  {!c.revoked_at && (
+                    <button type="button" onClick={() => handleRevoke(c.id)}>
+                      Revoke
+                    </button>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </div>
+  );
+}
+
+interface AdminKpis {
+  total_users: number;
+  users_by_tier: Record<string, number>;
+  users_by_audience: Record<string, number>;
+  signups_last_7d: number;
+  signups_last_30d: number;
+  mfa_enrolled: number;
+  mfa_enrollment_pending: number;
+  accounts_disabled: number;
+  admins: number;
+}
+
+function AdminKpisPanel(): React.ReactElement {
+  const [kpis, setKpis] = useState<AdminKpis | null>(null);
+
+  useEffect(() => {
+    fetch('/jeli/admin/kpis')
+      .then((r) => r.json())
+      .then(setKpis);
+  }, []);
+
+  return (
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <KpiCard label="Total users" value={String(kpis?.total_users ?? 0)} loading={!kpis} />
+      <KpiCard label="Admins" value={String(kpis?.admins ?? 0)} loading={!kpis} />
+      <KpiCard label="Signups (7d)" value={String(kpis?.signups_last_7d ?? 0)} loading={!kpis} />
+      <KpiCard label="Signups (30d)" value={String(kpis?.signups_last_30d ?? 0)} loading={!kpis} />
+      <KpiCard label="MFA enrolled" value={String(kpis?.mfa_enrolled ?? 0)} loading={!kpis} />
+      <KpiCard
+        label="MFA pending"
+        value={String(kpis?.mfa_enrollment_pending ?? 0)}
+        loading={!kpis}
+      />
+      <KpiCard label="Accounts disabled" value={String(kpis?.accounts_disabled ?? 0)} loading={!kpis} />
+      <KpiCard
+        label="By tier"
+        value={
+          kpis
+            ? Object.entries(kpis.users_by_tier)
+                .map(([k, v]) => `${k}: ${v}`)
+                .join(', ')
+            : '—'
+        }
+        loading={!kpis}
+      />
+    </div>
   );
 }
 
