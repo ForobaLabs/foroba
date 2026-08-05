@@ -41,6 +41,10 @@ backend/*.db
 backend/*.db-journal
 backend/*.db-wal
 backend/*.db-shm
+backend/data/*.db
+backend/data/*.db-journal
+backend/data/*.db-wal
+backend/data/*.db-shm
 
 # DB backups (GL-11.2 pre-encryption backups + Step-1 timestamped backups —
 # plaintext DB copies, never commit)
