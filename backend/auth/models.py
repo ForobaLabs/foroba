@@ -15,6 +15,7 @@ class RegisterRequest(BaseModel):
     password_confirm: str
     birth_year: int | None = Field(default=None, ge=1900, le=2100)
     country: str | None = Field(default=None, min_length=2, max_length=2)
+    tos_accepted: bool = False
 
     @model_validator(mode="after")
     def _check_confirmations(self) -> RegisterRequest:
@@ -22,6 +23,8 @@ class RegisterRequest(BaseModel):
             raise ValueError("Email and confirmation do not match")
         if self.password != self.password_confirm:
             raise ValueError("Password and confirmation do not match")
+        if not self.tos_accepted:
+            raise ValueError("You must accept the Terms of Service and Privacy Policy")
         return self
 
 
@@ -111,3 +114,9 @@ class MfaMethodsResponse(BaseModel):
 
 class RecoveryCodesResponse(BaseModel):
     codes: list[str]
+
+
+class ConsentRecord(BaseModel):
+    document_type: Literal["terms_of_service", "privacy_policy"]
+    document_version: str
+    accepted_at: str

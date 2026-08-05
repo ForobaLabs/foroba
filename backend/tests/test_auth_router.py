@@ -9,6 +9,17 @@ from auth.dependencies import get_current_user
 from auth.router import get_conn, router
 from auth.security import hash_password
 from db import init_schema
+from rate_limit import limiter
+
+
+@pytest.fixture(autouse=True)
+def _reset_rate_limiter():
+    # /auth/register is rate-limited (5/minute), shared across the whole test
+    # session since `limiter` is a module-level singleton — this file alone
+    # calls /auth/register more than 5 times, so reset between tests.
+    limiter.reset()
+    yield
+    limiter.reset()
 
 
 @pytest.fixture
@@ -31,6 +42,7 @@ def test_register_then_me(client):
             "name": "X",
             "password": "password123",
             "password_confirm": "password123",
+            "tos_accepted": True,
         },
     )
     assert r.status_code == 201, r.text
@@ -41,8 +53,58 @@ def test_register_then_me(client):
     assert me.json()["email"] == "x@y.com"
 
 
+def test_register_requires_tos_acceptance(client):
+    r = client.post(
+        "/auth/register",
+        json={
+            "email": "notos@y.com",
+            "email_confirm": "notos@y.com",
+            "name": "No Tos",
+            "password": "password123",
+            "password_confirm": "password123",
+            "tos_accepted": False,
+        },
+    )
+    assert r.status_code == 422
+
+
+def test_register_records_consents_and_exposes_them(client):
+    r = client.post(
+        "/auth/register",
+        json={
+            "email": "consentflow@y.com",
+            "email_confirm": "consentflow@y.com",
+            "name": "Consent Flow",
+            "password": "password123",
+            "password_confirm": "password123",
+            "tos_accepted": True,
+        },
+    )
+    assert r.status_code == 201
+
+    consents = client.get("/auth/consents")
+    assert consents.status_code == 200
+    body = consents.json()
+    assert len(body) == 2
+    types = {c["document_type"] for c in body}
+    assert types == {"terms_of_service", "privacy_policy"}
+    for c in body:
+        assert c["document_version"]
+        assert c["accepted_at"]
+
+
 def test_login_wrong_password_401(client):
-    client.post("/auth/register", json={"email": "x@y.com", "name": "X", "password": "password123"})
+    client.post(
+        "/auth/register",
+        json={
+            "email": "x@y.com",
+            "email_confirm": "x@y.com",
+            "name": "X",
+            "password": "password123",
+            "password_confirm": "password123",
+            "tos_accepted": True,
+        },
+    )
     r = client.post("/auth/login", json={"email": "x@y.com", "password": "nope"})
     assert r.status_code == 401
 
@@ -60,6 +122,7 @@ def test_update_display_currency(client):
             "name": "Curr User",
             "password": "password123",
             "password_confirm": "password123",
+            "tos_accepted": True,
         },
     )
     assert register.status_code == 201
@@ -143,6 +206,7 @@ def test_login_sets_cookie_domain_when_configured(client, monkeypatch):
             "name": "Domain Cookie",
             "password": "Sup3rSecret!",
             "password_confirm": "Sup3rSecret!",
+            "tos_accepted": True,
         },
     )
     assert resp.status_code == 201
@@ -161,6 +225,7 @@ def test_login_cookie_domain_attribute_present(client, monkeypatch):
             "name": "Domain Cookie2",
             "password": "Sup3rSecret!",
             "password_confirm": "Sup3rSecret!",
+            "tos_accepted": True,
         },
     )
     if hasattr(resp.headers, "get_list"):

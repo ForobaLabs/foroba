@@ -242,6 +242,31 @@ def set_share_preference(
     conn.commit()
 
 
+def record_consent(
+    conn: sqlite3.Connection,
+    *,
+    user_id: int,
+    document_type: str,
+    document_version: str,
+    ip_address: str | None,
+) -> None:
+    conn.execute(
+        "INSERT INTO consents (user_id, document_type, document_version, ip_address) "
+        "VALUES (?, ?, ?, ?)",
+        (user_id, document_type, document_version, ip_address),
+    )
+    conn.commit()
+
+
+def get_consents(conn: sqlite3.Connection, user_id: int) -> list[dict]:
+    rows = conn.execute(
+        "SELECT document_type, document_version, accepted_at FROM consents "
+        "WHERE user_id = ? ORDER BY accepted_at DESC, id DESC",
+        (user_id,),
+    ).fetchall()
+    return [dict(r) for r in rows]
+
+
 def get_visible_owner_ids(conn: sqlite3.Connection, user_id: int, resource_type: str) -> list[int]:
     """Return [user_id, ...household mates who opted to share this resource_type].
 

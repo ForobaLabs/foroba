@@ -41,6 +41,7 @@ def test_lockout_after_five_failed_attempts(client):
             "name": "L",
             "password": "password123",
             "password_confirm": "password123",
+            "tos_accepted": True,
         },
     )
     c.cookies.clear()
@@ -63,6 +64,7 @@ def test_successful_login_resets_counter(client):
             "name": "R",
             "password": "password123",
             "password_confirm": "password123",
+            "tos_accepted": True,
         },
     )
     c.cookies.clear()
@@ -87,6 +89,7 @@ def test_disabled_account_cannot_login(client):
             "name": "D",
             "password": "password123",
             "password_confirm": "password123",
+            "tos_accepted": True,
         },
     )
     c.cookies.clear()

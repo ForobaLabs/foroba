@@ -195,6 +195,19 @@ CREATE TABLE IF NOT EXISTS webauthn_challenges (
     purpose TEXT NOT NULL,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
+
+-- Versioned ToS/Privacy Policy consent record (GDPR Art. 5 accountability,
+-- foroba#219). One row per (user, document_type) acceptance event — a user who
+-- re-accepts a new version gets a new row, the old one is left untouched as the
+-- historical record of what they agreed to and when.
+CREATE TABLE IF NOT EXISTS consents (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL REFERENCES users(id),
+    document_type TEXT NOT NULL,
+    document_version TEXT NOT NULL,
+    accepted_at TEXT NOT NULL DEFAULT (datetime('now')),
+    ip_address TEXT
+);
 """
 
 

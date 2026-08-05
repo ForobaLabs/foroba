@@ -51,6 +51,7 @@ def test_stepup_verify_with_totp_sets_app_cookie(client):
             "name": "Step Up",
             "password": "Sup3rSecret!",
             "password_confirm": "Sup3rSecret!",
+            "tos_accepted": True,
         },
     )
     enroll_resp = client.post("/auth/2fa/enroll")

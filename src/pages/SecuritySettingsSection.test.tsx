@@ -48,6 +48,7 @@ describe("SecuritySettingsSection", () => {
           }),
           { status: 200 },
         ),
+      "/auth/consents": () => new Response(JSON.stringify([]), { status: 200 }),
     });
     renderSection();
     await waitFor(() => screen.getByText(/Authenticator app/));
@@ -70,6 +71,7 @@ describe("SecuritySettingsSection", () => {
         ),
       "/auth/2fa/methods/email_otp": () =>
         new Response(JSON.stringify({ removed: "email_otp" }), { status: 200 }),
+      "/auth/consents": () => new Response(JSON.stringify([]), { status: 200 }),
     });
     renderSection();
     await waitFor(() => screen.getByText(/Email code/));
@@ -99,6 +101,7 @@ describe("SecuritySettingsSection", () => {
         ),
       "/auth/2fa/email-otp/send": () => new Response(JSON.stringify({ sent: true }), { status: 200 }),
       "/auth/2fa/email-otp/verify": () => new Response(JSON.stringify({}), { status: 200 }),
+      "/auth/consents": () => new Response(JSON.stringify([]), { status: 200 }),
     });
     renderSection();
     await waitFor(() => screen.getByRole("button", { name: "Add Email code" }));
@@ -133,11 +136,47 @@ describe("SecuritySettingsSection", () => {
         ),
       "/auth/2fa/recovery-codes/regenerate": () =>
         new Response(JSON.stringify({ codes: ["AAAA-1111", "BBBB-2222"] }), { status: 200 }),
+      "/auth/consents": () => new Response(JSON.stringify([]), { status: 200 }),
     });
     renderSection();
     await waitFor(() => screen.getByText(/3 remaining/));
     await user.click(screen.getByRole("button", { name: "Regenerate" }));
     await waitFor(() => screen.getByText("AAAA-1111"));
     expect(screen.getByText("BBBB-2222")).toBeInTheDocument();
+  });
+
+  it("surfaces the accepted legal document versions", async () => {
+    mockFetchByUrl({
+      "/auth/2fa/methods": () =>
+        new Response(
+          JSON.stringify({
+            totp_enabled: true,
+            email_otp_enabled: false,
+            webauthn_enabled: false,
+            recovery_codes_remaining: 10,
+          }),
+          { status: 200 },
+        ),
+      "/auth/consents": () =>
+        new Response(
+          JSON.stringify([
+            {
+              document_type: "terms_of_service",
+              document_version: "2026-07-31",
+              accepted_at: "2026-08-06 12:00:00",
+            },
+            {
+              document_type: "privacy_policy",
+              document_version: "2026-07-31",
+              accepted_at: "2026-08-06 12:00:00",
+            },
+          ]),
+          { status: 200 },
+        ),
+    });
+    renderSection();
+    await waitFor(() => screen.getByText("Terms of Service"));
+    expect(screen.getByText("Privacy Policy")).toBeInTheDocument();
+    expect(screen.getAllByText(/Accepted v2026-07-31/)).toHaveLength(2);
   });
 });

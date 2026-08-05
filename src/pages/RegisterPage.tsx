@@ -55,6 +55,7 @@ export function RegisterPage() {
   const [passwordConfirm, setPasswordConfirm] = useState("");
   const [birthYear, setBirthYear] = useState("");
   const [country, setCountry] = useState("");
+  const [tosAccepted, setTosAccepted] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -68,7 +69,8 @@ export function RegisterPage() {
     email.toLowerCase() === emailConfirm.toLowerCase() &&
     name.length > 0 &&
     password.length >= 8 &&
-    password === passwordConfirm;
+    password === passwordConfirm &&
+    tosAccepted;
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -82,6 +84,7 @@ export function RegisterPage() {
         name,
         password,
         passwordConfirm,
+        tosAccepted,
         birthYear: birthYear ? Number(birthYear) : undefined,
         country: country || undefined,
       });
@@ -235,6 +238,26 @@ export function RegisterPage() {
               </div>
             </div>
           </div>
+
+          <label className="flex items-start gap-2 text-sm text-[var(--color-text-secondary)]">
+            <input
+              type="checkbox"
+              checked={tosAccepted}
+              onChange={(e) => setTosAccepted(e.target.checked)}
+              className="mt-0.5"
+            />
+            <span>
+              I have read and accept the{" "}
+              <a href="/legal" className="text-[var(--color-accent)] hover:underline">
+                Terms of Service
+              </a>{" "}
+              and{" "}
+              <a href="/legal" className="text-[var(--color-accent)] hover:underline">
+                Privacy Policy
+              </a>
+              .
+            </span>
+          </label>
 
           {error && (
             <p role="alert" className="text-sm text-[var(--color-negative)]">

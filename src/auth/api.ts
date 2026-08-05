@@ -47,6 +47,7 @@ export interface RegisterInput {
   name: string;
   password: string;
   passwordConfirm: string;
+  tosAccepted: boolean;
   birthYear?: number;
   country?: string;
 }
@@ -62,6 +63,7 @@ export async function register(input: RegisterInput): Promise<SessionUser> {
       name: input.name,
       password: input.password,
       password_confirm: input.passwordConfirm,
+      tos_accepted: input.tosAccepted,
       birth_year: input.birthYear ?? null,
       country: input.country ?? null,
     }),
@@ -154,6 +156,18 @@ export async function updateShowDebts(showDebts: boolean): Promise<void> {
     body: JSON.stringify({ show_debts: showDebts }),
   });
   if (!r.ok) throw new Error("failed to update show_debts");
+}
+
+export interface ConsentRecord {
+  document_type: "terms_of_service" | "privacy_policy";
+  document_version: string;
+  accepted_at: string;
+}
+
+export async function fetchConsents(): Promise<ConsentRecord[]> {
+  const r = await fetch("/jeli/auth/consents", opts);
+  if (!r.ok) throw new Error("failed to load consent records");
+  return r.json();
 }
 
 export interface MfaMethods {

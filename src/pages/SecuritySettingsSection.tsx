@@ -4,6 +4,7 @@ import { startRegistration } from "@simplewebauthn/browser";
 import { Button, Input } from "@foroba/ui";
 import {
   enrollTotp,
+  fetchConsents,
   fetchMfaMethods,
   passkeyRegisterOptions,
   passkeyRegisterVerify,
@@ -13,6 +14,11 @@ import {
   verifyEmailOtp,
   verifyTotp,
 } from "../auth/api";
+
+const CONSENT_LABELS: Record<string, string> = {
+  terms_of_service: "Terms of Service",
+  privacy_policy: "Privacy Policy",
+};
 
 type MethodKey = "totp" | "email_otp" | "webauthn";
 
@@ -25,6 +31,7 @@ const METHOD_ROWS: { key: MethodKey; label: string }[] = [
 export function SecuritySettingsSection() {
   const qc = useQueryClient();
   const { data: mfa } = useQuery({ queryKey: ["mfa-methods"], queryFn: fetchMfaMethods });
+  const { data: consents } = useQuery({ queryKey: ["consents"], queryFn: fetchConsents });
   const [savingKey, setSavingKey] = useState<string | null>(null);
   const [mfaError, setMfaError] = useState<string | null>(null);
   const [newRecoveryCodes, setNewRecoveryCodes] = useState<string[] | null>(null);
@@ -218,6 +225,28 @@ export function SecuritySettingsSection() {
             <span key={c}>{c}</span>
           ))}
         </div>
+      )}
+
+      {consents && consents.length > 0 && (
+        <>
+          <h2 className="mt-3 px-0.5 text-xs font-bold uppercase tracking-wide text-[var(--color-text-secondary)]">
+            Legal
+          </h2>
+          {consents.map((c) => (
+            <div
+              key={c.document_type}
+              className="flex items-center justify-between gap-3 rounded-lg border border-[var(--color-bg-border)] bg-[var(--color-bg-surface)] px-4.5 py-3.5"
+            >
+              <span className="text-sm text-[var(--color-text-primary)]">
+                {CONSENT_LABELS[c.document_type] ?? c.document_type}
+              </span>
+              <span className="text-xs text-[var(--color-text-secondary)]">
+                Accepted v{c.document_version} on{" "}
+                {new Date(c.accepted_at.replace(" ", "T") + "Z").toLocaleDateString()}
+              </span>
+            </div>
+          ))}
+        </>
       )}
 
       {mfaError && (

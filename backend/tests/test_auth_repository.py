@@ -31,6 +31,34 @@ def test_set_show_debts_persists_value(conn):
     assert bool(updated["show_debts"]) is True
 
 
+def test_record_and_get_consents(conn):
+    user = repo.create_user(
+        conn, email="consent@example.com", name="Consent Test", password_hash="x"
+    )
+    assert repo.get_consents(conn, user["id"]) == []
+
+    repo.record_consent(
+        conn,
+        user_id=user["id"],
+        document_type="terms_of_service",
+        document_version="2026-07-31",
+        ip_address="127.0.0.1",
+    )
+    repo.record_consent(
+        conn,
+        user_id=user["id"],
+        document_type="privacy_policy",
+        document_version="2026-07-31",
+        ip_address="127.0.0.1",
+    )
+
+    consents = repo.get_consents(conn, user["id"])
+    assert len(consents) == 2
+    types = {c["document_type"] for c in consents}
+    assert types == {"terms_of_service", "privacy_policy"}
+    assert all(c["document_version"] == "2026-07-31" for c in consents)
+
+
 def test_create_user_splits_name_into_first_last(conn):
     repo.create_user(
         conn,

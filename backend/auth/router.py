@@ -14,6 +14,7 @@ from auth.avatar_storage import save_avatar
 from auth.conn import get_conn  # re-exported for tests that import it from here
 from auth.dependencies import get_current_user
 from auth.models import (
+    ConsentRecord,
     DisplayCurrencyRequest,
     EmailOtpSendRequest,
     HouseholdJoinRequest,
@@ -30,6 +31,7 @@ from auth.security import create_token, hash_password, needs_rehash, verify_pass
 from config import settings
 from email_otp import EmailNotConfiguredError, generate_and_send
 from email_otp import verify_and_consume as verify_email_otp
+from legal import PRIVACY_VERSION, TOS_VERSION
 from passkeys.service import authentication_options_for_user
 from passkeys.service import verify_authentication as verify_webauthn_authentication
 from rate_limit import limiter
@@ -79,8 +81,30 @@ def register(
         birth_year=req.birth_year,
         country=req.country,
     )
+    client_ip = request.client.host if request.client else None
+    repo.record_consent(
+        conn,
+        user_id=user["id"],
+        document_type="terms_of_service",
+        document_version=TOS_VERSION,
+        ip_address=client_ip,
+    )
+    repo.record_consent(
+        conn,
+        user_id=user["id"],
+        document_type="privacy_policy",
+        document_version=PRIVACY_VERSION,
+        ip_address=client_ip,
+    )
     _set_session_cookie(response, user)
     return user
+
+
+@router.get("/consents", response_model=list[ConsentRecord])
+def get_consents(
+    user: dict = Depends(get_current_user), conn: sqlite3.Connection = Depends(get_conn)
+) -> list[dict]:
+    return repo.get_consents(conn, user["id"])
 
 
 @router.post("/onboarding/complete", status_code=204)
