@@ -73,6 +73,27 @@ def test_create_user_splits_name_into_first_last(conn):
     assert user["last_name"] == "Lovelace"
 
 
+def test_create_user_defaults_mfa_enrollment_pending_false(conn):
+    repo.create_user(
+        conn, email="default-mfa@example.com", name="Default", password_hash="x"
+    )
+    user = repo.get_user_by_email(conn, "default-mfa@example.com")
+    assert user["mfa_enrollment_pending"] == 0
+
+
+def test_create_user_require_mfa_enrollment_sets_pending_true(conn):
+    """foroba#173 — register() opts new self-service signups into forced MFA setup."""
+    repo.create_user(
+        conn,
+        email="require-mfa@example.com",
+        name="Require",
+        password_hash="x",
+        require_mfa_enrollment=True,
+    )
+    user = repo.get_user_by_email(conn, "require-mfa@example.com")
+    assert user["mfa_enrollment_pending"] == 1
+
+
 def test_create_user_single_word_name_has_empty_last_name(conn):
     repo.create_user(
         conn,

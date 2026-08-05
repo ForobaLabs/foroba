@@ -94,6 +94,7 @@ def register(
         password_hash=hash_password(req.password),
         birth_year=req.birth_year,
         country=req.country,
+        require_mfa_enrollment=True,
     )
     client_ip = request.client.host if request.client else None
     repo.record_consent(

@@ -1,5 +1,6 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { afterEach, expect, test, vi } from "vitest";
 import { EnrollmentWizard } from "./EnrollmentWizard";
 
@@ -13,13 +14,16 @@ vi.mock("@simplewebauthn/browser", () => ({
 }));
 
 function renderPage() {
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
-    <MemoryRouter initialEntries={["/enroll"]}>
-      <Routes>
-        <Route path="/enroll" element={<EnrollmentWizard />} />
-        <Route path="/onboarding" element={<div>Onboarding</div>} />
-      </Routes>
-    </MemoryRouter>,
+    <QueryClientProvider client={qc}>
+      <MemoryRouter initialEntries={["/enroll"]}>
+        <Routes>
+          <Route path="/enroll" element={<EnrollmentWizard />} />
+          <Route path="/onboarding" element={<div>Onboarding</div>} />
+        </Routes>
+      </MemoryRouter>
+    </QueryClientProvider>,
   );
 }
 

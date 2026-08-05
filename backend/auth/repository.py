@@ -76,11 +76,12 @@ def create_user(
     audience: str = "base",
     birth_year: int | None = None,
     country: str | None = None,
+    require_mfa_enrollment: bool = False,
 ) -> dict:
     first_name, last_name = _split_full_name(name)
     cur = conn.execute(
         "INSERT INTO users (email, name, password_hash, tier, audience, birth_year, country, "
-        "first_name, last_name) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "first_name, last_name, mfa_enrollment_pending) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         (
             email,
             name,
@@ -91,6 +92,7 @@ def create_user(
             country.upper() if country else None,
             first_name,
             last_name,
+            1 if require_mfa_enrollment else 0,
         ),
     )
     conn.commit()
@@ -169,7 +171,9 @@ def set_totp_secret(conn: sqlite3.Connection, user_id: int, secret: str) -> None
 
 
 def enable_totp(conn: sqlite3.Connection, user_id: int) -> None:
-    conn.execute("UPDATE users SET totp_enabled = 1 WHERE id = ?", (user_id,))
+    conn.execute(
+        "UPDATE users SET totp_enabled = 1, mfa_enrollment_pending = 0 WHERE id = ?", (user_id,)
+    )
     conn.commit()
 
 
@@ -179,7 +183,10 @@ def disable_totp(conn: sqlite3.Connection, user_id: int) -> None:
 
 
 def enable_email_otp(conn: sqlite3.Connection, user_id: int) -> None:
-    conn.execute("UPDATE users SET email_otp_enabled = 1 WHERE id = ?", (user_id,))
+    conn.execute(
+        "UPDATE users SET email_otp_enabled = 1, mfa_enrollment_pending = 0 WHERE id = ?",
+        (user_id,),
+    )
     conn.commit()
 
 
@@ -189,7 +196,10 @@ def disable_email_otp(conn: sqlite3.Connection, user_id: int) -> None:
 
 
 def enable_webauthn(conn: sqlite3.Connection, user_id: int) -> None:
-    conn.execute("UPDATE users SET webauthn_enabled = 1 WHERE id = ?", (user_id,))
+    conn.execute(
+        "UPDATE users SET webauthn_enabled = 1, mfa_enrollment_pending = 0 WHERE id = ?",
+        (user_id,),
+    )
     conn.commit()
 
 

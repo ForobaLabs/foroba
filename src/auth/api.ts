@@ -13,6 +13,7 @@ export interface SessionUser {
   totp_enabled: boolean;
   email_otp_enabled: boolean;
   webauthn_enabled: boolean;
+  mfa_enrollment_pending: boolean;
   is_admin: boolean;
   display_currency: string;
   show_debts: boolean;

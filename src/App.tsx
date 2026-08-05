@@ -34,6 +34,14 @@ export function App() {
     return <Navigate to="/login" replace state={{ from: location }} />;
   }
 
+  // GL-4.2 (foroba#173): new signups must complete MFA enrollment before using the app —
+  // register() already redirects to /enroll, but this guard catches a user who navigates
+  // away/refreshes/deep-links mid-setup, since register() alone can't be enforced. Existing
+  // pre-feature accounts are unaffected (mfa_enrollment_pending defaults false for them).
+  if (user.mfa_enrollment_pending) {
+    return <Navigate to="/enroll" replace />;
+  }
+
   // Admin route guard: non-admin users attempting to access /admin are redirected to /
   if (location.pathname.startsWith('/admin') && !user.is_admin) {
     return <Navigate to="/" replace />;

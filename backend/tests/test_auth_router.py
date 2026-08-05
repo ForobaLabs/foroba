@@ -54,6 +54,26 @@ def test_register_then_me(client):
     assert me.json()["email"] == "x@y.com"
 
 
+def test_register_sets_mfa_enrollment_pending(client):
+    """foroba#173 — new self-service signups must be forced through MFA enrollment."""
+    r = client.post(
+        "/auth/register",
+        json={
+            "email": "pending@y.com",
+            "email_confirm": "pending@y.com",
+            "name": "Pending",
+            "password": "password123",
+            "password_confirm": "password123",
+            "tos_accepted": True,
+        },
+    )
+    assert r.status_code == 201
+    assert r.json()["mfa_enrollment_pending"] is True
+
+    me = client.get("/auth/me")
+    assert me.json()["mfa_enrollment_pending"] is True
+
+
 def test_register_requires_tos_acceptance(client):
     r = client.post(
         "/auth/register",

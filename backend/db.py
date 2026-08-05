@@ -23,7 +23,8 @@ CREATE TABLE IF NOT EXISTS users (
     household_id TEXT,
     failed_login_attempts INTEGER NOT NULL DEFAULT 0,
     locked_until TEXT,
-    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    mfa_enrollment_pending INTEGER NOT NULL DEFAULT 0
 );
 
 -- Per-user, per-resource-type opt-in sharing toggle. If a row exists with
@@ -289,6 +290,16 @@ def init_schema(conn: sqlite3.Connection) -> None:
         pass  # column already exists
     try:
         conn.execute("ALTER TABLE users ADD COLUMN webauthn_enabled INTEGER NOT NULL DEFAULT 0")
+        conn.commit()
+    except sqlite3.OperationalError:
+        pass  # column already exists
+    # Idempotent migration: add mfa_enrollment_pending flag (GL-4.2, foroba#173 — 2FA on by
+    # default for new signups). Defaults to 0 so existing users are never retroactively
+    # forced into enrollment; only register() sets it to 1 for brand-new accounts.
+    try:
+        conn.execute(
+            "ALTER TABLE users ADD COLUMN mfa_enrollment_pending INTEGER NOT NULL DEFAULT 0"
+        )
         conn.commit()
     except sqlite3.OperationalError:
         pass  # column already exists

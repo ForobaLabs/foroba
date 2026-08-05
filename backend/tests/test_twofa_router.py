@@ -54,6 +54,26 @@ def test_verify_enables(client):
     )
 
 
+def test_verify_clears_mfa_enrollment_pending(client):
+    """foroba#173 — enrolling any method clears the forced-setup flag from registration."""
+    c, conn = client
+    conn.execute("UPDATE users SET mfa_enrollment_pending = 1 WHERE email='demo@foroba.app'")
+    conn.commit()
+    c.post("/auth/2fa/enroll")
+    secret = conn.execute("SELECT totp_secret FROM users WHERE email='demo@foroba.app'").fetchone()[
+        "totp_secret"
+    ]
+    code = pyotp.TOTP(secret).now()
+    r = c.post("/auth/2fa/verify", json={"code": code})
+    assert r.status_code == 200
+    assert (
+        conn.execute(
+            "SELECT mfa_enrollment_pending FROM users WHERE email='demo@foroba.app'"
+        ).fetchone()["mfa_enrollment_pending"]
+        == 0
+    )
+
+
 def test_verify_rejects_bad_code(client):
     c, _conn = client
     c.post("/auth/2fa/enroll")

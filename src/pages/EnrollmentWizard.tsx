@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
+import { useQueryClient } from "@tanstack/react-query";
 import { startRegistration } from "@simplewebauthn/browser";
 import { Button, Card, Input } from "@foroba/ui";
 import {
@@ -17,6 +18,7 @@ type Stage = "choose" | "passkey" | "totp" | "email_otp" | "more" | "recovery";
 
 export function EnrollmentWizard() {
   const navigate = useNavigate();
+  const qc = useQueryClient();
   const [stage, setStage] = useState<Stage>("choose");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -34,6 +36,9 @@ export function EnrollmentWizard() {
 
   function onMethodEnrolled(method: MethodKey) {
     setEnrolled((prev) => new Set(prev).add(method));
+    // Server clears mfa_enrollment_pending as soon as any method is enrolled — refetch the
+    // cached session so App's guard (foroba#173) stops redirecting here once we navigate away.
+    void qc.invalidateQueries({ queryKey: ["session"] });
     setStage("more");
   }
 
