@@ -51,6 +51,7 @@ from passkeys.router import router as passkeys_router
 from public_api_router import router as public_api_router
 from rate_limit import limiter, session_rate_limit_key
 from report_scheduler import start_report_scheduler
+from retention_job import start_retention_scheduler
 from settings_store import init_settings
 from stepup_router import router as stepup_router
 from twofa.router import router as twofa_router
@@ -131,6 +132,7 @@ def _startup() -> None:
     start_fx_scheduler()
     start_webhook_dispatch_scheduler()
     start_backup_scheduler()
+    start_retention_scheduler()
 
 
 class Personality(BaseModel):
