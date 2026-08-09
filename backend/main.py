@@ -38,6 +38,7 @@ from auth.router import router as auth_router
 from auth.webhooks_router import router as webhooks_router
 from backup_scheduler import start_backup_scheduler
 from config import settings
+from db import purge_mock_users as _purge
 from db import seed_demo_household as _seed_household
 from db import seed_mock_users as _seed
 from fx_router import router as fx_router
@@ -124,9 +125,15 @@ app.include_router(public_api_router)
 @app.on_event("startup")
 def _startup() -> None:
     conn = get_conn()
-    # foroba#214: mock/seed accounts must never be created in hosted (prod) mode,
-    # regardless of the SEED_MOCK_USERS flag -- deployment_mode is the hard gate.
-    if settings.deployment_mode == "selfhost" and settings.seed_mock_users:
+    # foroba#214: mock/seed accounts must never be created in hosted (prod) mode.
+    # foroba#254: additionally purge any dev seed rows that may have been created
+    # before the hosted guard existed — ensures known-password accounts are scrubbed
+    # from the prod DB on every startup when deployment_mode == "hosted".
+    if settings.deployment_mode == "hosted":
+        removed = _purge(conn)
+        if removed:
+            logger.warning("purge_mock_users: removed dev seed accounts %s", removed)
+    elif settings.seed_mock_users:
         _seed(conn)
         _seed_household(conn)
     init_settings(conn)

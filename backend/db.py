@@ -368,6 +368,28 @@ MOCK_USERS = [
     ("admin@foroba.app", "Foroba Admin", "Admin1234!", "free", "base", 1),
 ]
 
+# Emails that are local-dev-only seed accounts and must not exist in hosted (prod) mode.
+# admin@foroba.app is intentionally excluded: it is a legitimate ops account whose
+# password was already rotated on prod. Purging it would lock out the admin panel.
+_SEED_ONLY_EMAILS = ("demo@foroba.app", "pro@foroba.app", "test@foroba.app")
+
+
+def purge_mock_users(conn: sqlite3.Connection) -> list[str]:
+    """Delete local-dev-only seed accounts when running in hosted mode (foroba#254).
+
+    Called from _startup() whenever deployment_mode == "hosted", regardless of
+    seed_mock_users — this cleans up any rows seeded before the hosted guard was
+    tightened, ensuring well-known-password accounts never survive to production.
+    Returns the list of emails that were actually deleted.
+    """
+    deleted: list[str] = []
+    for email in _SEED_ONLY_EMAILS:
+        cur = conn.execute("DELETE FROM users WHERE email = ?", (email,))
+        if cur.rowcount:
+            deleted.append(email)
+    conn.commit()
+    return deleted
+
 
 def seed_mock_users(conn: sqlite3.Connection) -> list[str]:
     """Insert mock users that do not already exist. Returns created emails."""
