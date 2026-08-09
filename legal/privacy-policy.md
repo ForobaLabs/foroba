@@ -99,7 +99,7 @@ Market data providers (Twelve Data, iTick, Binance, CoinGecko, ECB) receive only
 
 Your personal data is processed within the European Union. The AI assistant (Jeli) runs locally on our server — your data is never sent to a US-based or external AI provider.
 
-[USER ACTION: Confirm GlitchTip hosting region and Cloudflare R2 bucket region before finalising this statement — see ADR-0004]
+GlitchTip error monitoring is self-hosted on the same EU server. Cloudflare R2 backup storage uses an EU-region bucket. Both confirmed. See ADR-0004.
 
 ---
 
