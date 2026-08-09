@@ -1,6 +1,7 @@
 stages:
   - lint
   - test
+  - security
   - build
   - docker
 
@@ -47,6 +48,57 @@ test:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     - if: $CI_COMMIT_BRANCH == "main"
     - if: $CI_COMMIT_BRANCH == "develop"
+
+# ─── Security scanning (CL-2.10 foroba#252) ──────────────────────────────────
+# allow_failure: true — CVE reports are informational; transitive-dep CVEs
+# should not block merges until they have an available fix.
+pip-audit-backend:
+  stage: security
+  image: python:3.11-slim
+  allow_failure: true
+  before_script: []
+  script:
+    - pip install pip-audit -q
+    - pip-audit --requirement backend/requirements.txt --format json --output pip-audit-report.json
+  artifacts:
+    when: always
+    paths:
+      - pip-audit-report.json
+    expire_in: 1 month
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == "main"
+
+bandit-backend:
+  stage: security
+  image: python:3.11-slim
+  allow_failure: true
+  before_script: []
+  script:
+    - pip install bandit -q
+    - bandit -r backend/ --exclude backend/.venv,backend/tests -f json -o bandit-report.json
+  artifacts:
+    when: always
+    paths:
+      - bandit-report.json
+    expire_in: 1 month
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == "main"
+
+pnpm-audit-frontend:
+  stage: security
+  allow_failure: true
+  script:
+    - pnpm audit --json > pnpm-audit-report.json || true
+  artifacts:
+    when: always
+    paths:
+      - pnpm-audit-report.json
+    expire_in: 1 month
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == "main"
 
 build:
   stage: build
