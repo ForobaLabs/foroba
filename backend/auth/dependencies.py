@@ -1,4 +1,4 @@
-"""Resolve the current user from the suite_session cookie."""
+"""Resolve the current user from Bearer header (native) or suite_session cookie (web)."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ import os
 import sqlite3
 
 import jwt
-from fastapi import Cookie, Depends, HTTPException, status
+from fastapi import Cookie, Depends, Header, HTTPException, status
 
 from auth import keys
 from auth import repository as repo
@@ -29,17 +29,33 @@ _DEV_USER: dict = {
 }
 
 
+def _token_from_header(authorization: str | None) -> str | None:
+    """Extract credential from `Authorization: Bearer <token>`.
+
+    Returns None for any other scheme so the caller falls back to the cookie.
+    """
+    if not authorization:
+        return None
+    scheme, _, credential = authorization.partition(" ")
+    if scheme.lower() != "bearer":
+        return None
+    credential = credential.strip()
+    return credential or None
+
+
 def get_current_user(
     conn: sqlite3.Connection = Depends(get_conn),
     suite_session: str | None = Cookie(default=None),
+    authorization: str | None = Header(default=None),
 ) -> dict:
     if os.getenv("AUTH_DEV_BYPASS", "false").lower() == "true":
         return _DEV_USER
-    if not suite_session:
+    token = _token_from_header(authorization) or suite_session
+    if not token:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Not authenticated")
     try:
         _, public_key, _ = keys.get_keypair(settings)
-        claims = decode_token(suite_session, public_key)
+        claims = decode_token(token, public_key)
     except jwt.PyJWTError:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid session") from None
     user = repo.get_user_by_id(conn, int(claims["sub"]))
