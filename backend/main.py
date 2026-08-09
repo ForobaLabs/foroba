@@ -97,6 +97,8 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["Content-Type", "Authorization"],
+    # CL-2.9: X-Stepup-Token must be accessible by JS in cross-origin responses
+    expose_headers=["X-Stepup-Token"],
 )
 
 _static_dir = Path(__file__).resolve().parent / "static"
