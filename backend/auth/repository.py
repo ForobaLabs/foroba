@@ -384,6 +384,26 @@ def get_consents(conn: sqlite3.Connection, user_id: int) -> list[dict]:
     return [dict(r) for r in rows]
 
 
+def update_processing_prefs(
+    conn: sqlite3.Connection,
+    user_id: int,
+    *,
+    processing_restricted: bool | None,
+    marketing_objection: bool | None,
+) -> None:
+    """CL-2.2 — set GDPR art.18/21 flags for a user."""
+    if processing_restricted is not None:
+        conn.execute(
+            "UPDATE users SET processing_restricted = ? WHERE id = ?",
+            (int(processing_restricted), user_id),
+        )
+    if marketing_objection is not None:
+        conn.execute(
+            "UPDATE users SET marketing_objection = ? WHERE id = ?",
+            (int(marketing_objection), user_id),
+        )
+
+
 def delete_user(conn: sqlite3.Connection, user_id: int) -> None:
     """foroba#183 — GDPR Art. 17 erasure: hard-delete every row this app holds for
     user_id. fx_rates is excluded — it's global/shared cached reference data, not

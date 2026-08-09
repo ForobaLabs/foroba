@@ -320,6 +320,33 @@ def init_schema(conn: sqlite3.Connection) -> None:
         conn.commit()
     except sqlite3.OperationalError:
         pass  # column already exists
+    # CL-2.2 (foroba#239): DSAR processing-restriction/objection flags
+    try:
+        conn.execute(
+            "ALTER TABLE users ADD COLUMN processing_restricted INTEGER NOT NULL DEFAULT 0"
+        )
+        conn.commit()
+    except sqlite3.OperationalError:
+        pass  # column already exists
+    try:
+        conn.execute(
+            "ALTER TABLE users ADD COLUMN marketing_objection INTEGER NOT NULL DEFAULT 0"
+        )
+        conn.commit()
+    except sqlite3.OperationalError:
+        pass  # column already exists
+    # CL-2.2 (foroba#239): DSAR request tracking log
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS dsar_requests ("
+        " id INTEGER PRIMARY KEY AUTOINCREMENT,"
+        " user_id INTEGER NOT NULL REFERENCES users(id),"
+        " kind TEXT NOT NULL,"
+        " status TEXT NOT NULL DEFAULT 'open',"
+        " created_at TEXT NOT NULL DEFAULT (datetime('now')),"
+        " resolved_at TEXT,"
+        " note TEXT)"
+    )
+    conn.commit()
 
 
 # (email, name, plaintext password, tier, audience, is_admin)

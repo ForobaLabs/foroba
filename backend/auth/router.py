@@ -177,6 +177,66 @@ def complete_onboarding(
     repo.complete_onboarding(conn, user["id"])
 
 
+# CL-2.2 — DSAR: processing preferences + portability export
+
+
+class ProcessingPrefs(BaseModel):
+    processing_restricted: bool | None = None
+    marketing_objection: bool | None = None
+
+
+@router.put("/me/processing", status_code=204)
+def update_processing(
+    body: ProcessingPrefs,
+    user: dict = Depends(get_current_user),
+    conn: sqlite3.Connection = Depends(get_conn),
+) -> None:
+    """GDPR art.18/21 — set processing-restriction and/or marketing-objection flags."""
+    repo.update_processing_prefs(
+        conn,
+        user["id"],
+        processing_restricted=body.processing_restricted,
+        marketing_objection=body.marketing_objection,
+    )
+    conn.commit()
+
+
+@router.get("/account/export")
+async def export_account(
+    user: dict = Depends(get_current_user),
+    conn: sqlite3.Connection = Depends(get_conn),
+    suite_session: str | None = Cookie(default=None),
+) -> dict:
+    """GDPR art.20 — machine-readable portability bundle: Foroba + Pazuru + Tsumi data."""
+    profile = dict(user)
+    profile.pop("password_hash", None)
+    consents = repo.get_consents(conn, user["id"])
+
+    stepup = issue_stepup_cookies(user["id"])
+    cookies = suite_cookies(
+        suite_session, stepup_pazuru=stepup["pazuru"], stepup_tsumi=stepup["tsumi"]
+    )
+
+    async def _get_app_data(url: str) -> dict:
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as c:
+                r = await c.get(url, cookies=cookies)
+                if r.status_code == 200:
+                    return r.json()
+        except httpx.HTTPError:
+            pass
+        return {}
+
+    pazuru_data = await _get_app_data(f"{settings.pazuru_api_url.rstrip('/')}/account/export")
+    tsumi_data = await _get_app_data(f"{settings.tsumi_api_url.rstrip('/')}/account/export")
+
+    return {
+        "foroba": {"profile": profile, "consents": consents},
+        "pazuru": pazuru_data,
+        "tsumi": tsumi_data,
+    }
+
+
 @router.post("/login", response_model=None)
 @limiter.limit("10/minute")
 def login(

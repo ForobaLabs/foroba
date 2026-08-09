@@ -55,6 +55,8 @@ class UserPublic(BaseModel):
     first_name: str | None = None
     last_name: str | None = None
     avatar_url: str | None = None
+    processing_restricted: bool = False
+    marketing_objection: bool = False
 
 
 class HouseholdJoinRequest(BaseModel):
