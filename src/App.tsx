@@ -1,10 +1,12 @@
 import { AppShell, Footer, NotificationBell, Sidebar, Spinner, Topbar, UserMenu, useSuiteProfile, useTheme, useUserProfile } from '@foroba/ui';
 import { useEffect, useState } from 'react';
 import { Navigate, Outlet, useLocation, useNavigate } from 'react-router';
+import { useQuery } from '@tanstack/react-query';
 import { getNavItems } from './components/AppNavItems';
 import { JeliPanel } from './components/JeliPanel';
 import { useAuth } from './auth/AuthProvider';
 import { useNotifications } from './hooks/useNotifications';
+import { fetchConsentStatus } from './auth/api';
 import i18n from './i18n';
 
 export function App() {
@@ -16,6 +18,14 @@ export function App() {
   const { profile } = useUserProfile();
   const { profile: suiteProfile } = useSuiteProfile();
   const { notifications, dismiss } = useNotifications();
+  // CL-2.1 (foroba#238): check consent status once the session is resolved. The query is
+  // disabled until we have an authenticated user so it never fires on the login page.
+  const { data: consentStatus } = useQuery({
+    queryKey: ['consents-status'],
+    queryFn: fetchConsentStatus,
+    staleTime: 5 * 60_000,
+    enabled: !loading && !!user,
+  });
 
   useEffect(() => {
     i18n.changeLanguage(profile.language);
@@ -40,6 +50,12 @@ export function App() {
   // pre-feature accounts are unaffected (mfa_enrollment_pending defaults false for them).
   if (user.mfa_enrollment_pending) {
     return <Navigate to="/enroll" replace />;
+  }
+
+  // CL-2.1 (foroba#238): redirect to re-consent page when any required legal document
+  // has been updated since the user last accepted.
+  if (consentStatus && Object.values(consentStatus).some((v) => !v)) {
+    return <Navigate to="/re-consent" replace />;
   }
 
   // Admin route guard: non-admin users attempting to access /admin are redirected to /

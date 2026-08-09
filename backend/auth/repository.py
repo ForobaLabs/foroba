@@ -362,6 +362,19 @@ def record_consent(
     conn.commit()
 
 
+def latest_consent_versions(conn: sqlite3.Connection, user_id: int) -> dict[str, str]:
+    """Return {document_type: most-recently-accepted version} for a user."""
+    rows = conn.execute(
+        "SELECT document_type, document_version FROM consents "
+        "WHERE user_id = ? ORDER BY accepted_at ASC",
+        (user_id,),
+    ).fetchall()
+    latest: dict[str, str] = {}
+    for row in rows:
+        latest[row["document_type"]] = row["document_version"]  # ascending => last write wins
+    return latest
+
+
 def get_consents(conn: sqlite3.Connection, user_id: int) -> list[dict]:
     rows = conn.execute(
         "SELECT document_type, document_version, accepted_at FROM consents "

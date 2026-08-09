@@ -178,6 +178,27 @@ export interface ConsentRecord {
   accepted_at: string;
 }
 
+export interface ConsentStatus {
+  terms_of_service: boolean;
+  privacy_policy: boolean;
+}
+
+export async function fetchConsentStatus(): Promise<ConsentStatus> {
+  const r = await fetch("/jeli/auth/consents/status", opts);
+  if (!r.ok) throw new Error("consent status error");
+  return r.json();
+}
+
+export async function postConsentAccept(documents: string[]): Promise<void> {
+  const r = await fetch("/jeli/auth/consents/accept", {
+    ...opts,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ documents }),
+  });
+  if (!r.ok) throw new Error("consent accept error");
+}
+
 export async function fetchConsents(): Promise<ConsentRecord[]> {
   const r = await fetch("/jeli/auth/consents", opts);
   if (!r.ok) throw new Error("failed to load consent records");

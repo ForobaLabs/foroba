@@ -6,6 +6,7 @@ import { App } from './App';
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { EnrollmentWizard } from './pages/EnrollmentWizard';
+import { ReConsentPage } from './pages/ReConsentPage';
 import { FOROBA_FAQ } from './data/faq';
 import { PRIVACY_POLICY, TERMS_OF_SERVICE, FISCAL_DISCLAIMER } from './data/legal';
 
@@ -37,7 +38,8 @@ const Loading = () => (
 export const router = createBrowserRouter([
   { path: '/login',    element: <LoginPage /> },
   { path: '/register', element: <RegisterPage /> },
-  { path: '/enroll',   element: <EnrollmentWizard /> },
+  { path: '/enroll',     element: <EnrollmentWizard /> },
+  { path: '/re-consent', element: <ReConsentPage /> },
   { path: '/status',   element: <Suspense fallback={<Loading />}><StatusPage /></Suspense> },
   {
     path: '/onboarding',

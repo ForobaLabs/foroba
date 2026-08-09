@@ -128,6 +128,48 @@ def get_consents(
     return repo.get_consents(conn, user["id"])
 
 
+# CL-2.1 — re-consent enforcement
+_REQUIRED_DOCS = {
+    "terms_of_service": lambda: TOS_VERSION,
+    "privacy_policy": lambda: PRIVACY_VERSION,
+}
+
+
+class ConsentAcceptRequest(BaseModel):
+    documents: list[str]
+
+
+@router.get("/consents/status")
+def consents_status(
+    user: dict = Depends(get_current_user), conn: sqlite3.Connection = Depends(get_conn)
+) -> dict[str, bool]:
+    """Return whether each required document has been accepted at its current version."""
+    latest = repo.latest_consent_versions(conn, user["id"])
+    return {doc: latest.get(doc) == current() for doc, current in _REQUIRED_DOCS.items()}
+
+
+@router.post("/consents/accept", status_code=204)
+def consents_accept(
+    body: ConsentAcceptRequest,
+    request: Request,
+    user: dict = Depends(get_current_user),
+    conn: sqlite3.Connection = Depends(get_conn),
+) -> None:
+    """Record new consent for one or more legal documents at their current version."""
+    ip = request.client.host if request.client else None
+    for doc in body.documents:
+        if doc not in _REQUIRED_DOCS:
+            raise HTTPException(status_code=400, detail=f"unknown document: {doc}")
+        repo.record_consent(
+            conn,
+            user_id=user["id"],
+            document_type=doc,
+            document_version=_REQUIRED_DOCS[doc](),
+            ip_address=ip,
+        )
+    conn.commit()
+
+
 @router.post("/onboarding/complete", status_code=204)
 def complete_onboarding(
     user: dict = Depends(get_current_user), conn: sqlite3.Connection = Depends(get_conn)
