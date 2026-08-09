@@ -1,10 +1,8 @@
 /**
- * Legal content for the in-app Legal page.
+ * Legal content for Foroba's in-app Legal page.
+ * Foroba: suite authentication hub, dashboard, goals, household, portfolio summary, markets.
  * Source: foroba/legal/ (CL-1 compliance drafts, 2026-08-09).
  * DRAFT — pending final review by a qualified lawyer before public launch.
- *
- * These strings are kept here (not in foroba-ui) so they can be updated
- * independently of the design system.
  */
 
 export const PRIVACY_POLICY = {
@@ -21,64 +19,59 @@ In self-hosted mode, the controller is the person running the server. This softw
 WHAT DATA WE COLLECT AND WHY
 
 Account and authentication data
-What: Email address, display name, and security credentials (password stored as a one-way argon2 hash; multi-factor authentication secrets).
-Why: To create and manage your account, authenticate you, and protect your account.
+What: Email address, display name, and security credentials (password stored as a one-way argon2 hash; multi-factor authentication secrets — TOTP, passkeys/WebAuthn, recovery codes).
+Why: To create and manage your account, authenticate you across the suite, and protect your account.
 Legal basis: Performance of a contract (GDPR art.6(1)(b)).
 
-Bank account data (Pazuru — if you connect a bank)
-What: Bank transaction history, account balances, and account identifiers retrieved from your bank via Enable Banking, a regulated Account Information Service Provider.
-Why: Spending analysis, budgeting, recurring-payment detection, and financial forecasting.
+Household and goals data
+What: Household configuration (shared-view settings with household members) and financial goals you set.
+Why: To display your household's financial overview and track progress against your goals.
 Legal basis: Performance of a contract.
-Note: We do not store your bank login credentials. Your bank connection is managed through Enable Banking's OAuth consent flow, which gives us a read-only access token.
 
-Portfolio and market data (Tsumi — if you use the portfolio feature)
-What: Portfolio positions (ETFs, crypto, equities) and trade history you enter or import.
-Why: To compute returns, run analysis, and display your portfolio.
+Portfolio summary and market data
+What: Aggregated portfolio data displayed in Foroba's dashboard (sourced from Pazuru and Tsumi). Market data (public tickers, prices) fetched from public providers.
+Why: To provide a unified financial overview.
 Legal basis: Performance of a contract.
-Note: Market data (prices, tickers) is fetched from public sources. No personal data is included in these API calls.
-
-AI assistant data (Jeli — if you use the chat feature)
-What: Your chat messages and, internally, embeddings of your transaction descriptions.
-Why: To provide the Jeli AI assistant feature.
-Legal basis: Performance of a contract.
-Important: Jeli runs entirely on our server using a local AI model (Ollama). Your financial data and chat messages are never sent to an external AI provider.
+Note: Market data API calls carry only public ticker symbols — no personal data is transmitted to market data providers.
 
 Security monitoring data
-What: Login timestamps, failed-login counts, and application error logs (pseudonymous — linked to your internal user ID, not your email, where possible). Error logs are captured by GlitchTip, which runs self-hosted on our server.
-Why: To detect and prevent unauthorised access and protect the security of the service.
+What: Login timestamps, failed-login counts, MFA attempt logs, and application error logs (pseudonymous — linked to your internal user ID). Error logs are captured by GlitchTip, which runs self-hosted on our server.
+Why: To detect and prevent unauthorised access and protect the security of the suite.
 Legal basis: Legitimate interests (GDPR art.6(1)(f)).
+
+Transactional email
+What: Your email address is used to send service-critical communications (MFA one-time codes, account security notifications).
+Why: For account security and service operation.
+Legal basis: Performance of a contract / legitimate interests.
 
 HOW LONG WE KEEP YOUR DATA
 
-Bank transactions and balances: retained while your account is active; deleted on account deletion.
-AI chat history: 90 days from creation (rolling deletion); deleted immediately on account deletion.
+Account data (profile, MFA secrets): retained while your account is active; deleted on account deletion.
+Household and goal data: retained while account is active; deleted on account deletion.
 Security / auth logs: 12 months from event.
-Session tokens: deleted on logout or expiry (short-lived).
-Account data: deleted within 30 days of account deletion.
+Session and step-up tokens: deleted on logout or expiry (short-lived).
+Account record: deleted within 30 days of account deletion.
 
 When you delete your account, your personal data is removed from our live databases immediately. Because we keep encrypted backups on a 30-day rolling window, deleted data will be absent from all backups within 30 days of deletion.
 
 WHO WE SHARE YOUR DATA WITH
 
-Enable Banking Oy — bank account connection (Account Information Service Provider); EU-based (Finland).
 Brevo SAS — transactional email (pending); EU-based (France).
-
 GlitchTip error monitoring runs self-hosted on our own server — no data is sent to a third party.
-Market data providers (Twelve Data, iTick, Binance, CoinGecko, ECB) receive only public ticker symbols — no personal data.
 
 We do not sell your personal data. We do not share your data with advertisers.
 
 INTERNATIONAL TRANSFERS
-Your personal data is processed within the European Union. The AI assistant (Jeli) runs locally on our server — your data is never sent to a US-based or external AI provider. GlitchTip is self-hosted on our EU server. Cloudflare R2 backup storage uses an EU-region bucket.
+Your personal data is processed within the European Union. GlitchTip is self-hosted on our EU server. Cloudflare R2 backup storage uses an EU-region bucket.
 
 COOKIES
 We use two types of cookies, both strictly necessary:
-• suite_session — authentication; keeps you logged in across the app.
-• stepup_pazuru / stepup_tsumi — step-up authentication; required for sensitive operations such as managing bank connections.
+• suite_session — authentication; keeps you logged in across all three apps (Foroba, Pazuru, Tsumi).
+• stepup_pazuru / stepup_tsumi — step-up authentication tokens, issued by Foroba and consumed by satellite apps for sensitive operations.
 No advertising or analytics cookies are used.
 
 YOUR RIGHTS
-Under GDPR you have the right to: access your data (art.15); correct inaccurate data (art.16); delete your account and all associated data (art.17 — available directly in Settings → Security → Delete account); restrict processing (art.18); export your data in CSV format (art.20 — available in Pazuru); object to processing based on legitimate interests (art.21).
+Under GDPR you have the right to: access your data (art.15); correct inaccurate data (art.16); delete your account and all associated data across the suite (art.17 — available directly in Settings → Security → Delete account); restrict processing (art.18); export your data (art.20 — CSV export available in Pazuru); object to processing based on legitimate interests (art.21).
 
 To exercise any right, contact: [SUPPORT EMAIL — to be inserted before launch].
 
@@ -106,29 +99,29 @@ AGE RESTRICTION
 This service is for adults aged 18 and older. By creating an account, you confirm you are at least 18 years old.
 
 NOT FINANCIAL ADVICE
-Personal Finance HUB is a personal finance management tool, not a financial adviser or regulated financial service (other than in relation to account information as addressed in our regulatory disclosures).
+Personal Finance HUB (Foroba, Pazuru, Tsumi) is a personal finance management suite — it is not a financial adviser or regulated financial service (other than in relation to account information as addressed in our regulatory disclosures).
 
-The portfolio analysis, market data, backtesting, AI assistant (Jeli), and any other analytical outputs are for informational and organisational purposes only.
-
-Nothing in this service constitutes investment advice, financial advice, legal advice, or tax advice. Past performance data and backtesting results do not predict or guarantee future performance. Market data may be delayed and may not reflect real-time prices. Do not rely on this data to make financial decisions without verifying with your broker or other authoritative source.
+Market data, portfolio summaries, and any analytical outputs are for informational and organisational purposes only. Nothing in this service constitutes investment advice, financial advice, legal advice, or tax advice. Market data may be delayed and may not reflect real-time prices.
 
 YOUR ACCOUNT
 • You are responsible for maintaining the confidentiality of your account credentials.
-• You must enable multi-factor authentication as prompted during registration.
+• You must enable multi-factor authentication as prompted during registration — this is mandatory for all accounts.
 • You must not share your account with other people.
 • Notify us immediately if you suspect unauthorised access to your account.
+
+ACCOUNT DELETION
+You may delete your account and all associated data at any time via Settings → Security → Delete account. Deletion is permanent and covers your data across all three apps (Foroba, Pazuru, Tsumi). Bank connections (Enable Banking) are revoked immediately on deletion.
 
 YOUR DATA
 • You retain ownership of your personal financial data.
 • We process your data as described in the Privacy Policy.
 • You may export your data at any time (CSV export in Pazuru).
-• You may delete your account and all associated data at any time via Settings → Security → Delete account.
 
-BANK CONNECTIONS (PAZURU)
-When you connect a bank account, you grant Enable Banking (a regulated Account Information Service Provider) read-only access to your bank data. We do not store your bank login credentials. You can disconnect at any time in Pazuru settings, which revokes access. Bank data accuracy depends on what your bank provides via the Open Banking API — we cannot guarantee completeness or accuracy of imported data.
+SUITE ARCHITECTURE
+Foroba acts as the authentication authority for the suite. Your login, MFA, and session tokens are issued by Foroba and shared with Pazuru and Tsumi. Account management (password change, MFA settings, account deletion) is performed in Foroba and applies to the entire suite.
 
 ACCEPTABLE USE
-You must not use this service to: violate any applicable law or regulation; attempt to gain unauthorised access to other users' accounts or data; reverse-engineer or copy the software for commercial use; or upload malicious files.
+You must not use this service to: violate any applicable law or regulation; attempt to gain unauthorised access to other users' accounts or data; reverse-engineer or copy the software for commercial use.
 
 SERVICE AVAILABILITY
 We aim to provide reliable service but do not guarantee 100% uptime. We may perform maintenance that temporarily affects availability.
@@ -136,7 +129,7 @@ We aim to provide reliable service but do not guarantee 100% uptime. We may perf
 LIABILITY
 [USER ACTION: lawyer — liability limitation clause to be completed before launch in compliance with applicable consumer protection law.]
 
-To the extent permitted by applicable law, we are not liable for decisions you make based on information provided by this service, nor for inaccuracies in market data or bank data provided by third-party sources.
+To the extent permitted by applicable law, we are not liable for decisions you make based on information provided by this service.
 
 GOVERNING LAW
 [USER ACTION: lawyer — governing law and jurisdiction clause to be completed before launch.]
@@ -151,7 +144,7 @@ For questions about these terms: [SUPPORT EMAIL — to be inserted before launch
 export const FISCAL_DISCLAIMER = {
   title: 'Fiscal Disclaimer',
   lastUpdated: '2026-08-09',
-  content: `Tax estimates and fiscal information shown in this application are indicative only.
+  content: `Tax estimates and fiscal information shown across the Personal Finance HUB suite are indicative only.
 
 They are NOT tax advice. They are NOT a substitute for professional tax counsel.
 
@@ -160,5 +153,5 @@ Before filing any tax return or making any tax-related decision, please verify a
 • France: expert-comptable or conseiller fiscal
 • Other jurisdictions: equivalent local tax professional
 
-Tax laws change frequently. Foroba does not guarantee that its tax estimates are up-to-date or applicable to your specific situation.`,
+Tax laws change frequently. Personal Finance HUB does not guarantee that its tax estimates are up-to-date or applicable to your specific situation.`,
 };
