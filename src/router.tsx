@@ -7,6 +7,7 @@ import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { EnrollmentWizard } from './pages/EnrollmentWizard';
 import { FOROBA_FAQ } from './data/faq';
+import { PRIVACY_POLICY, TERMS_OF_SERVICE, FISCAL_DISCLAIMER } from './data/legal';
 
 const DashboardPage     = lazy(() => import('./pages/DashboardPage').then(m => ({ default: m.DashboardPage })));
 const AccountsPage      = lazy(() => import('./pages/AccountsPage').then(m => ({ default: m.AccountsPage })));
@@ -63,7 +64,7 @@ export const router = createBrowserRouter([
       { path: 'developer', element: <Suspense fallback={<Loading />}><DeveloperPage /></Suspense> },
       { path: 'admin',     element: <Suspense fallback={<Loading />}><AdminPage /></Suspense> },
       { path: 'help',      element: <HelpPage faqItems={FOROBA_FAQ} gitlabIssueUrl="https://gitlab.com/bambac961/foroba/-/issues" /> },
-      { path: 'legal',    element: <LegalPage /> },
+      { path: 'legal',    element: <LegalPage privacyPolicy={PRIVACY_POLICY} termsOfService={TERMS_OF_SERVICE} fiscalDisclaimer={FISCAL_DISCLAIMER} /> },
       { path: 'security', element: <SecurityPage /> },
       { path: 'about',    element: <AboutPage appName="Foroba" version={__APP_VERSION__} /> },
     ],
