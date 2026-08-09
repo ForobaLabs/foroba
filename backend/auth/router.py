@@ -19,6 +19,7 @@ from fastapi import (
 )
 from pydantic import BaseModel
 
+import security_log
 from auth import keys
 from auth import repository as repo
 from auth.avatar_storage import save_avatar
@@ -253,6 +254,10 @@ def login(
     if user is None or not verify_password(req.password, user["password_hash"]):
         if user is not None:
             repo.register_failed_login(conn, user["id"])
+        _ip = request.client.host if request.client else None
+        _uid = user["id"] if user is not None else None
+        security_log.log_event(conn, user_id=_uid, event="login_failed",
+                               detail="invalid credentials", ip=_ip)
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid credentials")
     if needs_rehash(user["password_hash"]):
         new_hash = hash_password(req.password)
@@ -261,6 +266,8 @@ def login(
     if _has_any_mfa_method(user) and settings.auth_2fa_enabled:
         return {"mfa_required": True, "email": user["email"], "methods": _enabled_methods(user)}
     repo.reset_failed_login(conn, user["id"])
+    security_log.log_event(conn, user_id=user["id"], event="login_success",
+                           detail=None, ip=request.client.host if request.client else None)
     _set_session_cookie(response, user)
     return UserPublic(**user).model_dump()
 

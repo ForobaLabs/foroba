@@ -9,6 +9,7 @@ import sqlite3
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 
+import security_log
 from auth import repository as repo
 from auth.conn import get_conn
 from auth.dependencies import get_current_user
@@ -49,6 +50,9 @@ def verify(
 ) -> dict:
     fresh = repo.get_user_by_id(conn, user["id"])
     if not fresh["totp_secret"] or not verify_code(fresh["totp_secret"], req.code):
+        security_log.log_event(conn, user_id=user["id"], event="mfa_failed",
+                               detail="invalid TOTP code",
+                               ip=request.client.host if request.client else None)
         raise HTTPException(400, "Invalid code")
     repo.enable_totp(conn, user["id"])
     _ensure_recovery_codes(conn, user["id"])

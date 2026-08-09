@@ -335,6 +335,17 @@ def init_schema(conn: sqlite3.Connection) -> None:
         conn.commit()
     except sqlite3.OperationalError:
         pass  # column already exists
+    # CL-2.4 (foroba#241): security event audit log
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS security_events ("
+        " id INTEGER PRIMARY KEY AUTOINCREMENT,"
+        " user_id INTEGER,"
+        " event TEXT NOT NULL,"
+        " detail TEXT,"
+        " ip TEXT,"
+        " created_at TEXT NOT NULL DEFAULT (datetime('now')))"
+    )
+    conn.commit()
     # CL-2.2 (foroba#239): DSAR request tracking log
     conn.execute(
         "CREATE TABLE IF NOT EXISTS dsar_requests ("
