@@ -226,6 +226,25 @@ CREATE TABLE IF NOT EXISTS invite_codes (
     created_by_user_id INTEGER NOT NULL REFERENCES users(id),
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
+
+-- Opaque rotating refresh tokens for cookieless native clients (iOS/CLI).
+-- The plaintext token is never stored; only a SHA-256 hex hash is persisted.
+-- family_id groups a token and all its rotated successors so reuse detection can
+-- revoke the whole chain in one statement (RFC 6819 §5.2.2.3).
+-- IOS-0 / pfh-mobile#3.
+CREATE TABLE IF NOT EXISTS refresh_tokens (
+    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id      INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    token_hash   TEXT    NOT NULL UNIQUE,
+    family_id    TEXT    NOT NULL,
+    device_label TEXT,
+    created_at   TEXT    NOT NULL,
+    last_used_at TEXT,
+    expires_at   TEXT    NOT NULL,
+    revoked_at   TEXT
+);
+CREATE INDEX IF NOT EXISTS ix_refresh_tokens_user   ON refresh_tokens (user_id);
+CREATE INDEX IF NOT EXISTS ix_refresh_tokens_family ON refresh_tokens (family_id);
 """
 
 
