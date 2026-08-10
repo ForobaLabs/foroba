@@ -35,6 +35,7 @@ from auth.dependencies import get_current_user, require_admin
 from auth.entitlements_router import router as entitlements_router
 from auth.router import get_conn
 from auth.router import router as auth_router
+from auth.token_router import router as token_router
 from auth.webhooks_router import router as webhooks_router
 from backup_scheduler import start_backup_scheduler
 from config import settings
@@ -107,6 +108,7 @@ _static_dir.mkdir(parents=True, exist_ok=True)
 app.mount("/static", StaticFiles(directory=str(_static_dir)), name="static")
 
 app.include_router(auth_router)
+app.include_router(token_router)
 app.include_router(entitlements_router)
 app.include_router(onboarding_router)
 app.include_router(admin_router)
