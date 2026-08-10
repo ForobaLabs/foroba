@@ -7,7 +7,12 @@ from datetime import UTC, datetime, timedelta
 import bcrypt as _bcrypt_lib
 import jwt
 from argon2 import PasswordHasher
-from argon2.exceptions import InvalidHashError, VerificationError, VerifyMismatchError
+from argon2.exceptions import VerificationError, VerifyMismatchError
+
+try:
+    from argon2.exceptions import InvalidHashError  # argon2-cffi >= 22.x
+except ImportError:
+    InvalidHashError = VerificationError  # type: ignore[assignment,misc]
 
 _ph = PasswordHasher()  # argon2id, secure defaults
 _ALGO = "RS256"
