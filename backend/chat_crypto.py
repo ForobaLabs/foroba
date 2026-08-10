@@ -42,3 +42,21 @@ def is_encrypted(value: str) -> bool:
         return True
     except (InvalidToken, ValueError):
         return False
+
+
+def safe_encrypt(plaintext: str | None) -> str | None:
+    """Encrypt if FIELD_ENCRYPTION_KEY is configured; return plaintext otherwise. None-safe."""
+    if plaintext is None or not settings.field_encryption_key:
+        return plaintext
+    return encrypt(plaintext)
+
+
+def safe_decrypt(ciphertext: str | None) -> str | None:
+    """Decrypt if key is set and value looks encrypted; return as-is otherwise. None-safe.
+
+    Migration-safe: legacy plaintext values (stored before encryption was enabled) are
+    returned unchanged so callers never receive garbled data after the feature is enabled.
+    """
+    if ciphertext is None or not settings.field_encryption_key:
+        return ciphertext
+    return decrypt(ciphertext) if is_encrypted(ciphertext) else ciphertext

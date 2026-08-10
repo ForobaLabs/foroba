@@ -5,6 +5,7 @@ from __future__ import annotations
 import sqlite3
 from datetime import UTC, datetime, timedelta
 
+from chat_crypto import safe_decrypt, safe_encrypt
 from db import _split_full_name
 
 LOCKOUT_MAX_ATTEMPTS = 5
@@ -13,6 +14,14 @@ LOCKOUT_DURATION_MINUTES = 15
 
 def _row_to_dict(row: sqlite3.Row | None) -> dict | None:
     return dict(row) if row is not None else None
+
+
+def _decrypt_user(d: dict | None) -> dict | None:
+    """Decrypt sensitive user fields in-place (migration-safe). Returns d."""
+    if d is None:
+        return None
+    d["totp_secret"] = safe_decrypt(d.get("totp_secret"))
+    return d
 
 
 def is_locked_out(user: dict) -> bool:
@@ -113,12 +122,12 @@ def complete_onboarding(conn: sqlite3.Connection, user_id: int) -> None:
 
 def get_user_by_email(conn: sqlite3.Connection, email: str) -> dict | None:
     row = conn.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
-    return _row_to_dict(row)
+    return _decrypt_user(_row_to_dict(row))
 
 
 def get_user_by_id(conn: sqlite3.Connection, user_id: int) -> dict | None:
     row = conn.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
-    return _row_to_dict(row)
+    return _decrypt_user(_row_to_dict(row))
 
 
 def set_audience(conn: sqlite3.Connection, user_id: int, audience: str, *, locked: bool) -> None:
@@ -163,7 +172,7 @@ def list_all_users(conn: sqlite3.Connection) -> list[dict]:
     field filtering to prevent credential exposure in HTTP responses.
     """
     rows = conn.execute("SELECT * FROM users ORDER BY id").fetchall()
-    return [dict(r) for r in rows]
+    return [_decrypt_user(dict(r)) for r in rows]
 
 
 def get_admin_kpis(conn: sqlite3.Connection) -> dict:
@@ -262,7 +271,8 @@ def redeem_invite_code(conn: sqlite3.Connection, code: str) -> bool:
 
 def set_totp_secret(conn: sqlite3.Connection, user_id: int, secret: str) -> None:
     conn.execute(
-        "UPDATE users SET totp_secret = ?, totp_enabled = 0 WHERE id = ?", (secret, user_id)
+        "UPDATE users SET totp_secret = ?, totp_enabled = 0 WHERE id = ?",
+        (safe_encrypt(secret), user_id),
     )
     conn.commit()
 

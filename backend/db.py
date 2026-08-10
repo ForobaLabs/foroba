@@ -6,7 +6,7 @@ import sqlite3
 from pathlib import Path
 
 from auth.security import hash_password
-from chat_crypto import decrypt, encrypt
+from chat_crypto import decrypt, encrypt, safe_decrypt, safe_encrypt
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS users (
@@ -533,7 +533,7 @@ def get_sandbox_user_context(conn: sqlite3.Connection, user_id: str) -> str:
     row = conn.execute(
         "SELECT context_text FROM sandbox_user_context WHERE user_id = ?", (user_id,)
     ).fetchone()
-    return row["context_text"] if row else ""
+    return safe_decrypt(row["context_text"]) or "" if row else ""
 
 
 def update_sandbox_user_context(conn: sqlite3.Connection, user_id: str, context_text: str) -> None:
@@ -542,7 +542,7 @@ def update_sandbox_user_context(conn: sqlite3.Connection, user_id: str, context_
         "VALUES (?, ?, datetime('now')) "
         "ON CONFLICT(user_id) DO UPDATE SET "
         "context_text = excluded.context_text, updated_at = excluded.updated_at",
-        (user_id, context_text),
+        (user_id, safe_encrypt(context_text)),
     )
     conn.commit()
 
@@ -589,6 +589,12 @@ def _whatif_visibility_clause() -> str:
     return "(household_id = ? OR (household_id IS NULL AND created_by_user_id = ?))"
 
 
+def _decrypt_whatif_row(row: sqlite3.Row) -> dict:
+    d = dict(row)
+    d["params_json"] = safe_decrypt(d.get("params_json"))
+    return d
+
+
 def create_whatif_scenario(
     conn: sqlite3.Connection,
     *,
@@ -597,12 +603,12 @@ def create_whatif_scenario(
     name: str,
     horizon_months: int,
     params_json: str,
-) -> sqlite3.Row:
+) -> dict:
     cur = conn.execute(
         "INSERT INTO whatif_scenarios "
         "(created_by_user_id, household_id, name, horizon_months, params_json) "
         "VALUES (?, ?, ?, ?, ?)",
-        (created_by_user_id, household_id, name, horizon_months, params_json),
+        (created_by_user_id, household_id, name, horizon_months, safe_encrypt(params_json)),
     )
     conn.commit()
     row = get_whatif_scenario(
@@ -614,21 +620,23 @@ def create_whatif_scenario(
 
 def list_whatif_scenarios(
     conn: sqlite3.Connection, *, user_id: int, household_id: str | None
-) -> list[sqlite3.Row]:
-    return conn.execute(
+) -> list[dict]:
+    rows = conn.execute(
         f"SELECT * FROM whatif_scenarios WHERE {_whatif_visibility_clause()} "
         "ORDER BY created_at DESC, id DESC",
         (household_id, user_id),
     ).fetchall()
+    return [_decrypt_whatif_row(r) for r in rows]
 
 
 def get_whatif_scenario(
     conn: sqlite3.Connection, scenario_id: int, *, user_id: int, household_id: str | None
-) -> sqlite3.Row | None:
-    return conn.execute(
+) -> dict | None:
+    row = conn.execute(
         f"SELECT * FROM whatif_scenarios WHERE id = ? AND {_whatif_visibility_clause()}",
         (scenario_id, household_id, user_id),
     ).fetchone()
+    return _decrypt_whatif_row(row) if row is not None else None
 
 
 def update_whatif_scenario(
@@ -640,13 +648,13 @@ def update_whatif_scenario(
     name: str,
     horizon_months: int,
     params_json: str,
-) -> sqlite3.Row | None:
+) -> dict | None:
     if get_whatif_scenario(conn, scenario_id, user_id=user_id, household_id=household_id) is None:
         return None
     conn.execute(
         "UPDATE whatif_scenarios SET name = ?, horizon_months = ?, params_json = ?, "
         "updated_at = datetime('now') WHERE id = ?",
-        (name, horizon_months, params_json, scenario_id),
+        (name, horizon_months, safe_encrypt(params_json), scenario_id),
     )
     conn.commit()
     return get_whatif_scenario(conn, scenario_id, user_id=user_id, household_id=household_id)
@@ -777,13 +785,21 @@ def create_monthly_report(
     return row
 
 
+def _decrypt_monthly_row(row: sqlite3.Row) -> dict:
+    d = dict(row)
+    d["narrative_text"] = safe_decrypt(d.get("narrative_text"))
+    d["context_snapshot_json"] = safe_decrypt(d.get("context_snapshot_json"))
+    return d
+
+
 def get_monthly_report(
     conn: sqlite3.Connection, report_id: int, *, user_id: int
-) -> sqlite3.Row | None:
-    return conn.execute(
+) -> dict | None:
+    row = conn.execute(
         "SELECT * FROM monthly_reports WHERE id = ? AND user_id = ?",
         (report_id, user_id),
     ).fetchone()
+    return _decrypt_monthly_row(row) if row is not None else None
 
 
 def list_monthly_reports(
@@ -791,17 +807,19 @@ def list_monthly_reports(
     *,
     user_id: int,
     year_month: str | None = None,
-) -> list[sqlite3.Row]:
+) -> list[dict]:
     if year_month:
-        return conn.execute(
+        rows = conn.execute(
             "SELECT * FROM monthly_reports WHERE user_id = ? AND year_month = ? "
             "ORDER BY created_at DESC, id DESC",
             (user_id, year_month),
         ).fetchall()
-    return conn.execute(
-        "SELECT * FROM monthly_reports WHERE user_id = ? ORDER BY created_at DESC, id DESC",
-        (user_id,),
-    ).fetchall()
+    else:
+        rows = conn.execute(
+            "SELECT * FROM monthly_reports WHERE user_id = ? ORDER BY created_at DESC, id DESC",
+            (user_id,),
+        ).fetchall()
+    return [_decrypt_monthly_row(r) for r in rows]
 
 
 def count_monthly_reports_this_month(
@@ -823,14 +841,22 @@ def update_monthly_report_result(
     context_snapshot_json: str | None,
     error_message: str | None,
     attempt_count: int,
-) -> sqlite3.Row | None:
+) -> dict | None:
     conn.execute(
         "UPDATE monthly_reports SET status = ?, narrative_text = ?, context_snapshot_json = ?, "
         "error_message = ?, attempt_count = ?, updated_at = datetime('now') WHERE id = ?",
-        (status, narrative_text, context_snapshot_json, error_message, attempt_count, report_id),
+        (
+            status,
+            safe_encrypt(narrative_text),
+            safe_encrypt(context_snapshot_json),
+            error_message,
+            attempt_count,
+            report_id,
+        ),
     )
     conn.commit()
-    return conn.execute("SELECT * FROM monthly_reports WHERE id = ?", (report_id,)).fetchone()
+    row = conn.execute("SELECT * FROM monthly_reports WHERE id = ?", (report_id,)).fetchone()
+    return _decrypt_monthly_row(row) if row is not None else None
 
 
 def create_api_key(

@@ -39,10 +39,8 @@ def test_enroll_returns_qr_and_secret(client):
 
 def test_verify_enables(client):
     c, conn = client
-    c.post("/auth/2fa/enroll")
-    secret = conn.execute("SELECT totp_secret FROM users WHERE email='demo@foroba.app'").fetchone()[
-        "totp_secret"
-    ]
+    enroll_r = c.post("/auth/2fa/enroll")
+    secret = enroll_r.json()["secret"]
     code = pyotp.TOTP(secret).now()
     r = c.post("/auth/2fa/verify", json={"code": code})
     assert r.status_code == 200
@@ -59,10 +57,8 @@ def test_verify_clears_mfa_enrollment_pending(client):
     c, conn = client
     conn.execute("UPDATE users SET mfa_enrollment_pending = 1 WHERE email='demo@foroba.app'")
     conn.commit()
-    c.post("/auth/2fa/enroll")
-    secret = conn.execute("SELECT totp_secret FROM users WHERE email='demo@foroba.app'").fetchone()[
-        "totp_secret"
-    ]
+    enroll_r = c.post("/auth/2fa/enroll")
+    secret = enroll_r.json()["secret"]
     code = pyotp.TOTP(secret).now()
     r = c.post("/auth/2fa/verify", json={"code": code})
     assert r.status_code == 200
@@ -95,11 +91,9 @@ def test_methods_lists_all_flags_and_recovery_count(client):
 
 
 def test_remove_last_method_is_blocked(client):
-    c, conn = client
-    c.post("/auth/2fa/enroll")
-    secret = conn.execute(
-        "SELECT totp_secret FROM users WHERE email='demo@foroba.app'"
-    ).fetchone()["totp_secret"]
+    c, _conn = client
+    enroll_r = c.post("/auth/2fa/enroll")
+    secret = enroll_r.json()["secret"]
     code = pyotp.TOTP(secret).now()
     c.post("/auth/2fa/verify", json={"code": code})
     resp = c.delete("/auth/2fa/methods/totp")
