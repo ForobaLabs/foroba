@@ -63,6 +63,21 @@ export default defineConfig(({ mode }) => {
     server: {
       port: 5175,
       proxy: {
+        '/api/v1/foroba': {
+          target: 'http://localhost:8002',
+          changeOrigin: true,
+          rewrite: (p) => p.replace(/^\/api\/v1\/foroba/, ''),
+        },
+        '/api/v1/pazuru': {
+          target: 'http://localhost:8000',
+          changeOrigin: true,
+          rewrite: (p) => p.replace(/^\/api\/v1\/pazuru/, ''),
+        },
+        '/api/v1/tsumi': {
+          target: 'http://localhost:8050',
+          changeOrigin: true,
+          rewrite: (p) => p.replace(/^\/api\/v1\/tsumi/, ''),
+        },
         '/pazuru-api': {
           target: env.VITE_PAZURU_API_URL ?? 'http://localhost:8000',
           changeOrigin: true,
