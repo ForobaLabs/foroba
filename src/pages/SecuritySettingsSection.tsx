@@ -3,14 +3,17 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { startRegistration } from "@simplewebauthn/browser";
 import { Button, Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Input } from "@foroba/ui";
 import {
+  changePassword,
   deleteAccount,
   enrollTotp,
   fetchConsents,
   fetchMfaMethods,
+  fetchSessions,
   passkeyRegisterOptions,
   passkeyRegisterVerify,
   regenerateRecoveryCodes,
   removeMfaMethod,
+  revokeSession,
   sendEmailOtp,
   verifyEmailOtp,
   verifyTotp,
@@ -35,6 +38,10 @@ export function SecuritySettingsSection() {
   const qc = useQueryClient();
   const { data: mfa } = useQuery({ queryKey: ["mfa-methods"], queryFn: fetchMfaMethods });
   const { data: consents } = useQuery({ queryKey: ["consents"], queryFn: fetchConsents });
+  const { data: sessions, refetch: refetchSessions } = useQuery({
+    queryKey: ["sessions"],
+    queryFn: fetchSessions,
+  });
   const [savingKey, setSavingKey] = useState<string | null>(null);
   const [mfaError, setMfaError] = useState<string | null>(null);
   const [newRecoveryCodes, setNewRecoveryCodes] = useState<string[] | null>(null);
@@ -42,6 +49,16 @@ export function SecuritySettingsSection() {
   const [addingMethod, setAddingMethod] = useState<MethodKey | null>(null);
   const [addCode, setAddCode] = useState("");
   const [totpQr, setTotpQr] = useState<string | null>(null);
+  // Change password
+  const [changePwOpen, setChangePwOpen] = useState(false);
+  const [currentPw, setCurrentPw] = useState("");
+  const [newPw, setNewPw] = useState("");
+  const [newPwConfirm, setNewPwConfirm] = useState("");
+  const [changePwError, setChangePwError] = useState<string | null>(null);
+  const [changingPw, setChangingPw] = useState(false);
+  // Active devices
+  const [revokingSession, setRevokingSession] = useState<number | null>(null);
+  // Delete account
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deletePassword, setDeletePassword] = useState("");
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
@@ -129,6 +146,38 @@ export function SecuritySettingsSection() {
     }
   }
 
+  function closeChangePwDialog() {
+    setChangePwOpen(false);
+    setCurrentPw("");
+    setNewPw("");
+    setNewPwConfirm("");
+    setChangePwError(null);
+  }
+
+  async function handleChangePassword(e: React.FormEvent) {
+    e.preventDefault();
+    setChangingPw(true);
+    setChangePwError(null);
+    try {
+      await changePassword(currentPw, newPw, newPwConfirm);
+      closeChangePwDialog();
+    } catch (err) {
+      setChangePwError(err instanceof Error ? err.message : "Failed to change password.");
+    } finally {
+      setChangingPw(false);
+    }
+  }
+
+  async function handleRevokeSession(sessionId: number) {
+    setRevokingSession(sessionId);
+    try {
+      await revokeSession(sessionId);
+      await refetchSessions();
+    } finally {
+      setRevokingSession(null);
+    }
+  }
+
   function closeDeleteDialog() {
     setDeleteDialogOpen(false);
     setDeletePassword("");
@@ -153,6 +202,83 @@ export function SecuritySettingsSection() {
       <h2 className="mt-3 px-0.5 text-xs font-bold uppercase tracking-wide text-[var(--color-text-secondary)]">
         Security
       </h2>
+
+      {/* Change password */}
+      <div className="flex items-center justify-between gap-3 rounded-lg border border-[var(--color-bg-border)] bg-[var(--color-bg-surface)] px-4.5 py-3.5">
+        <span className="text-sm text-[var(--color-text-primary)]">Password</span>
+        <button
+          type="button"
+          onClick={() => setChangePwOpen(true)}
+          className="text-xs font-semibold text-[var(--color-accent)]"
+        >
+          Change
+        </button>
+      </div>
+
+      <Dialog open={changePwOpen} onOpenChange={(open) => (open ? setChangePwOpen(true) : closeChangePwDialog())}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Change password</DialogTitle>
+            <DialogDescription>
+              Enter your current password and choose a new one. All active mobile sessions
+              will be signed out.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleChangePassword} className="flex flex-col gap-3">
+            <label className="flex flex-col gap-1 text-xs text-[var(--color-text-secondary)]">
+              Current password
+              <Input
+                type="password"
+                value={currentPw}
+                onChange={(e) => setCurrentPw(e.target.value)}
+                autoComplete="current-password"
+                required
+              />
+            </label>
+            <label className="flex flex-col gap-1 text-xs text-[var(--color-text-secondary)]">
+              New password
+              <Input
+                type="password"
+                value={newPw}
+                onChange={(e) => setNewPw(e.target.value)}
+                autoComplete="new-password"
+                required
+                minLength={8}
+              />
+            </label>
+            <label className="flex flex-col gap-1 text-xs text-[var(--color-text-secondary)]">
+              Confirm new password
+              <Input
+                type="password"
+                value={newPwConfirm}
+                onChange={(e) => setNewPwConfirm(e.target.value)}
+                autoComplete="new-password"
+                required
+              />
+            </label>
+            {changePwError && (
+              <p role="alert" className="text-xs text-[var(--color-negative)]">
+                {changePwError}
+              </p>
+            )}
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={closeChangePwDialog}
+                className="text-xs font-semibold text-[var(--color-text-secondary)]"
+              >
+                Cancel
+              </button>
+              <Button
+                type="submit"
+                disabled={changingPw || currentPw.length === 0 || newPw.length < 8 || newPwConfirm.length === 0}
+              >
+                {changingPw ? "Saving…" : "Change password"}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       {METHOD_ROWS.map(({ key, label }) => {
         const enabled = mfa[`${key}_enabled` as const];
@@ -280,6 +406,40 @@ export function SecuritySettingsSection() {
         <p role="alert" className="m-0.5 text-xs text-[var(--color-negative)]">
           {mfaError}
         </p>
+      )}
+
+      {sessions && sessions.length > 0 && (
+        <>
+          <h2 className="mt-3 px-0.5 text-xs font-bold uppercase tracking-wide text-[var(--color-text-secondary)]">
+            Active devices
+          </h2>
+          {sessions.map((s) => (
+            <div
+              key={s.id}
+              className="flex items-center justify-between gap-3 rounded-lg border border-[var(--color-bg-border)] bg-[var(--color-bg-surface)] px-4.5 py-3.5"
+            >
+              <div className="flex flex-col gap-0.5 min-w-0">
+                <span className="truncate text-sm text-[var(--color-text-primary)]">
+                  {s.device_label}
+                </span>
+                <span className="text-xs text-[var(--color-text-secondary)]">
+                  Last active{" "}
+                  {s.last_used_at
+                    ? new Date(s.last_used_at).toLocaleDateString()
+                    : new Date(s.created_at).toLocaleDateString()}
+                </span>
+              </div>
+              <button
+                type="button"
+                disabled={revokingSession === s.id}
+                onClick={() => handleRevokeSession(s.id)}
+                className="shrink-0 text-xs font-semibold text-[var(--color-negative)] disabled:cursor-not-allowed disabled:text-[var(--color-text-secondary)]"
+              >
+                {revokingSession === s.id ? "Revoking…" : "Revoke"}
+              </button>
+            </div>
+          ))}
+        </>
       )}
 
       <h2 className="mt-3 px-0.5 text-xs font-bold uppercase tracking-wide text-[var(--color-negative)]">

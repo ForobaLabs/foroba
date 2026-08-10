@@ -2,13 +2,15 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { startAuthentication } from "@simplewebauthn/browser";
-import { Button, Card, Input } from "@foroba/ui";
+import { Button, Card, Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Input } from "@foroba/ui";
 import {
+  confirmPasswordReset,
   login,
   loginWithMethod,
   loginWithRecoveryCode,
   passkeyLoginOptions,
   passkeyLoginVerify,
+  requestPasswordReset,
   sendLoginEmailOtp,
   type Mfa2FAChallenge,
 } from "../auth/api";
@@ -32,6 +34,15 @@ export function LoginPage() {
   const [emailOtpSent, setEmailOtpSent] = useState(false);
   const [useRecoveryCode, setUseRecoveryCode] = useState(false);
   const [recoveryCode, setRecoveryCode] = useState("");
+  // Forgot-password flow
+  const [forgotOpen, setForgotOpen] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [forgotSent, setForgotSent] = useState(false);
+  const [forgotCode, setForgotCode] = useState("");
+  const [forgotNewPw, setForgotNewPw] = useState("");
+  const [forgotNewPwConfirm, setForgotNewPwConfirm] = useState("");
+  const [forgotError, setForgotError] = useState<string | null>(null);
+  const [forgotLoading, setForgotLoading] = useState(false);
 
   const challengeMethods = (challenge?.methods.filter((m) => m !== "webauthn") ?? []) as (
     | "totp"
@@ -122,6 +133,38 @@ export function LoginPage() {
       setError(err instanceof Error ? err.message : "Passkey sign-in failed.");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function onForgotRequest(e: React.FormEvent) {
+    e.preventDefault();
+    setForgotLoading(true);
+    setForgotError(null);
+    try {
+      await requestPasswordReset(forgotEmail);
+      setForgotSent(true);
+    } catch (err) {
+      setForgotError(err instanceof Error ? err.message : "Failed to send reset email.");
+    } finally {
+      setForgotLoading(false);
+    }
+  }
+
+  async function onForgotConfirm(e: React.FormEvent) {
+    e.preventDefault();
+    setForgotLoading(true);
+    setForgotError(null);
+    try {
+      await confirmPasswordReset(forgotEmail, forgotCode, forgotNewPw, forgotNewPwConfirm);
+      setForgotOpen(false);
+      setForgotSent(false);
+      setForgotCode("");
+      setForgotNewPw("");
+      setForgotNewPwConfirm("");
+    } catch (err) {
+      setForgotError(err instanceof Error ? err.message : "Invalid or expired code.");
+    } finally {
+      setForgotLoading(false);
     }
   }
 
@@ -304,6 +347,13 @@ export function LoginPage() {
           >
             Sign in with passkey
           </Button>
+          <button
+            type="button"
+            onClick={() => { setForgotEmail(email); setForgotOpen(true); }}
+            className="text-center text-sm text-[var(--color-accent)] hover:underline"
+          >
+            Forgot password?
+          </button>
           <p className="text-center text-sm text-[var(--color-text-secondary)]">
             No account?{" "}
             <a href="/register" className="text-[var(--color-accent)] hover:underline">
@@ -312,6 +362,76 @@ export function LoginPage() {
           </p>
         </form>
       </Card>
+
+      <Dialog open={forgotOpen} onOpenChange={(open) => { if (!open) { setForgotOpen(false); setForgotSent(false); setForgotError(null); } }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reset your password</DialogTitle>
+            <DialogDescription>
+              {forgotSent
+                ? "Check your email for a 6-digit code and enter it below."
+                : "Enter your email address and we'll send you a reset code."}
+            </DialogDescription>
+          </DialogHeader>
+          {!forgotSent ? (
+            <form onSubmit={onForgotRequest} className="flex flex-col gap-3">
+              <Input
+                type="email"
+                placeholder="your@email.com"
+                value={forgotEmail}
+                onChange={(e) => setForgotEmail(e.target.value)}
+                required
+                autoComplete="email"
+              />
+              {forgotError && (
+                <p role="alert" className="text-xs text-[var(--color-negative)]">{forgotError}</p>
+              )}
+              <Button type="submit" disabled={forgotLoading || forgotEmail.length === 0} className="w-full">
+                {forgotLoading ? "Sending…" : "Send reset code"}
+              </Button>
+            </form>
+          ) : (
+            <form onSubmit={onForgotConfirm} className="flex flex-col gap-3">
+              <Input
+                type="text"
+                placeholder="6-digit code"
+                inputMode="numeric"
+                value={forgotCode}
+                onChange={(e) => setForgotCode(e.target.value)}
+                required
+                autoComplete="one-time-code"
+              />
+              <Input
+                type="password"
+                placeholder="New password"
+                value={forgotNewPw}
+                onChange={(e) => setForgotNewPw(e.target.value)}
+                required
+                minLength={8}
+                autoComplete="new-password"
+              />
+              <Input
+                type="password"
+                placeholder="Confirm new password"
+                value={forgotNewPwConfirm}
+                onChange={(e) => setForgotNewPwConfirm(e.target.value)}
+                required
+                autoComplete="new-password"
+              />
+              {forgotError && (
+                <p role="alert" className="text-xs text-[var(--color-negative)]">{forgotError}</p>
+              )}
+              <Button
+                type="submit"
+                disabled={forgotLoading || forgotCode.length === 0 || forgotNewPw.length < 8}
+                className="w-full"
+              >
+                {forgotLoading ? "Resetting…" : "Reset password"}
+              </Button>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

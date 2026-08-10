@@ -349,6 +349,82 @@ export async function passkeyLoginVerify(email: string, credential: string): Pro
   return r.json();
 }
 
+export async function changePassword(
+  currentPassword: string,
+  newPassword: string,
+  newPasswordConfirm: string,
+): Promise<void> {
+  const r = await fetch("/jeli/auth/me/password", {
+    ...opts,
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      current_password: currentPassword,
+      new_password: newPassword,
+      new_password_confirm: newPasswordConfirm,
+    }),
+  });
+  if (!r.ok) {
+    const body = await r.json().catch(() => null);
+    throw new Error(body?.detail ?? "Failed to change password.");
+  }
+}
+
+export async function requestPasswordReset(email: string): Promise<void> {
+  const r = await fetch("/jeli/auth/me/password/reset-request", {
+    ...opts,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email }),
+  });
+  if (!r.ok) {
+    const body = await r.json().catch(() => null);
+    throw new Error(body?.detail ?? "Failed to send reset email.");
+  }
+}
+
+export async function confirmPasswordReset(
+  email: string,
+  code: string,
+  newPassword: string,
+  newPasswordConfirm: string,
+): Promise<void> {
+  const r = await fetch("/jeli/auth/me/password/reset", {
+    ...opts,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      email,
+      code,
+      new_password: newPassword,
+      new_password_confirm: newPasswordConfirm,
+    }),
+  });
+  if (!r.ok) {
+    const body = await r.json().catch(() => null);
+    throw new Error(body?.detail ?? "Invalid or expired code.");
+  }
+}
+
+export interface DeviceSession {
+  id: number;
+  device_label: string;
+  created_at: string;
+  last_used_at: string | null;
+  expires_at: string;
+}
+
+export async function fetchSessions(): Promise<DeviceSession[]> {
+  const r = await fetch("/jeli/auth/sessions", opts);
+  if (!r.ok) throw new Error("failed to load sessions");
+  return (await r.json()).sessions;
+}
+
+export async function revokeSession(sessionId: number): Promise<void> {
+  const r = await fetch(`/jeli/auth/sessions/${sessionId}`, { ...opts, method: "DELETE" });
+  if (!r.ok) throw new Error("failed to revoke session");
+}
+
 export type StepupApp = "pazuru" | "tsumi";
 
 export async function stepupVerify(

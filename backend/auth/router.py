@@ -27,6 +27,7 @@ from auth.avatar_storage import save_avatar
 from auth.conn import get_conn  # re-exported for tests that import it from here
 from auth.dependencies import get_current_user
 from auth.models import (
+    ChangePasswordRequest,
     ConsentRecord,
     DeleteAccountRequest,
     DisplayCurrencyRequest,
@@ -35,6 +36,8 @@ from auth.models import (
     Login2FARequest,
     LoginRequest,
     NameUpdateRequest,
+    PasswordResetConfirmRequest,
+    PasswordResetRequestModel,
     RecoveryCodeLoginRequest,
     RegisterRequest,
     ShareToggleRequest,
@@ -584,6 +587,67 @@ async def upload_avatar(
     avatar_url = save_avatar(user["id"], file, content)
     repo.set_avatar_url(conn, user["id"], avatar_url)
     return {"avatar_url": avatar_url}
+
+
+@router.put("/me/password", status_code=204)
+@limiter.limit("5/minute")
+def change_password(
+    request: Request,
+    req: ChangePasswordRequest,
+    user: dict = Depends(get_current_user),
+    conn: sqlite3.Connection = Depends(get_conn),
+) -> None:
+    """Change the authenticated user's password. Revokes all refresh tokens so that
+    mobile sessions (which can live for 30 days) are invalidated immediately."""
+    if not verify_password(req.current_password, user["password_hash"]):
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Current password is incorrect")
+    conn.execute(
+        "UPDATE users SET password_hash = ? WHERE id = ?",
+        (hash_password(req.new_password), user["id"]),
+    )
+    conn.commit()
+    refresh_tokens.revoke_all_for_user(conn, user["id"])
+
+
+@router.post("/me/password/reset-request", status_code=204)
+@limiter.limit("5/minute")
+def password_reset_request(
+    request: Request,
+    req: PasswordResetRequestModel,
+    conn: sqlite3.Connection = Depends(get_conn),
+) -> None:
+    """Initiate a password reset via email OTP. Always returns 204 — even if the
+    email is not registered — to avoid leaking which addresses exist."""
+    user = repo.get_user_by_email(conn, req.email)
+    if user is None:
+        return  # silent — no oracle
+    try:
+        generate_and_send(conn, user["id"], user["email"])
+    except EmailNotConfiguredError as exc:
+        raise HTTPException(
+            status.HTTP_503_SERVICE_UNAVAILABLE,
+            "Email delivery is not configured on this server",
+        ) from exc
+
+
+@router.post("/me/password/reset", status_code=204)
+@limiter.limit("5/minute")
+def password_reset_confirm(
+    request: Request,
+    req: PasswordResetConfirmRequest,
+    conn: sqlite3.Connection = Depends(get_conn),
+) -> None:
+    """Complete a password reset: verify the OTP, update the hash, revoke all
+    refresh tokens. Returns 400 on invalid / expired code."""
+    user = repo.get_user_by_email(conn, req.email)
+    if user is None or not verify_email_otp(conn, user["id"], req.code):
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Invalid or expired code")
+    conn.execute(
+        "UPDATE users SET password_hash = ? WHERE id = ?",
+        (hash_password(req.new_password), user["id"]),
+    )
+    conn.commit()
+    refresh_tokens.revoke_all_for_user(conn, user["id"])
 
 
 @router.get("/visible-owners")

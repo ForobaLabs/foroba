@@ -124,6 +124,35 @@ class DeleteAccountRequest(BaseModel):
     password: str
 
 
+class ChangePasswordRequest(BaseModel):
+    current_password: str
+    new_password: str = Field(min_length=8, max_length=128)
+    new_password_confirm: str
+
+    @model_validator(mode="after")
+    def _check_match(self) -> ChangePasswordRequest:
+        if self.new_password != self.new_password_confirm:
+            raise ValueError("New password and confirmation do not match")
+        return self
+
+
+class PasswordResetRequestModel(BaseModel):
+    email: EmailStr
+
+
+class PasswordResetConfirmRequest(BaseModel):
+    email: EmailStr
+    code: str
+    new_password: str = Field(min_length=8, max_length=128)
+    new_password_confirm: str
+
+    @model_validator(mode="after")
+    def _check_match(self) -> PasswordResetConfirmRequest:
+        if self.new_password != self.new_password_confirm:
+            raise ValueError("New password and confirmation do not match")
+        return self
+
+
 class ConsentRecord(BaseModel):
     document_type: Literal["terms_of_service", "privacy_policy"]
     document_version: str
