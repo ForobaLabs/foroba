@@ -19,6 +19,7 @@ from pydantic import BaseModel, EmailStr, Field
 from auth import keys, refresh_tokens
 from auth import repository as repo
 from auth.conn import get_conn
+from auth.dependencies import get_current_user
 from auth.models import UserPublic
 from auth.security import create_token, hash_password, needs_rehash, verify_password
 from config import settings
@@ -181,3 +182,21 @@ def revoke(req: RefreshRequest, conn: sqlite3.Connection = Depends(get_conn)) ->
     # Returns 204 even for an unknown token — exposing 404 would be an oracle
     # for guessing valid refresh tokens.
     refresh_tokens.revoke(conn, req.refresh_token)
+
+
+@router.get("/sessions")
+def list_sessions(
+    user: dict = Depends(get_current_user),
+    conn: sqlite3.Connection = Depends(get_conn),
+) -> dict:
+    return {"sessions": refresh_tokens.list_sessions(conn, user["id"])}
+
+
+@router.delete("/sessions/{session_id}", status_code=204)
+def delete_session(
+    session_id: int,
+    user: dict = Depends(get_current_user),
+    conn: sqlite3.Connection = Depends(get_conn),
+) -> None:
+    if not refresh_tokens.revoke_session(conn, user["id"], session_id):
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Session not found")

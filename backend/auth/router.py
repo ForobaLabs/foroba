@@ -11,6 +11,7 @@ from fastapi import (
     Cookie,
     Depends,
     File,
+    Header,
     HTTPException,
     Request,
     Response,
@@ -20,7 +21,7 @@ from fastapi import (
 from pydantic import BaseModel
 
 import security_log
-from auth import keys
+from auth import keys, refresh_tokens
 from auth import repository as repo
 from auth.avatar_storage import save_avatar
 from auth.conn import get_conn  # re-exported for tests that import it from here
@@ -411,8 +412,37 @@ def _enabled_methods(user: dict) -> list[str]:
 
 
 @router.post("/logout", status_code=204)
-def logout(response: Response) -> None:
+def logout(
+    response: Response,
+    conn: sqlite3.Connection = Depends(get_conn),
+    authorization: str | None = Header(default=None),
+    suite_session: str | None = Cookie(default=None),
+) -> None:
+    """Clear the session cookie. When a valid session can be identified (Bearer header or
+    cookie), also revoke all refresh tokens so native clients are signed out too."""
     response.delete_cookie("suite_session")
+    # Resolve user id from Bearer header (native) or cookie (web) — best-effort,
+    # do not raise on invalid/missing credentials.
+    import jwt
+
+    from auth import keys as _keys
+
+    token = None
+    if authorization:
+        scheme, _, cred = authorization.partition(" ")
+        if scheme.lower() == "bearer":
+            token = cred.strip() or None
+    if token is None:
+        token = suite_session
+    if token:
+        try:
+            _, public_key, _ = _keys.get_keypair(settings)
+            from auth.security import decode_token
+
+            claims = decode_token(token, public_key)
+            refresh_tokens.revoke_all_for_user(conn, int(claims["sub"]))
+        except (jwt.PyJWTError, Exception):
+            pass  # logout succeeds even if we can't identify the user
 
 
 @router.delete("/account", status_code=204)
