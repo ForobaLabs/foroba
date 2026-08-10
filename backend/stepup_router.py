@@ -5,7 +5,7 @@ from __future__ import annotations
 import sqlite3
 from typing import Literal
 
-from fastapi import APIRouter, Depends, HTTPException, Request, Response
+from fastapi import APIRouter, Depends, Header, HTTPException, Request, Response
 from pydantic import BaseModel
 
 from auth import repository as repo
@@ -39,6 +39,7 @@ def stepup_verify(
     response: Response,
     user: dict = Depends(get_current_user),
     conn: sqlite3.Connection = Depends(get_conn),
+    x_client: str | None = Header(default=None),
 ) -> dict:
     fresh = repo.get_user_by_id(conn, user["id"])
     ok = False
@@ -62,6 +63,8 @@ def stepup_verify(
         max_age=settings.stepup_ttl_minutes * 60,
         domain=settings.cookie_domain or None,
     )
+    if (x_client or "").lower() == "native":
+        return {"app": req.app, "token": token}
     return {"verified": True}
 
 
