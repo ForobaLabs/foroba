@@ -43,7 +43,7 @@ def start_retention_scheduler() -> None:
     """Wire the retention job into APScheduler (runs daily at 03:30)."""
     from apscheduler.schedulers.background import BackgroundScheduler
 
-    from db import get_conn
+    from auth.conn import get_conn
 
     sched = BackgroundScheduler()
 
