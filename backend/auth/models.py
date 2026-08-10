@@ -57,6 +57,7 @@ class UserPublic(BaseModel):
     avatar_url: str | None = None
     processing_restricted: bool = False
     marketing_objection: bool = False
+    email_verified: bool = True
 
 
 class HouseholdJoinRequest(BaseModel):
@@ -174,6 +175,33 @@ class InviteCodeCreateRequest(BaseModel):
     note: str | None = Field(default=None, max_length=200)
     max_uses: int = Field(default=1, ge=1, le=10_000)
     expires_at: str | None = None
+
+
+class EmailVerifyRequest(BaseModel):
+    code: str = Field(min_length=6, max_length=6)
+
+
+class EmailChangeRequestModel(BaseModel):
+    new_email: EmailStr
+    new_email_confirm: EmailStr
+
+    @model_validator(mode="after")
+    def _check_match(self) -> EmailChangeRequestModel:
+        if self.new_email.lower() != self.new_email_confirm.lower():
+            raise ValueError("Email and confirmation do not match")
+        return self
+
+
+class EmailChangeConfirmRequest(BaseModel):
+    code: str = Field(min_length=6, max_length=6)
+
+
+class HouseholdInviteRequest(BaseModel):
+    email: EmailStr
+
+
+class HouseholdInviteAcceptRequest(BaseModel):
+    token: str = Field(min_length=6, max_length=20)
 
 
 class AdminKpis(BaseModel):

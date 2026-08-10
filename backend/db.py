@@ -377,6 +377,36 @@ def init_schema(conn: sqlite3.Connection) -> None:
         " note TEXT)"
     )
     conn.commit()
+    # A2 (foroba#178): email_verified flag — DEFAULT 1 so existing users are not affected.
+    # New users get 0 when SMTP is enabled; set to 1 via POST /auth/verify-email.
+    try:
+        conn.execute(
+            "ALTER TABLE users ADD COLUMN email_verified INTEGER NOT NULL DEFAULT 1"
+        )
+        conn.commit()
+    except sqlite3.OperationalError:
+        pass  # column already exists
+    # A6 (foroba#182): pending_email — stores new address during change flow,
+    # cleared once the OTP is verified and the address is applied.
+    try:
+        conn.execute("ALTER TABLE users ADD COLUMN pending_email TEXT")
+        conn.commit()
+    except sqlite3.OperationalError:
+        pass  # column already exists
+    # A4 (foroba#180): household invites table.
+    # token is a 12-char alphanumeric code that expires in 48h and is single-use.
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS household_invites ("
+        " id INTEGER PRIMARY KEY AUTOINCREMENT,"
+        " inviter_id INTEGER NOT NULL REFERENCES users(id),"
+        " household_id TEXT NOT NULL,"
+        " invited_email TEXT NOT NULL,"
+        " token_hash TEXT NOT NULL UNIQUE,"
+        " expires_at TEXT NOT NULL,"
+        " accepted_at TEXT,"
+        " created_at TEXT NOT NULL DEFAULT (datetime('now')))"
+    )
+    conn.commit()
 
 
 # (email, name, plaintext password, tier, audience, is_admin)

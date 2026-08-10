@@ -2,10 +2,14 @@
 
 from __future__ import annotations
 
+import hashlib
+import secrets
 import sqlite3
 import uuid
+from datetime import UTC, datetime, timedelta
 
 import httpx
+from argon2 import PasswordHasher as _PasswordHasher
 from fastapi import (
     APIRouter,
     Cookie,
@@ -31,7 +35,12 @@ from auth.models import (
     ConsentRecord,
     DeleteAccountRequest,
     DisplayCurrencyRequest,
+    EmailChangeConfirmRequest,
+    EmailChangeRequestModel,
     EmailOtpSendRequest,
+    EmailVerifyRequest,
+    HouseholdInviteAcceptRequest,
+    HouseholdInviteRequest,
     HouseholdJoinRequest,
     Login2FARequest,
     LoginRequest,
@@ -46,8 +55,9 @@ from auth.models import (
 )
 from auth.security import create_token, hash_password, needs_rehash, verify_password
 from config import settings
-from email_otp import EmailNotConfiguredError, generate_and_send
+from email_otp import EmailNotConfiguredError, generate_and_send, generate_and_send_signup_verify
 from email_otp import verify_and_consume as verify_email_otp
+from email_service import send_email_change_email, send_household_invite_email
 from legal import PRIVACY_VERSION, TOS_VERSION
 from passkeys.service import authentication_options_for_user
 from passkeys.service import verify_authentication as verify_webauthn_authentication
@@ -98,6 +108,9 @@ def register(
     if get_settings(conn).get("require_invite_code") == "true":
         if not req.invite_code or not repo.redeem_invite_code(conn, req.invite_code):
             raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Invalid invite code")
+    # A2 (foroba#178): new users start unverified when SMTP is configured.
+    # If SMTP is disabled (self-host without email), mark them as verified immediately.
+    send_verify = settings.smtp_enabled
     user = repo.create_user(
         conn,
         email=req.email,
@@ -106,6 +119,7 @@ def register(
         birth_year=req.birth_year,
         country=req.country,
         require_mfa_enrollment=True,
+        email_verified=not send_verify,
     )
     client_ip = request.client.host if request.client else None
     repo.record_consent(
@@ -122,6 +136,11 @@ def register(
         document_version=PRIVACY_VERSION,
         ip_address=client_ip,
     )
+    if send_verify:
+        try:
+            generate_and_send_signup_verify(conn, user["id"], user["email"], country=req.country)
+        except Exception:
+            pass  # non-blocking — user can resend; don't fail registration
     _set_session_cookie(response, user)
     return user
 
@@ -499,6 +518,170 @@ async def delete_account(
 @router.get("/me", response_model=UserPublic)
 def me(user: dict = Depends(get_current_user)) -> dict:
     return user
+
+
+# ── A2: Email verification (foroba#178) ──────────────────────────────────────
+
+@router.post("/verify-email", status_code=204)
+@limiter.limit("10/minute")
+def verify_email(
+    request: Request,
+    req: EmailVerifyRequest,
+    user: dict = Depends(get_current_user),
+    conn: sqlite3.Connection = Depends(get_conn),
+) -> None:
+    """Verify the user's email address using the OTP sent at signup."""
+    if user.get("email_verified"):
+        return  # already verified — idempotent
+    if not verify_email_otp(conn, user["id"], req.code):
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Invalid or expired code")
+    repo.set_email_verified(conn, user["id"], True)
+
+
+@router.post("/resend-verification", status_code=204)
+@limiter.limit("3/minute")
+def resend_verification(
+    request: Request,
+    user: dict = Depends(get_current_user),
+    conn: sqlite3.Connection = Depends(get_conn),
+) -> None:
+    """Re-send the email verification OTP."""
+    if user.get("email_verified"):
+        return  # already verified
+    try:
+        generate_and_send_signup_verify(
+            conn, user["id"], user["email"], country=user.get("country")
+        )
+    except EmailNotConfiguredError as exc:
+        raise HTTPException(
+            status.HTTP_503_SERVICE_UNAVAILABLE,
+            "Email delivery is not configured on this server",
+        ) from exc
+
+
+# ── A6: Email change flow (foroba#182) ───────────────────────────────────────
+
+@router.post("/me/email/change-request", status_code=204)
+@limiter.limit("5/minute")
+def email_change_request(
+    request: Request,
+    req: EmailChangeRequestModel,
+    user: dict = Depends(get_current_user),
+    conn: sqlite3.Connection = Depends(get_conn),
+) -> None:
+    """Initiate an email address change: send OTP to the new address."""
+    if not user.get("email_verified", True):
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN,
+            "Verify your current email address before changing it",
+        )
+    if repo.get_user_by_email(conn, req.new_email.lower()):
+        raise HTTPException(status.HTTP_409_CONFLICT, "Email already in use")
+    if not settings.smtp_enabled:
+        raise HTTPException(
+            status.HTTP_503_SERVICE_UNAVAILABLE,
+            "Email delivery is not configured on this server",
+        )
+    repo.set_pending_email(conn, user["id"], req.new_email.lower())
+    code = f"{secrets.randbelow(1_000_000):06d}"
+    expires_at = (datetime.now(UTC) + timedelta(minutes=10)).isoformat()
+    conn.execute(
+        "INSERT INTO email_otp_codes (user_id, code_hash, expires_at) VALUES (?, ?, ?)",
+        (user["id"], _PasswordHasher().hash(code), expires_at),
+    )
+    conn.commit()
+    send_email_change_email(req.new_email, code, country=user.get("country"))
+
+
+@router.post("/me/email/change-confirm", status_code=204)
+@limiter.limit("5/minute")
+def email_change_confirm(
+    request: Request,
+    req: EmailChangeConfirmRequest,
+    user: dict = Depends(get_current_user),
+    conn: sqlite3.Connection = Depends(get_conn),
+) -> None:
+    """Confirm the email change OTP and apply the new address."""
+    pending = user.get("pending_email")
+    if not pending:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "No pending email change")
+    if not verify_email_otp(conn, user["id"], req.code):
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Invalid or expired code")
+    repo.apply_pending_email(conn, user["id"])
+    repo.set_email_verified(conn, user["id"], True)
+
+
+# ── A4: Household invite by email (foroba#180) ───────────────────────────────
+
+_INVITE_TTL_HOURS = 48
+_INVITE_TOKEN_BYTES = 6  # 6 bytes → 12 hex chars, easy to type
+
+
+def _make_invite_token() -> tuple[str, str]:
+    """Return (plain_token, sha256_hex_hash)."""
+    raw = secrets.token_hex(_INVITE_TOKEN_BYTES).upper()
+    hashed = hashlib.sha256(raw.encode()).hexdigest()
+    return raw, hashed
+
+
+@router.post("/household/invite", status_code=204)
+@limiter.limit("10/minute")
+def household_invite(
+    request: Request,
+    req: HouseholdInviteRequest,
+    user: dict = Depends(get_current_user),
+    conn: sqlite3.Connection = Depends(get_conn),
+) -> None:
+    """Send an email invite to join the current user's household (A4, foroba#180)."""
+    if not settings.smtp_enabled:
+        raise HTTPException(
+            status.HTTP_503_SERVICE_UNAVAILABLE,
+            "Email delivery is not configured on this server",
+        )
+    if req.email.lower() == user["email"].lower():
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Cannot invite yourself")
+    household_id = user.get("household_id") or str(uuid.uuid4())
+    if not user.get("household_id"):
+        repo.set_household_id(conn, user["id"], household_id)
+    token, token_hash = _make_invite_token()
+    expires_at = (datetime.now(UTC) + timedelta(hours=_INVITE_TTL_HOURS)).isoformat()
+    repo.create_household_invite(
+        conn,
+        inviter_id=user["id"],
+        household_id=household_id,
+        invited_email=req.email.lower(),
+        token_hash=token_hash,
+        expires_at=expires_at,
+    )
+    send_household_invite_email(
+        req.email,
+        token,
+        inviter_name=user.get("first_name") or user["name"],
+        country=user.get("country"),
+    )
+
+
+@router.post("/household/invite/accept", status_code=204)
+@limiter.limit("10/minute")
+def household_invite_accept(
+    request: Request,
+    req: HouseholdInviteAcceptRequest,
+    user: dict = Depends(get_current_user),
+    conn: sqlite3.Connection = Depends(get_conn),
+) -> None:
+    """Accept a household invite token (A4, foroba#180)."""
+    token_hash = hashlib.sha256(req.token.upper().encode()).hexdigest()
+    invite = repo.get_household_invite_by_token_hash(conn, token_hash)
+    if invite is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Invite not found")
+    if invite["accepted_at"]:
+        raise HTTPException(status.HTTP_409_CONFLICT, "Invite already accepted")
+    if invite["expires_at"] < datetime.now(UTC).isoformat():
+        raise HTTPException(status.HTTP_410_GONE, "Invite has expired")
+    if invite["invited_email"] != user["email"].lower():
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Invite is for a different email address")
+    repo.set_household_id(conn, user["id"], invite["household_id"])
+    repo.accept_household_invite(conn, invite["id"])
 
 
 @router.get("/household")

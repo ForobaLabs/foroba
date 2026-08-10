@@ -77,11 +77,13 @@ def create_user(
     birth_year: int | None = None,
     country: str | None = None,
     require_mfa_enrollment: bool = False,
+    email_verified: bool = True,
 ) -> dict:
     first_name, last_name = _split_full_name(name)
     cur = conn.execute(
         "INSERT INTO users (email, name, password_hash, tier, audience, birth_year, country, "
-        "first_name, last_name, mfa_enrollment_pending) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "first_name, last_name, mfa_enrollment_pending, email_verified) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         (
             email,
             name,
@@ -93,6 +95,7 @@ def create_user(
             first_name,
             last_name,
             1 if require_mfa_enrollment else 0,
+            1 if email_verified else 0,
         ),
     )
     conn.commit()
@@ -434,6 +437,77 @@ def delete_user(conn: sqlite3.Connection, user_id: int) -> None:
     conn.execute("DELETE FROM recovery_codes WHERE user_id = ?", (user_id,))
     conn.execute("DELETE FROM share_preferences WHERE user_id = ?", (user_id,))
     conn.execute("DELETE FROM users WHERE id = ?", (user_id,))
+    conn.commit()
+
+
+def set_email_verified(conn: sqlite3.Connection, user_id: int, verified: bool = True) -> None:
+    """A2 (foroba#178) — mark the user's email address as verified."""
+    conn.execute(
+        "UPDATE users SET email_verified = ? WHERE id = ?",
+        (1 if verified else 0, user_id),
+    )
+    conn.commit()
+
+
+def set_pending_email(
+    conn: sqlite3.Connection, user_id: int, pending_email: str | None
+) -> None:
+    """A6 (foroba#182) — store or clear the pending new email address."""
+    conn.execute("UPDATE users SET pending_email = ? WHERE id = ?", (pending_email, user_id))
+    conn.commit()
+
+
+def apply_pending_email(conn: sqlite3.Connection, user_id: int) -> str | None:
+    """Apply pending_email → email and clear it. Returns the new email or None."""
+    user = get_user_by_id(conn, user_id)
+    if not user or not user.get("pending_email"):
+        return None
+    new_email = user["pending_email"]
+    conn.execute(
+        "UPDATE users SET email = ?, pending_email = NULL WHERE id = ?",
+        (new_email, user_id),
+    )
+    conn.commit()
+    return new_email
+
+
+def create_household_invite(
+    conn: sqlite3.Connection,
+    *,
+    inviter_id: int,
+    household_id: str,
+    invited_email: str,
+    token_hash: str,
+    expires_at: str,
+) -> dict:
+    """A4 (foroba#180) — insert a household invite record."""
+    cur = conn.execute(
+        "INSERT INTO household_invites "
+        "(inviter_id, household_id, invited_email, token_hash, expires_at) "
+        "VALUES (?, ?, ?, ?, ?)",
+        (inviter_id, household_id, invited_email, token_hash, expires_at),
+    )
+    conn.commit()
+    row = conn.execute(
+        "SELECT * FROM household_invites WHERE id = ?", (cur.lastrowid,)
+    ).fetchone()
+    return dict(row)
+
+
+def get_household_invite_by_token_hash(
+    conn: sqlite3.Connection, token_hash: str
+) -> dict | None:
+    row = conn.execute(
+        "SELECT * FROM household_invites WHERE token_hash = ?", (token_hash,)
+    ).fetchone()
+    return dict(row) if row else None
+
+
+def accept_household_invite(conn: sqlite3.Connection, invite_id: int) -> None:
+    conn.execute(
+        "UPDATE household_invites SET accepted_at = datetime('now') WHERE id = ?",
+        (invite_id,),
+    )
     conn.commit()
 
 
