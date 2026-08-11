@@ -840,3 +840,37 @@ def visible_owners(
     conn: sqlite3.Connection = Depends(get_conn),
 ) -> dict:
     return {"owner_ids": repo.get_visible_owner_ids(conn, user["id"], resource_type)}
+
+
+# ── Push notification device-token registration (#37 — IOS-4.4) ──────────────
+
+class DevicePushTokenRequest(BaseModel):
+    token: str
+    platform: str  # 'ios' | 'android'
+
+
+@router.post("/device/push-token", status_code=204)
+def register_device_push_token(
+    req: DevicePushTokenRequest,
+    user: dict = Depends(get_current_user),
+    conn: sqlite3.Connection = Depends(get_conn),
+) -> None:
+    """Store the APNs / FCM device token for this user.
+
+    Actual push delivery requires the Apple Developer Program ($99) and an
+    APNs key. This endpoint is the server-side groundwork: it stores the token
+    so push delivery can be added in IOS-5+ without a schema change.
+
+    Upserts on (user_id, token) so re-registration is idempotent.
+    """
+    conn.execute(
+        """
+        INSERT INTO device_push_tokens (user_id, token, platform, registered_at)
+        VALUES (?, ?, ?, ?)
+        ON CONFLICT(user_id, token) DO UPDATE SET
+            platform = excluded.platform,
+            registered_at = excluded.registered_at
+        """,
+        (user["id"], req.token, req.platform, datetime.now(UTC).isoformat()),
+    )
+    conn.commit()

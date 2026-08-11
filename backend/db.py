@@ -407,6 +407,21 @@ def init_schema(conn: sqlite3.Connection) -> None:
         " created_at TEXT NOT NULL DEFAULT (datetime('now')))"
     )
     conn.commit()
+    # IOS-4 (#37): device push-token table for APNs/FCM groundwork.
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS device_push_tokens ("
+        " id INTEGER PRIMARY KEY AUTOINCREMENT,"
+        " user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,"
+        " token TEXT NOT NULL,"
+        " platform TEXT NOT NULL,"
+        " registered_at TEXT NOT NULL,"
+        " UNIQUE(user_id, token))"
+    )
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS ix_device_push_tokens_user_id"
+        " ON device_push_tokens(user_id)"
+    )
+    conn.commit()
 
 
 # (email, name, plaintext password, tier, audience, is_admin)
