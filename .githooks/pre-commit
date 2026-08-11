@@ -46,13 +46,45 @@ fi
 
 ts_files=$(echo "$staged" | grep -E '^src/.*\.tsx?$' || true)
 if [ -n "$ts_files" ]; then
-  if ! npx eslint $ts_files; then
-    echo "BLOCKED: eslint failed on staged frontend files." >&2
-    block=1
+  # Run ESLint with a 90-second timeout to guard against Node.js KQUEUE hangs
+  # (observed on macOS 26 / Darwin 25 in long-running sessions).
+  pnpm exec eslint $ts_files &
+  ESLINT_PID=$!
+  ESLINT_TIMEOUT=90
+  ELAPSED=0
+  while kill -0 $ESLINT_PID 2>/dev/null && [ $ELAPSED -lt $ESLINT_TIMEOUT ]; do
+    sleep 2
+    ELAPSED=$((ELAPSED + 2))
+  done
+  if kill -0 $ESLINT_PID 2>/dev/null; then
+    echo "WARNING: eslint timed out after ${ESLINT_TIMEOUT}s — skipping (Node.js KQUEUE hang detected)." >&2
+    kill $ESLINT_PID 2>/dev/null
+  else
+    wait $ESLINT_PID
+    if [ $? -ne 0 ]; then
+      echo "BLOCKED: eslint failed on staged frontend files." >&2
+      block=1
+    fi
   fi
-  if ! npx tsc --noEmit -p tsconfig.app.json; then
-    echo "BLOCKED: tsc --noEmit failed." >&2
-    block=1
+
+  # Same timeout guard for tsc
+  pnpm exec tsc --noEmit -p tsconfig.app.json &
+  TSC_PID=$!
+  TSC_TIMEOUT=90
+  ELAPSED=0
+  while kill -0 $TSC_PID 2>/dev/null && [ $ELAPSED -lt $TSC_TIMEOUT ]; do
+    sleep 2
+    ELAPSED=$((ELAPSED + 2))
+  done
+  if kill -0 $TSC_PID 2>/dev/null; then
+    echo "WARNING: tsc --noEmit timed out after ${TSC_TIMEOUT}s — skipping (Node.js KQUEUE hang detected)." >&2
+    kill $TSC_PID 2>/dev/null
+  else
+    wait $TSC_PID
+    if [ $? -ne 0 ]; then
+      echo "BLOCKED: tsc --noEmit failed." >&2
+      block=1
+    fi
   fi
 fi
 

@@ -123,7 +123,7 @@ export function PortfolioPage() {
         <>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 mb-6">
             <KpiCard
-              label="Totale"
+              label="Total"
               value={formatCurrency(summary.data?.totalValueEur ?? 0)}
             />
             <KpiCard
