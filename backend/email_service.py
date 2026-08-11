@@ -212,7 +212,7 @@ def _smtp_send(to: str, subject: str, html: str, plain: str) -> None:
     msg.attach(MIMEText(plain, "plain"))
     msg.attach(MIMEText(html, "html"))
     try:
-        with smtplib.SMTP(settings.smtp_host, settings.smtp_port, timeout=10) as smtp:
+        with smtplib.SMTP(settings.smtp_host, settings.smtp_port, timeout=30) as smtp:
             smtp.starttls()
             if settings.smtp_user:
                 smtp.login(settings.smtp_user, settings.smtp_password)
@@ -231,7 +231,7 @@ def send_email(to: str, subject: str, body: str) -> None:
     message["From"] = settings.smtp_from
     message["To"] = to
     try:
-        with smtplib.SMTP(settings.smtp_host, settings.smtp_port, timeout=10) as smtp:
+        with smtplib.SMTP(settings.smtp_host, settings.smtp_port, timeout=30) as smtp:
             smtp.starttls()
             if settings.smtp_user:
                 smtp.login(settings.smtp_user, settings.smtp_password)
@@ -244,7 +244,7 @@ def send_email(to: str, subject: str, body: str) -> None:
 # Typed transactional email senders (GL-8.1, foroba#184)
 # ---------------------------------------------------------------------------
 
-_OTP_TTL_MINUTES = 10
+_OTP_TTL_MINUTES = 60
 
 
 def send_otp_email(

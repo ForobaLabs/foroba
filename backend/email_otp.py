@@ -1,5 +1,5 @@
 """Email OTP: 6-digit codes sent via the existing SMTP wiring (email_service.send_email),
-hashed at rest (argon2), 10-minute expiry, single-use.
+hashed at rest (argon2), 60-minute expiry, single-use.
 """
 
 from __future__ import annotations
@@ -15,7 +15,7 @@ from config import settings
 from email_service import send_otp_email, send_signup_verify_email
 
 _ph = PasswordHasher()
-_CODE_TTL_MINUTES = 10
+_CODE_TTL_MINUTES = 60
 
 
 class EmailNotConfiguredError(RuntimeError):
