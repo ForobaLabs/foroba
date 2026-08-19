@@ -11,6 +11,7 @@ export default defineConfig(({ mode }) => {
       tailwindcss(),
       VitePWA({
         registerType: 'autoUpdate',
+        devOptions: { enabled: false },
         includeAssets: ['favicon.svg', 'icons/*.svg'],
         manifest: {
           name: 'Foroba — Personal Finance Hub',
@@ -45,7 +46,42 @@ export default defineConfig(({ mode }) => {
       }),
     ],
     optimizeDeps: {
-      exclude: ['@foroba/ui', '@foroba/ui/i18n', '@foroba/ui/charts'],
+      // Pre-bundle @foroba/ui (a linked tsup build whose deps are left external)
+      // AND its heavy transitive deps up front. Without this, Vite discovers
+      // lucide-react / recharts / all @radix-ui/* lazily mid-load and forces a
+      // full-page reload ("new dependencies optimized"), which made first open slow.
+      include: [
+        '@foroba/ui',
+        '@foroba/ui/i18n',
+        '@foroba/ui/charts',
+        '@foroba/ui/api',
+        '@foroba/ui/tokens',
+        'react',
+        'react-dom',
+        'react-dom/client',
+        'react/jsx-runtime',
+        'react-router',
+        '@tanstack/react-query',
+        'lucide-react',
+        'recharts',
+        'i18next',
+        'react-i18next',
+        '@simplewebauthn/browser',
+        'clsx',
+        'tailwind-merge',
+        'class-variance-authority',
+        '@radix-ui/react-avatar',
+        '@radix-ui/react-checkbox',
+        '@radix-ui/react-dialog',
+        '@radix-ui/react-label',
+        '@radix-ui/react-select',
+        '@radix-ui/react-separator',
+        '@radix-ui/react-slot',
+        '@radix-ui/react-switch',
+        '@radix-ui/react-tabs',
+        '@radix-ui/react-toast',
+        '@radix-ui/react-tooltip',
+      ],
     },
     resolve: {
       // @foroba/ui is consumed via a `file:` dependency and resolves its own
@@ -62,6 +98,15 @@ export default defineConfig(({ mode }) => {
     },
     server: {
       port: 5175,
+      warmup: {
+        clientFiles: [
+          './src/main.tsx',
+          './src/App.tsx',
+          './src/router.tsx',
+          './src/pages/LoginPage.tsx',
+          './src/pages/DashboardPage.tsx',
+        ],
+      },
       proxy: {
         '/api/v1/foroba': {
           target: 'http://localhost:8002',
