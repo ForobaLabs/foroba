@@ -48,8 +48,11 @@ export default defineConfig(({ mode }) => {
     optimizeDeps: {
       // Pre-bundle @foroba/ui (a linked tsup build whose deps are left external)
       // AND its heavy transitive deps up front. Without this, Vite discovers
-      // lucide-react / recharts / all @radix-ui/* lazily mid-load and forces a
-      // full-page reload ("new dependencies optimized"), which made first open slow.
+      // lucide-react / recharts lazily mid-load and forces a full-page reload.
+      // Only list packages resolvable from foroba's own node_modules — transitive
+      // deps of @foroba/ui (clsx, @radix-ui/*, etc.) are inlined into @foroba/ui's
+      // pre-bundle chunk by rolldown and must NOT be listed here (they would fail
+      // to resolve and trigger a redundant second optimizer pass).
       include: [
         '@foroba/ui',
         '@foroba/ui/i18n',
@@ -67,21 +70,10 @@ export default defineConfig(({ mode }) => {
         'i18next',
         'react-i18next',
         '@simplewebauthn/browser',
-        'clsx',
-        'tailwind-merge',
-        'class-variance-authority',
-        '@radix-ui/react-avatar',
-        '@radix-ui/react-checkbox',
-        '@radix-ui/react-dialog',
-        '@radix-ui/react-label',
-        '@radix-ui/react-select',
-        '@radix-ui/react-separator',
-        '@radix-ui/react-slot',
-        '@radix-ui/react-switch',
-        '@radix-ui/react-tabs',
-        '@radix-ui/react-toast',
-        '@radix-ui/react-tooltip',
       ],
+      // Don't hold the page response while the crawler does its second pass —
+      // serve immediately with current cache, reload once if new deps found.
+      holdUntilCrawlEnd: false,
     },
     resolve: {
       // @foroba/ui is consumed via a `file:` dependency and resolves its own
