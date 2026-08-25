@@ -22,6 +22,7 @@ from lab_service import run_lab_turn
 from rate_limit import limiter, session_rate_limit_key
 from searxng_client import search_web
 from settings_store import get_all
+from stepup import issue_stepup_cookies
 
 router = APIRouter(prefix="/lab", tags=["lab"])
 
@@ -40,8 +41,6 @@ async def lab_chat(
     user: dict = Depends(get_current_user),
     conn=Depends(get_conn),
     suite_session: str | None = Cookie(default=None),
-    stepup_pazuru: str | None = Cookie(default=None),
-    stepup_tsumi: str | None = Cookie(default=None),
 ):
     user_id = str(user["id"])
 
@@ -78,12 +77,15 @@ async def lab_chat(
 
         return StreamingResponse(_disabled_stream(), media_type="application/x-ndjson")
 
+    # DuckDNS PSL: stepup_pazuru/stepup_tsumi cookies are subdomain-scoped and
+    # never forwarded to foroba-app.duckdns.org — mint server-side instead.
+    stepup = issue_stepup_cookies(user["id"])
     dataframes = await gather_dataframes(
         settings.pazuru_api_url,
         settings.tsumi_api_url,
         cookie=suite_session,
-        stepup_pazuru=stepup_pazuru,
-        stepup_tsumi=stepup_tsumi,
+        stepup_pazuru=stepup["pazuru"],
+        stepup_tsumi=stepup["tsumi"],
     )
     history = get_sandbox_history(conn, user_id, body.session_id)
     context = get_sandbox_user_context(conn, user_id)

@@ -14,6 +14,7 @@ import monthly_report_service as mrs
 import pdf_service
 from auth.conn import get_conn
 from auth.entitlements_router import require_feature
+from stepup import issue_stepup_cookies
 
 router = APIRouter(prefix="/reports/monthly", tags=["monthly-reports"])
 
@@ -71,9 +72,10 @@ async def generate(
     user: dict = Depends(require_feature(FEATURE_KEY)),
     conn: sqlite3.Connection = Depends(get_conn),
     suite_session: str | None = Cookie(default=None),
-    stepup_pazuru: str | None = Cookie(default=None),
-    stepup_tsumi: str | None = Cookie(default=None),
 ) -> ReportOut:
+    # DuckDNS PSL: stepup_pazuru/stepup_tsumi cookies are subdomain-scoped and
+    # never forwarded to foroba-app.duckdns.org — mint server-side instead.
+    stepup = issue_stepup_cookies(user["id"])
     try:
         row = await mrs.generate_new_report(
             conn,
@@ -81,8 +83,8 @@ async def generate(
             body.year_month,
             trigger="manual",
             cookie=suite_session,
-            stepup_pazuru=stepup_pazuru,
-            stepup_tsumi=stepup_tsumi,
+            stepup_pazuru=stepup["pazuru"],
+            stepup_tsumi=stepup["tsumi"],
         )
     except mrs.QuotaExceededError as exc:
         raise HTTPException(429, {"error": "monthly_limit_reached", "limit": exc.limit}) from exc
@@ -107,17 +109,16 @@ async def retry(
     user: dict = Depends(require_feature(FEATURE_KEY)),
     conn: sqlite3.Connection = Depends(get_conn),
     suite_session: str | None = Cookie(default=None),
-    stepup_pazuru: str | None = Cookie(default=None),
-    stepup_tsumi: str | None = Cookie(default=None),
 ) -> ReportOut:
+    stepup = issue_stepup_cookies(user["id"])
     try:
         row = await mrs.retry_report(
             conn,
             user,
             report_id,
             cookie=suite_session,
-            stepup_pazuru=stepup_pazuru,
-            stepup_tsumi=stepup_tsumi,
+            stepup_pazuru=stepup["pazuru"],
+            stepup_tsumi=stepup["tsumi"],
         )
     except mrs.ReportNotFoundError as exc:
         raise HTTPException(404, "Report not found") from exc

@@ -13,6 +13,7 @@ import db
 import whatif_service
 from auth.conn import get_conn
 from auth.entitlements_router import require_feature
+from stepup import issue_stepup_cookies
 
 router = APIRouter(prefix="/whatif", tags=["whatif"])
 
@@ -43,17 +44,16 @@ class SimulateParams(BaseModel):
 @router.post("/simulate")
 async def simulate(
     body: SimulateParams,
-    _user: dict = Depends(require_feature(FEATURE_KEY)),
+    user: dict = Depends(require_feature(FEATURE_KEY)),
     suite_session: str | None = Cookie(default=None),
-    stepup_pazuru: str | None = Cookie(default=None),
-    stepup_tsumi: str | None = Cookie(default=None),
 ) -> dict:
+    stepup = issue_stepup_cookies(user["id"])
     return await whatif_service.simulate(
         body.model_dump(),
         body.horizon_months,
         owner_cookie=suite_session,
-        stepup_pazuru=stepup_pazuru,
-        stepup_tsumi=stepup_tsumi,
+        stepup_pazuru=stepup["pazuru"],
+        stepup_tsumi=stepup["tsumi"],
     )
 
 
@@ -115,21 +115,20 @@ async def get_scenario(
     user: dict = Depends(require_feature(FEATURE_KEY)),
     conn: sqlite3.Connection = Depends(get_conn),
     suite_session: str | None = Cookie(default=None),
-    stepup_pazuru: str | None = Cookie(default=None),
-    stepup_tsumi: str | None = Cookie(default=None),
 ) -> dict:
     row = db.get_whatif_scenario(
         conn, scenario_id, user_id=user["id"], household_id=user.get("household_id")
     )
     if row is None:
         raise HTTPException(404, "Scenario not found")
+    stepup = issue_stepup_cookies(user["id"])
     params = json.loads(row["params_json"])
     projection = await whatif_service.simulate(
         params,
         row["horizon_months"],
         owner_cookie=suite_session,
-        stepup_pazuru=stepup_pazuru,
-        stepup_tsumi=stepup_tsumi,
+        stepup_pazuru=stepup["pazuru"],
+        stepup_tsumi=stepup["tsumi"],
     )
     return {**_to_out(row).model_dump(), "projection": projection}
 
