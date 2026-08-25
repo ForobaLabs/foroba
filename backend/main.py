@@ -55,6 +55,7 @@ from rate_limit import limiter, session_rate_limit_key
 from report_scheduler import start_report_scheduler
 from retention_job import start_retention_scheduler
 from settings_store import init_settings
+from stepup import issue_stepup_cookies
 from stepup_router import router as stepup_router
 from twofa.router import router as twofa_router
 from webhook_dispatch_job import start_webhook_dispatch_scheduler
@@ -247,22 +248,26 @@ async def networth_summary(
     days: int = 365,
     include_manual_assets: bool = True,
     include_debts: bool = False,
-    _: dict = Depends(get_current_user),
+    user: dict = Depends(get_current_user),
     suite_session: str | None = Cookie(default=None),
-    stepup_pazuru: str | None = Cookie(default=None),
-    stepup_tsumi: str | None = Cookie(default=None),
 ) -> dict:
     """Aggregate bank net worth (Pazuru) + investment portfolio (Tsumi), optionally
     including manual assets (foroba#157, extended foroba#164) and manual debts
     (TI-D item 3 Plan 1 debts module, pazuru#99), into one unified total. Requires
     auth — this is per-user financial data, unlike the public-ish /markets/*
     surface. Degrades gracefully if either upstream is offline: failed sections
-    are null and `degraded` is true; never returns 500."""
+    are null and `degraded` is true; never returns 500.
+
+    Step-up tokens are minted server-side (same pattern as /auth/account/export)
+    because stepup_pazuru/stepup_tsumi cookies are set on their respective subdomains
+    and are never forwarded to foroba-app.duckdns.org by the browser (DuckDNS PSL
+    treats each subdomain independently)."""
+    stepup = issue_stepup_cookies(user["id"])
     return await networth_service.fetch_networth(
         days,
         cookie=suite_session,
-        stepup_pazuru=stepup_pazuru,
-        stepup_tsumi=stepup_tsumi,
+        stepup_pazuru=stepup["pazuru"],
+        stepup_tsumi=stepup["tsumi"],
         include_manual_assets=include_manual_assets,
         include_debts=include_debts,
     )
@@ -273,14 +278,14 @@ async def list_notifications(
     user: dict = Depends(get_current_user),
     conn: sqlite3.Connection = Depends(get_conn),
     suite_session: str | None = Cookie(default=None),
-    stepup_pazuru: str | None = Cookie(default=None),
 ) -> dict:
     """Active (non-dismissed) alerts for the current user (foroba#158):
     low balance, goal reached, recurring payment increased, unusual
     transaction. Deterministic checks over Pazuru data — never LLM-based.
     Degrades gracefully if Pazuru is offline (empty items, degraded=true)."""
+    stepup = issue_stepup_cookies(user["id"])
     return await notification_service.generate_notifications(
-        conn, user["id"], cookie=suite_session, stepup_pazuru=stepup_pazuru
+        conn, user["id"], cookie=suite_session, stepup_pazuru=stepup["pazuru"]
     )
 
 
