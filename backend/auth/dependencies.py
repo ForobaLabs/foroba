@@ -48,10 +48,10 @@ def get_current_user(
     suite_session: str | None = Cookie(default=None),
     authorization: str | None = Header(default=None),
 ) -> dict:
-    if os.getenv("AUTH_DEV_BYPASS", "false").lower() == "true":
-        return _DEV_USER
     token = _token_from_header(authorization) or suite_session
     if not token:
+        if os.getenv("AUTH_DEV_BYPASS", "false").lower() == "true":
+            return _DEV_USER
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Not authenticated")
     try:
         _, public_key, _ = keys.get_keypair(settings)
