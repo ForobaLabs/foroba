@@ -40,6 +40,7 @@ class SimulateParams(BaseModel):
     goal_contributions: list[GoalContribution] = []
     one_off_events: list[OneOffEvent] = []
     investment_growth_rate_pct: float = Field(default=5.0, ge=-100.0, le=100.0)
+    include_debts: bool = False
 
 
 @router.post("/simulate")

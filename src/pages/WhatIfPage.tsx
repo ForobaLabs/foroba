@@ -8,6 +8,7 @@ import {
   useEntitlement,
 } from '@foroba/ui';
 import { useRechartsTheme } from '@foroba/ui/charts';
+import { useAuth } from '../auth/AuthProvider';
 import { fetchPazuruGoals, type PazuruGoal } from '../api/pazuru';
 import {
   simulateWhatIf, listWhatIfScenarios, createWhatIfScenario, getWhatIfScenario,
@@ -39,6 +40,8 @@ export function WhatIfPage() {
 function WhatIfBuilder() {
   const { t } = useTranslation();
   const theme = useRechartsTheme();
+  const { user } = useAuth();
+  const includeDebts = user?.show_debts ?? false;
 
   const [horizonMonths, setHorizonMonths] = useState(24);
   const [incomeDeltaEur, setIncomeDeltaEur] = useState(0);
@@ -80,6 +83,7 @@ function WhatIfBuilder() {
       goalContributions,
       oneOffEvents,
       investmentGrowthRatePct: investmentGrowthPct,
+      includeDebts,
     };
   }
 
@@ -90,7 +94,7 @@ function WhatIfBuilder() {
       // Sequential (not Promise.all) — firing both requests concurrently trips a
       // backend session-lookup race on the shared connection (returns spurious 401s).
       const scenario = await simulateWhatIf(currentParams());
-      const baseline = await simulateWhatIf({ horizonMonths });
+      const baseline = await simulateWhatIf({ horizonMonths, includeDebts });
       setResult(scenario);
       setBaselineResult(baseline);
     } catch {
@@ -136,7 +140,9 @@ function WhatIfBuilder() {
     setOneOffEvents(scenario.params.oneOffEvents ?? []);
     setResult(scenario.projection);
     setBaselineResult(null);
-    simulateWhatIf({ horizonMonths: scenario.horizonMonths }).then(setBaselineResult).catch(() => setBaselineResult(null));
+    simulateWhatIf({ horizonMonths: scenario.horizonMonths, includeDebts })
+      .then(setBaselineResult)
+      .catch(() => setBaselineResult(null));
   }
 
   async function remove(id: number) {
@@ -267,6 +273,17 @@ function WhatIfBuilder() {
               </p>
             )}
             <p className="text-xs text-[var(--color-text-secondary)]">{result.disclaimer}</p>
+            {result.debtsEur !== undefined ? (
+              <p className="text-xs text-[var(--color-text-secondary)]">
+                {t('whatif.debtsIncluded', 'Includes -{{amount}} in outstanding debts (Pazuru).', {
+                  amount: result.debtsEur.toLocaleString(undefined, { style: 'currency', currency: 'EUR' }),
+                })}
+              </p>
+            ) : (
+              <p className="text-xs text-[var(--color-text-secondary)]">
+                {t('whatif.debtsExcluded', 'Outstanding debts are not included in this projection. Enable "Show debts" in Settings to include them.')}
+              </p>
+            )}
             {baselineDeltaEur !== null && (
               <div className="rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] p-3">
                 <p className="text-xs text-[var(--color-text-secondary)]">

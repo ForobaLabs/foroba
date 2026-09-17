@@ -225,6 +225,55 @@ async def test_simulate_degrades_gracefully_when_tsumi_down(monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_simulate_ignores_debts_by_default(fake_ok_client):
+    # fake_ok_client does not stub GET /api/debts/net-worth -- if simulate()
+    # fetched it unconditionally this would raise AssertionError("unexpected GET").
+    result = await ws.simulate(
+        {
+            "goal_contributions": [],
+            "one_off_events": [],
+            "income_delta_cents": 0,
+            "investment_growth_rate_pct": 0.0,
+        },
+        horizon_months=1,
+        owner_cookie=None,
+    )
+    assert "debts_eur" not in result
+
+
+@pytest.mark.asyncio
+async def test_simulate_nets_and_discloses_debts_when_included(monkeypatch):
+    history = [
+        {"date": f"2026-06-{i:02d}", "balance_cents": 500_000} for i in range(1, 32)
+    ]
+    client = _FakeClient(
+        get_map={
+            "/api/accounts/net-worth": {"summary": {"total_cents": 500_000}, "history": history},
+            "/api/portfolio/summary": {"total_eur": 0.0},
+            "/api/goals": [],
+            "/api/debts/net-worth": {"total_debt_cents": 676443},
+        },
+        post_map={"/api/forecasts/what-if": {"base_cents": 0}},
+    )
+    monkeypatch.setattr(ws.httpx, "AsyncClient", lambda: client)
+
+    result = await ws.simulate(
+        {
+            "goal_contributions": [],
+            "one_off_events": [],
+            "income_delta_cents": 0,
+            "investment_growth_rate_pct": 0.0,
+            "include_debts": True,
+        },
+        horizon_months=1,
+        owner_cookie=None,
+    )
+    assert result["debts_eur"] == 6764.43
+    # 500000 - 676443 = -176443 cents = -1764.43 EUR, netted into the projection.
+    assert result["points"][0]["bank_eur"] == -1764.43
+
+
+@pytest.mark.asyncio
 async def test_simulate_projects_goal_contribution_override(fake_ok_client):
     result = await ws.simulate(
         {
