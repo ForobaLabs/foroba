@@ -131,6 +131,23 @@ def get_user_by_id(conn: sqlite3.Connection, user_id: int) -> dict | None:
     return _decrypt_user(_row_to_dict(row))
 
 
+def get_session_version(conn: sqlite3.Connection, user_id: int) -> int:
+    """Current session_version floor for user_id (XAPP-D03). Any suite_session
+    JWT whose own session_version claim is below this value is stale/revoked."""
+    row = conn.execute("SELECT session_version FROM users WHERE id = ?", (user_id,)).fetchone()
+    return row["session_version"] if row else 1
+
+
+def bump_session_version(conn: sqlite3.Connection, user_id: int) -> int:
+    """Increment user_id's session_version, invalidating every suite_session
+    JWT already issued to them (XAPP-D03). Called on logout."""
+    conn.execute(
+        "UPDATE users SET session_version = session_version + 1 WHERE id = ?", (user_id,)
+    )
+    conn.commit()
+    return get_session_version(conn, user_id)
+
+
 def set_audience(conn: sqlite3.Connection, user_id: int, audience: str, *, locked: bool) -> None:
     conn.execute(
         "UPDATE users SET audience = ?, audience_locked = ? WHERE id = ?",

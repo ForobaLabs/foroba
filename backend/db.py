@@ -24,7 +24,8 @@ CREATE TABLE IF NOT EXISTS users (
     failed_login_attempts INTEGER NOT NULL DEFAULT 0,
     locked_until TEXT,
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
-    mfa_enrollment_pending INTEGER NOT NULL DEFAULT 0
+    mfa_enrollment_pending INTEGER NOT NULL DEFAULT 0,
+    session_version INTEGER NOT NULL DEFAULT 1
 );
 
 -- Per-user, per-resource-type opt-in sharing toggle. If a row exists with

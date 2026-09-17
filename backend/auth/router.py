@@ -54,6 +54,7 @@ from auth.models import (
     UserPublic,
 )
 from auth.security import create_token, hash_password, needs_rehash, verify_password
+from auth.session_invalidation import invalidate_sessions_downstream
 from config import settings
 from email_otp import EmailNotConfiguredError, generate_and_send, generate_and_send_signup_verify
 from email_otp import verify_and_consume as verify_email_otp
@@ -81,6 +82,7 @@ def _set_session_cookie(response: Response, user: dict) -> None:
         audience=user.get("audience", "base"),
         is_admin=bool(user.get("is_admin", 0)),
         kid=kid,
+        session_version=user.get("session_version", 1),
     )
     response.set_cookie(
         "suite_session",
@@ -463,6 +465,12 @@ def logout(
 
             claims = decode_token(token, public_key)
             refresh_tokens.revoke_all_for_user(conn, int(claims["sub"]))
+            # XAPP-D03: bump the local session_version floor (invalidates
+            # every already-issued suite_session JWT for this user, closing
+            # the replay window the refresh-token revocation above doesn't
+            # cover) and best-effort push the new floor to Pazuru/Tsumi.
+            new_version = repo.bump_session_version(conn, int(claims["sub"]))
+            invalidate_sessions_downstream(int(claims["sub"]), new_version)
         except (jwt.PyJWTError, Exception):
             pass  # logout succeeds even if we can't identify the user
 

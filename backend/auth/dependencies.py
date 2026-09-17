@@ -61,6 +61,14 @@ def get_current_user(
     user = repo.get_user_by_id(conn, int(claims["sub"]))
     if user is None:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Unknown user")
+    # XAPP-D03: reject any suite_session JWT whose own session_version claim
+    # is stale relative to the DB floor -- this is how logout immediately
+    # invalidates already-issued tokens without a token blocklist. Tokens
+    # issued before this claim existed default to 1, same as the DB column's
+    # own DEFAULT, so pre-existing sessions are unaffected until their next
+    # logout bumps the floor past 1.
+    if claims.get("session_version", 1) < user.get("session_version", 1):
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Session revoked")
     return user
 
 
