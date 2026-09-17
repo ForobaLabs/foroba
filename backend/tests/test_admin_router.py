@@ -84,6 +84,32 @@ def test_get_admin_users_returns_list(setup):
     assert any(u["email"] == "admin@foroba.app" for u in users)
 
 
+def test_get_admin_users_tolerates_malformed_legacy_email(setup):
+    """FOR-D05: a legacy row inserted out-of-band (email='ci@bearer.test',
+    rejected by EmailStr as a reserved TLD) must not 500 the whole list."""
+    tc, conn, admin, _ = setup
+    tc.app.dependency_overrides[get_current_user] = lambda: admin
+
+    admin_row = dict(conn.execute("SELECT * FROM users WHERE id = ?", (admin["id"],)).fetchone())
+    bad_row = dict(admin_row)
+    bad_row["email"] = "ci@bearer.test"
+    bad_row["name"] = "Legacy CI row"
+    bad_row["is_admin"] = 0
+    cols = [c for c in admin_row if c != "id"]
+    conn.execute(
+        f"INSERT INTO users ({','.join(cols)}) VALUES ({','.join('?' for _ in cols)})",
+        [bad_row[c] for c in cols],
+    )
+    conn.commit()
+
+    resp = tc.get("/admin/users")
+    assert resp.status_code == 200
+    users = resp.json()
+    emails = [u["email"] for u in users]
+    assert "admin@foroba.app" in emails
+    assert "ci@bearer.test" in emails
+
+
 def test_export_backup_requires_admin(setup):
     tc, _conn, _, regular = setup
     tc.app.dependency_overrides[get_current_user] = lambda: regular

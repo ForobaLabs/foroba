@@ -5,10 +5,11 @@ Public endpoint /jeli/admin/settings is unauthenticated so Pazuru/Tsumi can poll
 
 from __future__ import annotations
 
+import logging
 import sqlite3
 
 from fastapi import APIRouter, Cookie, Depends, Form, HTTPException, Response, UploadFile, status
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 
 import backup_orchestrator
 import backup_service
@@ -20,6 +21,7 @@ from auth.models import AdminKpis, InviteCode, InviteCodeCreateRequest, UserPubl
 from settings_store import DEFAULT_SETTINGS, get_all, set_value
 
 router = APIRouter(tags=["admin"])
+logger = logging.getLogger(__name__)
 
 
 class SettingPatch(BaseModel):
@@ -58,7 +60,17 @@ def admin_get_users(
     conn: sqlite3.Connection = Depends(get_conn),
     _: dict = Depends(require_admin),
 ) -> list[dict]:
-    return repo.list_all_users(conn)
+    """Validate rows individually rather than relying solely on FastAPI's
+    list[UserPublic] response-model validation (FOR-D05): one malformed
+    legacy row (e.g. an out-of-band insert with a reserved-TLD email) must
+    not 500 the entire list. Any row that still fails is logged and skipped."""
+    users = []
+    for row in repo.list_all_users(conn):
+        try:
+            users.append(UserPublic(**row).model_dump())
+        except ValidationError:
+            logger.warning("Skipping malformed user row id=%r in /admin/users", row.get("id"))
+    return users
 
 
 class AccountDisabledPatch(BaseModel):

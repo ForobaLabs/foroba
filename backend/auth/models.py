@@ -35,8 +35,12 @@ class LoginRequest(BaseModel):
 
 
 class UserPublic(BaseModel):
+    """email is `str`, not `EmailStr`: legacy/out-of-band rows (e.g. a reserved-TLD
+    address like ci@bearer.test) must still round-trip on read paths (FOR-D05).
+    Write paths (RegisterRequest etc.) keep EmailStr to reject bad input at creation."""
+
     id: int
-    email: EmailStr
+    email: str
     name: str
     tier: str
     audience: str
