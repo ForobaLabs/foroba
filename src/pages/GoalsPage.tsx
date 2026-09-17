@@ -8,17 +8,7 @@ import {
   useUserProfile,
   suggestTargetDate,
   suggestMonthlyContribution,
-  type GoalCategory,
 } from '@foroba/ui';
-
-const CATEGORIES: { value: GoalCategory; label: string }[] = [
-  { value: 'savings', label: 'Savings' },
-  { value: 'debt', label: 'Debt payoff' },
-  { value: 'investment', label: 'Investment' },
-  { value: 'emergency_fund', label: 'Emergency fund' },
-  { value: 'purchase', label: 'Purchase' },
-  { value: 'other', label: 'Other' },
-];
 
 const inputCls =
   'mt-1 block w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-primary)] px-3 py-2 text-sm text-[var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]';
@@ -29,7 +19,6 @@ export function GoalsPage() {
   const { profile } = useUserProfile();
   const [showForm, setShowForm] = useState(false);
   const [title, setTitle] = useState('');
-  const [category, setCategory] = useState<GoalCategory>('savings');
   const [target, setTarget] = useState('');
   const [current, setCurrent] = useState('0');
   const [targetDate, setTargetDate] = useState('');
@@ -66,7 +55,10 @@ export function GoalsPage() {
     if (!title.trim() || !target) return;
     addGoal({
       title: title.trim(),
-      category,
+      // Pazuru's Goal model has no category field yet — every goal is
+      // 'other' until (if ever) the upstream schema grows one; a selector
+      // here would silently discard the choice, which would be worse.
+      category: 'other',
       targetAmount: parseFloat(target),
       currentAmount: parseFloat(current) || 0,
       currency: profile.baseCurrency || 'EUR',
@@ -103,12 +95,6 @@ export function GoalsPage() {
             <div>
               <label className={labelCls}>Title</label>
               <input className={inputCls} value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Emergency fund" />
-            </div>
-            <div>
-              <label className={labelCls}>Category</label>
-              <select className={inputCls} value={category} onChange={(e) => setCategory(e.target.value as GoalCategory)}>
-                {CATEGORIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
-              </select>
             </div>
             <div>
               <label className={labelCls}>Target amount ({profile.baseCurrency})</label>
@@ -170,7 +156,7 @@ export function GoalsPage() {
             <GoalCard goal={goal} onUpdate={(g) => updateGoal(g.id, g)} />
             <div className="absolute right-3 top-3 hidden gap-1 group-hover:flex">
               <button
-                onClick={() => updateGoal(goal.id, { status: 'completed' })}
+                onClick={() => updateGoal(goal.id, { currentAmount: goal.targetAmount })}
                 className="rounded px-2 py-0.5 text-xs font-medium text-[var(--color-positive)] hover:bg-[var(--color-positive)]/10"
               >Done</button>
               <button
