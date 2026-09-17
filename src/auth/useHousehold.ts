@@ -1,5 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { fetchHousehold, joinHousehold, leaveHousehold, setSharePreference } from "./api";
+import {
+  acceptHouseholdInvite,
+  fetchHousehold,
+  joinHousehold,
+  leaveHousehold,
+  setSharePreference,
+} from "./api";
 
 const HOUSEHOLD_QUERY_KEY = ["household"];
 
@@ -19,6 +25,11 @@ export function useHousehold() {
     onSuccess: invalidate,
   });
 
+  const acceptInvite = useMutation({
+    mutationFn: (token: string) => acceptHouseholdInvite(token),
+    onSuccess: invalidate,
+  });
+
   const leave = useMutation({
     mutationFn: leaveHousehold,
     onSuccess: invalidate,
@@ -30,5 +41,5 @@ export function useHousehold() {
     onSuccess: invalidate,
   });
 
-  return { household, join, leave, toggleShare };
+  return { household, join, acceptInvite, leave, toggleShare };
 }

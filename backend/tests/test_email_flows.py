@@ -443,3 +443,104 @@ class TestHouseholdInvite:
         settings.smtp_enabled = False
         resp = client.post("/auth/household/invite", json={"email": "x@example.com"})
         assert resp.status_code == 503
+
+
+# ---------------------------------------------------------------------------
+# FOR-D04 — household join must require the target's consent, and leaving
+# a household must not let stale sharing opt-ins carry over to the next one.
+# ---------------------------------------------------------------------------
+
+class TestHouseholdJoinConsent:
+    def _verified_client(self, client, conn, email="alice@example.com"):
+        r = _register(client, email)
+        user_id = r.json()["id"]
+        conn.execute("UPDATE users SET email_verified = 1 WHERE id = ?", (user_id,))
+        conn.commit()
+        return user_id
+
+    def test_household_join_requires_target_consent(self, client, conn):
+        """/household/join must no longer merge household_id unilaterally --
+        it must only send a consent-requiring invite, exactly like
+        /household/invite. No merge should happen until the target calls
+        /household/invite/accept."""
+        alice_id = self._verified_client(client, conn, "alice@example.com")
+
+        bob_register_client = TestClient(client.app)
+        settings.smtp_enabled = False
+        bob_id = _register(bob_register_client, "bob@example.com").json()["id"]
+        settings.smtp_enabled = True
+        conn.execute("UPDATE users SET email_verified = 1 WHERE id = ?", (bob_id,))
+        conn.commit()
+
+        FakeSMTP.instances.clear()
+        resp = client.post("/auth/household/join", json={"email": "bob@example.com"})
+        assert resp.status_code == 204, resp.text
+
+        # No unilateral merge -- neither party has a household_id yet.
+        alice_row = conn.execute(
+            "SELECT household_id FROM users WHERE id = ?", (alice_id,)
+        ).fetchone()
+        bob_row = conn.execute(
+            "SELECT household_id FROM users WHERE id = ?", (bob_id,)
+        ).fetchone()
+        assert alice_row["household_id"] is not None, "inviter gets a pending household_id"
+        assert bob_row["household_id"] is None, "target must not be merged before consenting"
+
+        # A real invite record was created for Bob, and he must accept it.
+        assert FakeSMTP.instances
+        import re
+        _, to_addrs, msg = FakeSMTP.instances[0].sent[0]
+        assert "bob@example.com" in to_addrs[0]
+        token = re.search(r"\b([A-F0-9]{12})\b", msg)
+        assert token, f"No token found in: {msg[:200]}"
+
+        bob_client = TestClient(client.app)
+        bob_client.post(
+            "/auth/login", json={"email": "bob@example.com", "password": "Secret1234!"}
+        )
+        accept_resp = bob_client.post(
+            "/auth/household/invite/accept", json={"token": token.group(1)}
+        )
+        assert accept_resp.status_code == 204, accept_resp.text
+
+        bob_row_after = conn.execute(
+            "SELECT household_id FROM users WHERE id = ?", (bob_id,)
+        ).fetchone()
+        assert bob_row_after["household_id"] == alice_row["household_id"]
+
+    def test_household_join_self_rejected(self, client, conn):
+        self._verified_client(client, conn, "alice@example.com")
+        resp = client.post("/auth/household/join", json={"email": "alice@example.com"})
+        assert resp.status_code == 400
+
+    def test_household_leave_clears_share_preferences_for_that_household(self, client, conn):
+        """A stale sharing opt-in must not silently apply to whichever new
+        household the user joins next -- leaving must clear it."""
+        alice_id = self._verified_client(client, conn, "alice@example.com")
+        conn.execute(
+            "UPDATE users SET household_id = 'household-1' WHERE id = ?", (alice_id,)
+        )
+        conn.commit()
+        resp = client.put(
+            "/auth/household/share", json={"resource_type": "networth", "shared": True}
+        )
+        assert resp.status_code == 204, resp.text
+        prefs = conn.execute(
+            "SELECT shared FROM share_preferences WHERE user_id = ? AND resource_type = 'networth'",
+            (alice_id,),
+        ).fetchone()
+        assert prefs is not None and prefs["shared"] == 1
+
+        resp = client.post("/auth/household/leave")
+        assert resp.status_code == 204, resp.text
+
+        prefs_after = conn.execute(
+            "SELECT shared FROM share_preferences WHERE user_id = ? AND resource_type = 'networth'",
+            (alice_id,),
+        ).fetchone()
+        assert prefs_after is None, "share_preferences must be cleared on leave"
+
+        household_row = conn.execute(
+            "SELECT household_id FROM users WHERE id = ?", (alice_id,)
+        ).fetchone()
+        assert household_row["household_id"] is None

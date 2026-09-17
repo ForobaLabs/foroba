@@ -375,6 +375,17 @@ def set_share_preference(
     conn.commit()
 
 
+def clear_share_preferences(conn: sqlite3.Connection, user_id: int) -> None:
+    """Clear this user's sharing opt-ins (FOR-D04).
+
+    Called on household leave so a stale consent given to the old household
+    doesn't silently carry over and apply to whichever household this user
+    joins next.
+    """
+    conn.execute("DELETE FROM share_preferences WHERE user_id = ?", (user_id,))
+    conn.commit()
+
+
 def record_consent(
     conn: sqlite3.Connection,
     *,
