@@ -110,6 +110,74 @@ def test_simulate_rejects_zero_horizon_months(monkeypatch):
         app.dependency_overrides.pop(get_conn, None)
 
 
+def test_simulate_rejects_extreme_negative_income_delta_cents(monkeypatch):
+    monkeypatch.setattr(ws, "simulate", _fake_simulate)
+    _override_user(_PREMIUM_USER)
+    try:
+        client = TestClient(app)
+        resp = client.post(
+            "/whatif/simulate",
+            json={"horizon_months": 1, "income_delta_cents": -999999999 * 100},
+        )
+        assert resp.status_code == 422
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+        app.dependency_overrides.pop(get_conn, None)
+
+
+def test_simulate_rejects_extreme_investment_growth_rate_pct(monkeypatch):
+    monkeypatch.setattr(ws, "simulate", _fake_simulate)
+    _override_user(_PREMIUM_USER)
+    try:
+        client = TestClient(app)
+        resp = client.post(
+            "/whatif/simulate",
+            json={"horizon_months": 1, "investment_growth_rate_pct": -500},
+        )
+        assert resp.status_code == 422
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+        app.dependency_overrides.pop(get_conn, None)
+
+
+def test_simulate_rejects_reduce_merchant_pct_over_100(monkeypatch):
+    monkeypatch.setattr(ws, "simulate", _fake_simulate)
+    _override_user(_PREMIUM_USER)
+    try:
+        client = TestClient(app)
+        resp = client.post(
+            "/whatif/simulate",
+            json={
+                "horizon_months": 1,
+                "reduce_merchant_pct": {"Groceries Inc": 150.0},
+            },
+        )
+        assert resp.status_code == 422
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+        app.dependency_overrides.pop(get_conn, None)
+
+
+def test_simulate_accepts_reasonable_income_and_growth_values(monkeypatch):
+    monkeypatch.setattr(ws, "simulate", _fake_simulate)
+    _override_user(_PREMIUM_USER)
+    try:
+        client = TestClient(app)
+        resp = client.post(
+            "/whatif/simulate",
+            json={
+                "horizon_months": 12,
+                "income_delta_cents": -50000,
+                "investment_growth_rate_pct": 7.5,
+                "reduce_merchant_pct": {"Groceries Inc": 20.0},
+            },
+        )
+        assert resp.status_code == 200
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+        app.dependency_overrides.pop(get_conn, None)
+
+
 def test_scenario_crud_roundtrip(monkeypatch):
     monkeypatch.setattr(ws, "simulate", _fake_simulate)
     _override_user(_PREMIUM_USER)
