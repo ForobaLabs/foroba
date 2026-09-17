@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -178,6 +178,68 @@ describe("SecuritySettingsSection", () => {
     await waitFor(() => screen.getByText("Terms of Service"));
     expect(screen.getByText("Privacy Policy")).toBeInTheDocument();
     expect(screen.getAllByText(/Accepted v2026-07-31/)).toHaveLength(2);
+  });
+
+  describe("FOR-D09: WebAuthn add-method timeout/cancel", () => {
+    function mockMethodsForWebauthn() {
+      mockFetchByUrl({
+        "/auth/2fa/methods": () =>
+          new Response(
+            JSON.stringify({
+              totp_enabled: true,
+              email_otp_enabled: false,
+              webauthn_enabled: false,
+              recovery_codes_remaining: 10,
+            }),
+            { status: 200 },
+          ),
+        "/auth/webauthn/register/options": () =>
+          new Response(JSON.stringify({ challenge: "c" }), { status: 200 }),
+        "/auth/consents": () => new Response(JSON.stringify([]), { status: 200 }),
+      });
+    }
+
+    it("shows a working Cancel button while a passkey ceremony is pending, instead of leaving the row stuck", async () => {
+      const user = userEvent.setup();
+      const { startRegistration } = await import("@simplewebauthn/browser");
+      vi.mocked(startRegistration).mockImplementation(() => new Promise(() => {})); // never resolves
+      mockMethodsForWebauthn();
+
+      renderSection();
+      await waitFor(() => screen.getByRole("button", { name: "Add Passkey" }));
+      await user.click(screen.getByRole("button", { name: "Add Passkey" }));
+
+      // Previously: no Cancel button rendered at all for webauthn (key !== "webauthn"
+      // exclusion), and the Add button had already vanished -- a permanently stuck
+      // row with zero recovery short of a full page reload.
+      const cancelBtn = await waitFor(() => screen.getByRole("button", { name: "Cancel" }));
+      await user.click(cancelBtn);
+
+      await waitFor(() =>
+        expect(screen.getByRole("button", { name: "Add Passkey" })).toBeInTheDocument(),
+      );
+    });
+
+    it("times out and surfaces an error instead of hanging forever", async () => {
+      vi.useFakeTimers();
+      try {
+        const { startRegistration } = await import("@simplewebauthn/browser");
+        vi.mocked(startRegistration).mockImplementation(() => new Promise(() => {}));
+        mockMethodsForWebauthn();
+
+        renderSection();
+        await vi.waitFor(() => screen.getByRole("button", { name: "Add Passkey" }));
+        fireEvent.click(screen.getByRole("button", { name: "Add Passkey" }));
+
+        await vi.waitFor(() => screen.getByRole("button", { name: "Cancel" }));
+        await vi.advanceTimersByTimeAsync(60_000);
+
+        await vi.waitFor(() => screen.getByText(/timed out/i));
+        expect(screen.getByRole("button", { name: "Add Passkey" })).toBeInTheDocument();
+      } finally {
+        vi.useRealTimers();
+      }
+    });
   });
 
   describe("delete account", () => {

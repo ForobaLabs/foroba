@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { startRegistration } from "@simplewebauthn/browser";
 import { Button, Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Input } from "@foroba/ui";
@@ -20,6 +20,12 @@ import {
 } from "../auth/api";
 
 const DELETE_CONFIRM_PHRASE = "DELETE";
+
+// startRegistration()'s underlying navigator.credentials.create() promise
+// never settles on its own in a headless/no-authenticator environment (the
+// @simplewebauthn/browser public API doesn't accept an AbortSignal to cancel
+// it), so it's raced against this bound instead (FOR-D09).
+const WEBAUTHN_TIMEOUT_MS = 60_000;
 
 const CONSENT_LABELS: Record<string, string> = {
   terms_of_service: "Terms of Service",
@@ -49,6 +55,10 @@ export function SecuritySettingsSection() {
   const [addingMethod, setAddingMethod] = useState<MethodKey | null>(null);
   const [addCode, setAddCode] = useState("");
   const [totpQr, setTotpQr] = useState<string | null>(null);
+  // Bumped on every handleStartAdd/cancelAdd call so a startRegistration()
+  // promise that resolves/rejects after the user has already cancelled (or
+  // started a different method) is recognized as stale and ignored.
+  const addRequestId = useRef(0);
   // Change password
   const [changePwOpen, setChangePwOpen] = useState(false);
   const [currentPw, setCurrentPw] = useState("");
@@ -85,6 +95,7 @@ export function SecuritySettingsSection() {
   }
 
   function cancelAdd() {
+    addRequestId.current += 1;
     setAddingMethod(null);
     setAddCode("");
     setTotpQr(null);
@@ -94,6 +105,7 @@ export function SecuritySettingsSection() {
     setMfaError(null);
     setAddCode("");
     setAddingMethod(method);
+    const requestId = (addRequestId.current += 1);
     try {
       if (method === "totp") {
         const { qr } = await enrollTotp();
@@ -102,12 +114,22 @@ export function SecuritySettingsSection() {
         await sendEmailOtp();
       } else {
         const options = await passkeyRegisterOptions();
-        const attestation = await startRegistration({ optionsJSON: options });
+        const attestation = await Promise.race([
+          startRegistration({ optionsJSON: options }),
+          new Promise<never>((_, reject) => {
+            setTimeout(
+              () => reject(new Error("Passkey setup timed out. Please try again.")),
+              WEBAUTHN_TIMEOUT_MS,
+            );
+          }),
+        ]);
+        if (requestId !== addRequestId.current) return; // cancelled/superseded meanwhile
         await passkeyRegisterVerify(JSON.stringify(attestation), "Passkey");
         await qc.invalidateQueries({ queryKey: ["mfa-methods"] });
         cancelAdd();
       }
     } catch (err) {
+      if (requestId !== addRequestId.current) return; // cancelled/superseded meanwhile
       setMfaError(err instanceof Error ? err.message : "Failed to start setup.");
       cancelAdd();
     }
@@ -304,6 +326,20 @@ export function SecuritySettingsSection() {
                   </button>
                 )}
               </div>
+              {addingMethod === key && key === "webauthn" && (
+                <div className="flex flex-col gap-2">
+                  <p className="text-xs text-[var(--color-text-secondary)]">
+                    Follow your browser or security key's prompt to finish adding a passkey.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={cancelAdd}
+                    className="self-start text-xs font-semibold text-[var(--color-text-secondary)]"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              )}
               {addingMethod === key && key !== "webauthn" && (
                 <div className="flex flex-col gap-2">
                   {key === "totp" && totpQr && (
