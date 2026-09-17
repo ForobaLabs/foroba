@@ -45,15 +45,29 @@ async def _get_json(
     cookies: dict[str, str] | None,
     *,
     timeout: float = _TIMEOUT,
-) -> Any | None:
-    """GET one Tsumi endpoint, returning parsed JSON or None on any failure."""
+) -> tuple[Any | None, str | None]:
+    """GET one Tsumi endpoint.
+
+    Returns `(json, reason)`: `reason` is None on success, "entitlement" when
+    Tsumi rejected the call for auth/tier reasons (401/402/403 — e.g. its own
+    audience gate on rating/movers), or "unavailable" for any other failure
+    (network error, timeout, 5xx), so callers can distinguish a real Tsumi
+    outage from a legitimate entitlement boundary instead of collapsing both
+    into the same `degraded` bucket.
+    """
     try:
         resp = await client.get(url, params=params, cookies=cookies, timeout=timeout)
         resp.raise_for_status()
-        return resp.json()
+        return resp.json(), None
+    except httpx.HTTPStatusError as exc:
+        if exc.response.status_code in (401, 402, 403):
+            logger.info("markets snapshot section gated (%s): %s", url, exc)
+            return None, "entitlement"
+        logger.warning("markets snapshot section unavailable (%s): %s", url, exc)
+        return None, "unavailable"
     except Exception as exc:
         logger.warning("markets snapshot section unavailable (%s): %s", url, exc)
-        return None
+        return None, "unavailable"
 
 
 async def fetch_snapshot(
@@ -71,21 +85,31 @@ async def fetch_snapshot(
     common = {"symbol": symbol, "asset_class": asset_class}
     cookies = suite_cookies(cookie, stepup_tsumi=stepup_tsumi)
     async with httpx.AsyncClient() as client:
-        combined, sentiment, scan = await asyncio.gather(
-            _get_json(client, f"{base}/api/markets/combined", common, cookies),
-            _get_json(client, f"{base}/api/news/sentiment", common, cookies),
-            _get_json(
-                client,
-                f"{base}/api/screener/scan",
-                {"asset_class": asset_class, "screen": "top_movers", "limit": 5},
-                cookies,
-                timeout=_SCREENER_TIMEOUT,
-            ),
+        (combined, combined_reason), (sentiment, sentiment_reason), (scan, scan_reason) = (
+            await asyncio.gather(
+                _get_json(client, f"{base}/api/markets/combined", common, cookies),
+                _get_json(client, f"{base}/api/news/sentiment", common, cookies),
+                _get_json(
+                    client,
+                    f"{base}/api/screener/scan",
+                    {"asset_class": asset_class, "screen": "top_movers", "limit": 5},
+                    cookies,
+                    timeout=_SCREENER_TIMEOUT,
+                ),
+            )
         )
 
     rating = combined.get("consensus") if isinstance(combined, dict) else None
     movers = scan.get("results") if isinstance(scan, dict) else None
     degraded = rating is None or sentiment is None or movers is None
+
+    degraded_reasons = {}
+    if rating is None and combined_reason:
+        degraded_reasons["rating"] = combined_reason
+    if sentiment is None and sentiment_reason:
+        degraded_reasons["sentiment"] = sentiment_reason
+    if movers is None and scan_reason:
+        degraded_reasons["movers"] = scan_reason
 
     return {
         "symbol": symbol,
@@ -94,6 +118,7 @@ async def fetch_snapshot(
         "sentiment": sentiment,
         "movers": movers,
         "degraded": degraded,
+        "degraded_reasons": degraded_reasons or None,
         "disclaimer": DISCLAIMER,
     }
 
@@ -113,7 +138,7 @@ async def fetch_overview(
         # derives both gainers and losers from the same rows, avoiding the
         # double network fetch (and consequent Twelve Data rate-limit
         # failures on equity) that two separate top_movers scans incurred.
-        movers = await _get_json(
+        movers, movers_reason = await _get_json(
             client,
             f"{base}/api/screener/movers",
             {"asset_class": asset_class, "limit": 5},
@@ -124,10 +149,11 @@ async def fetch_overview(
         losers = movers.get("losers") if isinstance(movers, dict) else None
 
         news = None
+        news_reason = None
         if gainers:
             top_symbol = gainers[0].get("symbol")
             if top_symbol:
-                news = await _get_json(
+                news, news_reason = await _get_json(
                     client,
                     f"{base}/api/news/headlines",
                     {"symbol": top_symbol, "limit": 10},
@@ -136,11 +162,18 @@ async def fetch_overview(
 
     degraded = gainers is None or losers is None or news is None
 
+    degraded_reasons = {}
+    if gainers is None and movers_reason:
+        degraded_reasons["movers"] = movers_reason
+    if news is None and news_reason:
+        degraded_reasons["news"] = news_reason
+
     return {
         "asset_class": asset_class,
         "gainers": gainers,
         "losers": losers,
         "news": news,
         "degraded": degraded,
+        "degraded_reasons": degraded_reasons or None,
         "disclaimer": DISCLAIMER,
     }

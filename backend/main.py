@@ -32,6 +32,7 @@ from admin_router import router as admin_router
 from auth import keys
 from auth.api_keys_router import router as api_keys_router
 from auth.dependencies import get_current_user, require_admin
+from auth.entitlements_router import require_feature
 from auth.entitlements_router import router as entitlements_router
 from auth.router import get_conn
 from auth.router import router as auth_router
@@ -217,11 +218,15 @@ async def markets_snapshot(
     asset_class: str = Query("crypto"),
     suite_session: str | None = Cookie(default=None),
     stepup_tsumi: str | None = Cookie(default=None),
+    user: dict = Depends(require_feature("markets.sentiment")),
 ) -> dict:
     """Aggregate Tsumi rating + sentiment + top movers for one symbol.
 
-    Read-only superapp surface. Degrades gracefully if Tsumi is offline:
-    failed sections are null and `degraded` is true; never returns 500.
+    FOR-D01: gated server-side on markets.sentiment (tier=premium) — this route
+    delivers the premium sentiment field, unlike /markets/overview which never
+    touches it and stays free/anonymous. Read-only superapp surface. Degrades
+    gracefully if Tsumi is offline: failed sections are null and `degraded` is
+    true; never returns 500.
     """
     return await markets_service.fetch_snapshot(
         symbol, asset_class, cookie=suite_session, stepup_tsumi=stepup_tsumi
