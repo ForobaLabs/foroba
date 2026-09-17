@@ -21,6 +21,7 @@ function renderPage() {
         <Routes>
           <Route path="/enroll" element={<EnrollmentWizard />} />
           <Route path="/onboarding" element={<div>Onboarding</div>} />
+          <Route path="/settings" element={<div>Settings</div>} />
         </Routes>
       </MemoryRouter>
     </QueryClientProvider>,
@@ -49,6 +50,12 @@ afterEach(() => {
 
 test("sets up TOTP: shows the QR code, verifies the code, then shows recovery codes", async () => {
   mockFetchByUrl({
+    "/auth/2fa/methods": () => ({
+      totp_enabled: false,
+      email_otp_enabled: false,
+      webauthn_enabled: false,
+      recovery_codes_remaining: 0,
+    }),
     "/auth/2fa/enroll": () => ({ secret: "JBSWY3DPEHPK3PXP", qr: "data:image/png;base64,abc" }),
     "/auth/2fa/verify": () => ({ enabled: true }),
     "/auth/2fa/recovery-codes/regenerate": () => ({
@@ -77,6 +84,12 @@ test("sets up TOTP: shows the QR code, verifies the code, then shows recovery co
 
 test("allows enrolling a second method (email OTP) before finishing setup", async () => {
   mockFetchByUrl({
+    "/auth/2fa/methods": () => ({
+      totp_enabled: false,
+      email_otp_enabled: false,
+      webauthn_enabled: false,
+      recovery_codes_remaining: 0,
+    }),
     "/auth/2fa/enroll": () => ({ secret: "JBSWY3DPEHPK3PXP", qr: "data:image/png;base64,abc" }),
     "/auth/2fa/verify": () => ({ enabled: true }),
     "/auth/2fa/email-otp/send": () => ({ sent: true }),
@@ -118,6 +131,12 @@ test("allows enrolling a second method (email OTP) before finishing setup", asyn
 
 test("sets up email OTP: auto-sends the code, verifies, then shows recovery codes", async () => {
   mockFetchByUrl({
+    "/auth/2fa/methods": () => ({
+      totp_enabled: false,
+      email_otp_enabled: false,
+      webauthn_enabled: false,
+      recovery_codes_remaining: 0,
+    }),
     "/auth/2fa/email-otp/send": () => ({ sent: true }),
     "/auth/2fa/email-otp/verify": () => ({}),
     "/auth/2fa/recovery-codes/regenerate": () => ({
@@ -144,6 +163,12 @@ test("sets up email OTP: auto-sends the code, verifies, then shows recovery code
 
 test("sets up a passkey end-to-end without requiring any typed code", async () => {
   mockFetchByUrl({
+    "/auth/2fa/methods": () => ({
+      totp_enabled: false,
+      email_otp_enabled: false,
+      webauthn_enabled: false,
+      recovery_codes_remaining: 0,
+    }),
     "/auth/webauthn/register/options": () => ({ challenge: "abc", rp: { id: "foroba.app" } }),
     "/auth/webauthn/register/verify": () => ({}),
     "/auth/2fa/recovery-codes/regenerate": () => ({
@@ -167,6 +192,17 @@ test("shows an error and stays on the TOTP step when the code is invalid", async
     "fetch",
     vi.fn(async (url: RequestInfo | URL) => {
       const path = String(url);
+      if (path.endsWith("/auth/2fa/methods")) {
+        return {
+          ok: true,
+          json: async () => ({
+            totp_enabled: false,
+            email_otp_enabled: false,
+            webauthn_enabled: false,
+            recovery_codes_remaining: 0,
+          }),
+        } as Response;
+      }
       if (path.endsWith("/auth/2fa/enroll")) {
         return {
           ok: true,
@@ -189,4 +225,18 @@ test("shows an error and stays on the TOTP step when the code is invalid", async
 
   await waitFor(() => expect(screen.getByText("Invalid code.")).toBeInTheDocument());
   expect(screen.queryByText("Save your recovery codes")).not.toBeInTheDocument();
+});
+
+test("FOR-D06: redirects to /settings when the account already has an enrolled MFA method", async () => {
+  mockFetchByUrl({
+    "/auth/2fa/methods": () => ({
+      totp_enabled: true,
+      email_otp_enabled: false,
+      webauthn_enabled: false,
+      recovery_codes_remaining: 10,
+    }),
+  });
+  renderPage();
+
+  await waitFor(() => expect(screen.getByText("Settings")).toBeInTheDocument());
 });

@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { startRegistration } from "@simplewebauthn/browser";
 import { Button, Card, Input } from "@foroba/ui";
 import {
   enrollTotp,
+  fetchMfaMethods,
   passkeyRegisterOptions,
   passkeyRegisterVerify,
   regenerateRecoveryCodes,
@@ -33,6 +34,28 @@ export function EnrollmentWizard() {
   const [enrolled, setEnrolled] = useState<Set<MethodKey>>(new Set());
 
   const backStage: Stage = enrolled.size > 0 ? "more" : "choose";
+
+  useEffect(() => {
+    // FOR-D06: App's guard only forces users INTO /enroll when mfa_enrollment_pending is
+    // true — it never stops an already-fully-enrolled user from navigating here directly
+    // (URL/bookmark/back-button) and re-triggering enrollment. Bounce them to /settings
+    // instead; re-enrollment from an already-enrolled state now requires the dedicated
+    // password-confirmation flow in SecuritySettingsSection, not this wizard.
+    let cancelled = false;
+    void fetchMfaMethods()
+      .then((methods) => {
+        if (cancelled) return;
+        if (methods.totp_enabled || methods.email_otp_enabled || methods.webauthn_enabled) {
+          navigate("/settings", { replace: true });
+        }
+      })
+      .catch(() => {
+        // Best-effort guard only — if the check itself fails, fall through to the wizard.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [navigate]);
 
   function onMethodEnrolled(method: MethodKey) {
     setEnrolled((prev) => new Set(prev).add(method));

@@ -4,6 +4,7 @@ methods listing/removal and recovery-code regeneration."""
 
 from __future__ import annotations
 
+import json
 import sqlite3
 
 from fastapi import APIRouter, Depends, HTTPException, Request
@@ -14,6 +15,7 @@ from auth import repository as repo
 from auth.conn import get_conn
 from auth.dependencies import get_current_user
 from auth.models import EmailOtpVerifyRequest, MfaMethodsResponse, RecoveryCodesResponse
+from auth.security import verify_password
 from email_otp import EmailNotConfiguredError, generate_and_send
 from email_otp import verify_and_consume as verify_email_otp
 from rate_limit import limiter
@@ -29,11 +31,24 @@ class CodeRequest(BaseModel):
 
 @router.post("/enroll")
 @limiter.limit("20/minute")
-def enroll(
+async def enroll(
     request: Request,
     user: dict = Depends(get_current_user),
     conn: sqlite3.Connection = Depends(get_conn),
 ) -> dict:
+    fresh = repo.get_user_by_id(conn, user["id"])
+    if fresh and fresh["totp_enabled"]:
+        # FOR-D06: re-enrolling on an already-MFA-enrolled account must re-confirm the
+        # current password (same pattern as PUT /auth/me/password) before staging a new
+        # secret — otherwise a stale/replayed /enroll call could be used to prepare a
+        # takeover, and set_totp_secret() must never disable a working MFA method on its own.
+        try:
+            body = await request.json()
+        except json.JSONDecodeError:
+            body = {}
+        current_password = (body or {}).get("current_password")
+        if not current_password or not verify_password(current_password, fresh["password_hash"]):
+            raise HTTPException(401, "Current password required to re-enroll")
     secret = generate_secret()
     repo.set_totp_secret(conn, user["id"], secret)
     uri = provisioning_uri(secret, account=user["email"])
@@ -49,7 +64,8 @@ def verify(
     conn: sqlite3.Connection = Depends(get_conn),
 ) -> dict:
     fresh = repo.get_user_by_id(conn, user["id"])
-    if not fresh["totp_secret"] or not verify_code(fresh["totp_secret"], req.code):
+    pending_secret = fresh["totp_secret_pending"] or fresh["totp_secret"]
+    if not pending_secret or not verify_code(pending_secret, req.code):
         security_log.log_event(conn, user_id=user["id"], event="mfa_failed",
                                detail="invalid TOTP code",
                                ip=request.client.host if request.client else None)

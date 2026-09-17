@@ -232,25 +232,27 @@ class TestMonthlyReportEncryption:
 
 class TestTotpSecretEncryption:
     def test_stored_secret_is_encrypted(self, conn, user_id):
+        # FOR-D06: set_totp_secret() now stages the secret in totp_secret_pending until
+        # enable_totp() promotes it — that pending column is what must be ciphertext.
         repo.set_totp_secret(conn, user_id, "JBSWY3DPEHPK3PXP")
-        raw = _raw(conn, "users", "totp_secret", "id", user_id)
-        assert is_encrypted(raw), "totp_secret must be ciphertext in DB"
+        raw = _raw(conn, "users", "totp_secret_pending", "id", user_id)
+        assert is_encrypted(raw), "totp_secret_pending must be ciphertext in DB"
 
     def test_get_user_by_id_returns_plaintext(self, conn, user_id):
         repo.set_totp_secret(conn, user_id, "JBSWY3DPEHPK3PXP")
         user = repo.get_user_by_id(conn, user_id)
-        assert user["totp_secret"] == "JBSWY3DPEHPK3PXP"
+        assert user["totp_secret_pending"] == "JBSWY3DPEHPK3PXP"
 
     def test_get_user_by_email_returns_plaintext(self, conn, user_id):
         repo.set_totp_secret(conn, user_id, "ABCDE67890FGHIJK")
         user = repo.get_user_by_email(conn, "enc_test@example.com")
-        assert user["totp_secret"] == "ABCDE67890FGHIJK"
+        assert user["totp_secret_pending"] == "ABCDE67890FGHIJK"
 
     def test_list_all_users_decrypts(self, conn, user_id):
         repo.set_totp_secret(conn, user_id, "MYSECRET1234567A")
         users = repo.list_all_users(conn)
         target = next(u for u in users if u["id"] == user_id)
-        assert target["totp_secret"] == "MYSECRET1234567A"
+        assert target["totp_secret_pending"] == "MYSECRET1234567A"
 
     def test_migration_plaintext_secret_returned_as_is(self, conn, user_id):
         """Legacy plaintext totp_secret (before encryption was enabled) works on read."""

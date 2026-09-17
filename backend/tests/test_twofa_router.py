@@ -32,9 +32,79 @@ def test_enroll_returns_qr_and_secret(client):
     assert r.status_code == 200
     body = r.json()
     assert body["qr"].startswith("data:image/png;base64,")
-    assert conn.execute("SELECT totp_secret FROM users WHERE email='demo@foroba.app'").fetchone()[
-        "totp_secret"
-    ]
+    # FOR-D06: a freshly generated secret is staged as pending, not written to the
+    # live totp_secret column, until /verify succeeds.
+    row = conn.execute(
+        "SELECT totp_secret, totp_secret_pending FROM users WHERE email='demo@foroba.app'"
+    ).fetchone()
+    assert row["totp_secret_pending"]
+    assert not row["totp_secret"]
+
+
+def test_enroll_on_already_enrolled_account_without_password_is_rejected(client):
+    """FOR-D06: re-visiting /enroll on an already-MFA-enrolled account must not silently
+    stage (and risk clobbering) a new secret without re-confirming the current password."""
+    c, conn = client
+    enroll_r = c.post("/auth/2fa/enroll")
+    secret = enroll_r.json()["secret"]
+    code = pyotp.TOTP(secret).now()
+    c.post("/auth/2fa/verify", json={"code": code})
+    assert (
+        conn.execute("SELECT totp_enabled FROM users WHERE email='demo@foroba.app'").fetchone()[
+            "totp_enabled"
+        ]
+        == 1
+    )
+
+    r = c.post("/auth/2fa/enroll")
+
+    assert r.status_code == 401
+    row = conn.execute(
+        "SELECT totp_enabled, totp_secret FROM users WHERE email='demo@foroba.app'"
+    ).fetchone()
+    assert row["totp_enabled"] == 1
+    assert row["totp_secret"]
+
+
+def test_enroll_on_already_enrolled_account_with_wrong_password_is_rejected(client):
+    c, conn = client
+    enroll_r = c.post("/auth/2fa/enroll")
+    secret = enroll_r.json()["secret"]
+    code = pyotp.TOTP(secret).now()
+    c.post("/auth/2fa/verify", json={"code": code})
+
+    r = c.post("/auth/2fa/enroll", json={"current_password": "WrongPassword!"})
+
+    assert r.status_code == 401
+    assert (
+        conn.execute("SELECT totp_enabled FROM users WHERE email='demo@foroba.app'").fetchone()[
+            "totp_enabled"
+        ]
+        == 1
+    )
+
+
+def test_enroll_on_already_enrolled_account_with_correct_password_stages_new_secret(client):
+    """Re-enrolling with the correct current password is allowed to stage a new secret,
+    but must not disable the existing (working) MFA method until the new one is verified."""
+    c, conn = client
+    enroll_r = c.post("/auth/2fa/enroll")
+    old_secret = enroll_r.json()["secret"]
+    code = pyotp.TOTP(old_secret).now()
+    c.post("/auth/2fa/verify", json={"code": code})
+
+    r = c.post("/auth/2fa/enroll", json={"current_password": "Demo!2026"})
+
+    assert r.status_code == 200
+    new_secret = r.json()["secret"]
+    assert new_secret != old_secret
+    row = conn.execute(
+        "SELECT totp_enabled, totp_secret, totp_secret_pending "
+        "FROM users WHERE email='demo@foroba.app'"
+    ).fetchone()
+    assert row["totp_enabled"] == 1
+    assert row["totp_secret"]
+    assert row["totp_secret_pending"]
 
 
 def test_verify_enables(client):

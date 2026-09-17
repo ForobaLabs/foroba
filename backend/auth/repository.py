@@ -21,6 +21,7 @@ def _decrypt_user(d: dict | None) -> dict | None:
     if d is None:
         return None
     d["totp_secret"] = safe_decrypt(d.get("totp_secret"))
+    d["totp_secret_pending"] = safe_decrypt(d.get("totp_secret_pending"))
     return d
 
 
@@ -270,22 +271,37 @@ def redeem_invite_code(conn: sqlite3.Connection, code: str) -> bool:
 
 
 def set_totp_secret(conn: sqlite3.Connection, user_id: int, secret: str) -> None:
+    """Stage a freshly generated TOTP secret without touching the live totp_secret or
+    totp_enabled columns (FOR-D06) — only enable_totp() promotes it, on a successful verify."""
     conn.execute(
-        "UPDATE users SET totp_secret = ?, totp_enabled = 0 WHERE id = ?",
+        "UPDATE users SET totp_secret_pending = ? WHERE id = ?",
         (safe_encrypt(secret), user_id),
     )
     conn.commit()
 
 
 def enable_totp(conn: sqlite3.Connection, user_id: int) -> None:
+    """Atomically promote the pending secret (if any) to the live totp_secret column and
+    enable MFA. Uses COALESCE so a caller that set totp_secret directly (e.g. legacy
+    fixtures/tests) still works even with no pending value staged."""
     conn.execute(
-        "UPDATE users SET totp_enabled = 1, mfa_enrollment_pending = 0 WHERE id = ?", (user_id,)
+        "UPDATE users SET"
+        " totp_secret = COALESCE(totp_secret_pending, totp_secret),"
+        " totp_secret_pending = NULL,"
+        " totp_enabled = 1,"
+        " mfa_enrollment_pending = 0"
+        " WHERE id = ?",
+        (user_id,),
     )
     conn.commit()
 
 
 def disable_totp(conn: sqlite3.Connection, user_id: int) -> None:
-    conn.execute("UPDATE users SET totp_enabled = 0, totp_secret = NULL WHERE id = ?", (user_id,))
+    conn.execute(
+        "UPDATE users SET totp_enabled = 0, totp_secret = NULL, totp_secret_pending = NULL"
+        " WHERE id = ?",
+        (user_id,),
+    )
     conn.commit()
 
 
