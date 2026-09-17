@@ -396,9 +396,13 @@ class TestHouseholdInvite:
 
     def test_invite_accept_joins_household(self, client, conn):
         self._verified_client(client, conn, "alice@example.com")
-        # Register the invitee
+        # Register the invitee on a separate client -- registering on the
+        # shared `client` would overwrite Alice's session cookie with Bob's
+        # (register() always sets a fresh session cookie on success), making
+        # the invite call below run as Bob instead of Alice.
+        bob_register_client = TestClient(client.app)
         settings.smtp_enabled = False
-        _register(client, "bob@example.com")
+        _register(bob_register_client, "bob@example.com")
         settings.smtp_enabled = True
         bob_id = conn.execute(
             "SELECT id FROM users WHERE email = 'bob@example.com'"
