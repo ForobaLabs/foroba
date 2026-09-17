@@ -86,6 +86,30 @@ def test_simulate_returns_projection(monkeypatch):
         app.dependency_overrides.pop(get_conn, None)
 
 
+def test_simulate_rejects_negative_horizon_months(monkeypatch):
+    monkeypatch.setattr(ws, "simulate", _fake_simulate)
+    _override_user(_PREMIUM_USER)
+    try:
+        client = TestClient(app)
+        resp = client.post("/whatif/simulate", json={"horizon_months": -5})
+        assert resp.status_code == 422
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+        app.dependency_overrides.pop(get_conn, None)
+
+
+def test_simulate_rejects_zero_horizon_months(monkeypatch):
+    monkeypatch.setattr(ws, "simulate", _fake_simulate)
+    _override_user(_PREMIUM_USER)
+    try:
+        client = TestClient(app)
+        resp = client.post("/whatif/simulate", json={"horizon_months": 0})
+        assert resp.status_code == 422
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+        app.dependency_overrides.pop(get_conn, None)
+
+
 def test_scenario_crud_roundtrip(monkeypatch):
     monkeypatch.setattr(ws, "simulate", _fake_simulate)
     _override_user(_PREMIUM_USER)

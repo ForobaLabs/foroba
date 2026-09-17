@@ -7,7 +7,7 @@ import json
 import sqlite3
 
 from fastapi import APIRouter, Cookie, Depends, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 import db
 import whatif_service
@@ -32,7 +32,7 @@ class GoalContribution(BaseModel):
 
 
 class SimulateParams(BaseModel):
-    horizon_months: int = 24
+    horizon_months: int = Field(default=24, gt=0)
     eliminate_categories: list[str] | None = None
     reduce_merchant_pct: dict[str, float] | None = None
     income_delta_cents: int = 0
