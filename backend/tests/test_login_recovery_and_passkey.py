@@ -70,11 +70,13 @@ def test_login_email_otp_send_works_before_authentication(monkeypatch):
     monkeypatch.setattr(settings, "smtp_host", "localhost")
     monkeypatch.setattr(settings, "smtp_from", "noreply@example.com")
     sent = {}
-    monkeypatch.setattr("email_otp.send_email", lambda to, subject, body: sent.update(body=body))
+    monkeypatch.setattr(
+        "email_otp.send_otp_email", lambda to, code, **kw: sent.update(code=code)
+    )
     r = c.post("/auth/login/email-otp/send", json={"email": "demo@foroba.app"})
     assert r.status_code == 200
     assert r.json() == {"sent": True}
-    assert "body" in sent
+    assert "code" in sent
 
 
 def test_login_email_otp_send_rejects_when_not_enrolled():

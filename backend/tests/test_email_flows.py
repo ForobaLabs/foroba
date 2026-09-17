@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import smtplib
 import sqlite3
+from datetime import UTC, datetime, timedelta
 from typing import ClassVar
 
 import pytest
@@ -117,20 +118,36 @@ def _get_latest_otp(conn, user_id: int) -> str:
 # #184 — email_service template functions
 # ---------------------------------------------------------------------------
 
+def _decoded_parts(msg: str) -> list[str]:
+    """Non-ASCII (accented FR/IT) template text makes Python's email module
+    base64-encode the multipart/alternative parts, so the raw MIME string no
+    longer contains the plain code/text verbatim -- decode each part first."""
+    import email
+
+    parsed = email.message_from_string(msg)
+    return [
+        part.get_payload(decode=True).decode(part.get_content_charset() or "utf-8")
+        for part in parsed.walk()
+        if part.get_content_maintype() != "multipart"
+    ]
+
+
 class TestEmailTemplates:
     def test_send_otp_email_sends_html(self):
         email_service.send_otp_email("u@example.com", "123456", country="FR")
         assert FakeSMTP.instances
         _, _, msg = FakeSMTP.instances[0].sent[0]
-        assert "123456" in msg
+        parts = _decoded_parts(msg)
+        assert any("123456" in part for part in parts)
         assert "text/html" in msg
 
     def test_send_signup_verify_email(self):
         email_service.send_signup_verify_email("u@example.com", "654321", country="IT")
         _, _, msg = FakeSMTP.instances[0].sent[0]
-        assert "654321" in msg
+        parts = _decoded_parts(msg)
+        assert any("654321" in part for part in parts)
         # Italian translation should be present
-        assert "Foroba" in msg
+        assert any("Foroba" in part for part in parts)
 
     def test_send_email_change_email(self):
         email_service.send_email_change_email("new@example.com", "111222")
@@ -195,10 +212,10 @@ class TestEmailVerify:
         # Inject a known OTP directly
         from argon2 import PasswordHasher
         ph = PasswordHasher()
+        expires_at = (datetime.now(UTC) + timedelta(minutes=10)).isoformat()
         conn.execute(
-            "INSERT INTO email_otp_codes (user_id, code_hash, expires_at) "
-            "VALUES (?, ?, datetime('now', '+10 minutes'))",
-            (user_id, ph.hash("123456")),
+            "INSERT INTO email_otp_codes (user_id, code_hash, expires_at) VALUES (?, ?, ?)",
+            (user_id, ph.hash("123456"), expires_at),
         )
         conn.commit()
         resp = client.post("/auth/verify-email", json={"code": "123456"})
@@ -213,10 +230,10 @@ class TestEmailVerify:
         user_id = r.json()["id"]
         from argon2 import PasswordHasher
         ph = PasswordHasher()
+        expires_at = (datetime.now(UTC) + timedelta(minutes=10)).isoformat()
         conn.execute(
-            "INSERT INTO email_otp_codes (user_id, code_hash, expires_at) "
-            "VALUES (?, ?, datetime('now', '+10 minutes'))",
-            (user_id, ph.hash("123456")),
+            "INSERT INTO email_otp_codes (user_id, code_hash, expires_at) VALUES (?, ?, ?)",
+            (user_id, ph.hash("123456"), expires_at),
         )
         conn.commit()
         resp = client.post("/auth/verify-email", json={"code": "000000"})
@@ -304,10 +321,10 @@ class TestEmailChange:
         # Inject a known OTP
         from argon2 import PasswordHasher
         ph = PasswordHasher()
+        expires_at = (datetime.now(UTC) + timedelta(minutes=10)).isoformat()
         conn.execute(
-            "INSERT INTO email_otp_codes (user_id, code_hash, expires_at) "
-            "VALUES (?, ?, datetime('now', '+10 minutes'))",
-            (user_id, ph.hash("777888")),
+            "INSERT INTO email_otp_codes (user_id, code_hash, expires_at) VALUES (?, ?, ?)",
+            (user_id, ph.hash("777888"), expires_at),
         )
         conn.commit()
         resp = client.post("/auth/me/email/change-confirm", json={"code": "777888"})

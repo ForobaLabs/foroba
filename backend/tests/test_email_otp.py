@@ -36,15 +36,15 @@ def test_generate_and_send_then_verify(monkeypatch):
     monkeypatch.setattr(settings, "smtp_from", "noreply@example.com")
     sent = {}
 
-    def fake_send_email(to, subject, body):
+    def fake_send_otp_email(to, code, *, country=None, ttl_minutes=None):
         sent["to"] = to
-        sent["body"] = body
+        sent["code"] = code
 
-    monkeypatch.setattr("email_otp.send_email", fake_send_email)
+    monkeypatch.setattr("email_otp.send_otp_email", fake_send_otp_email)
     conn, user_id = _conn_with_user()
     generate_and_send(conn, user_id, "o@example.com")
     assert sent["to"] == "o@example.com"
-    code = next(line.strip() for line in sent["body"].splitlines() if line.strip().isdigit())
+    code = sent["code"]
     assert verify_and_consume(conn, user_id, code) is True
     assert verify_and_consume(conn, user_id, code) is False  # single-use
 
@@ -55,7 +55,7 @@ def test_verify_rejects_expired_code(monkeypatch):
     monkeypatch.setattr(settings, "smtp_enabled", True)
     monkeypatch.setattr(settings, "smtp_host", "localhost")
     monkeypatch.setattr(settings, "smtp_from", "noreply@example.com")
-    monkeypatch.setattr("email_otp.send_email", lambda to, subject, body: None)
+    monkeypatch.setattr("email_otp.send_otp_email", lambda to, code, **kw: None)
     conn, user_id = _conn_with_user()
     generate_and_send(conn, user_id, "o@example.com")
     past = (datetime.now(UTC) - timedelta(minutes=1)).isoformat()
