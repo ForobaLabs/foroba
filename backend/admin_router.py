@@ -8,6 +8,7 @@ from __future__ import annotations
 import logging
 import sqlite3
 
+import httpx
 from fastapi import APIRouter, Cookie, Depends, Form, HTTPException, Response, UploadFile, status
 from pydantic import BaseModel, ValidationError
 
@@ -18,10 +19,27 @@ from auth import repository as repo
 from auth.conn import get_conn
 from auth.dependencies import require_admin
 from auth.models import AdminKpis, InviteCode, InviteCodeCreateRequest, UserPublic
+from config import settings
 from settings_store import DEFAULT_SETTINGS, get_all, set_value
 
 router = APIRouter(tags=["admin"])
 logger = logging.getLogger(__name__)
+
+
+def _invalidate_downstream_settings_caches() -> None:
+    """Best-effort notify Pazuru/Tsumi to drop their cached settings snapshot
+    right after a write here, so a rapid toggle+restore doesn't leave either
+    app serving a stale value for up to their SettingsCache TTL (300s).
+    Confirmed live 2026-09-17: this staleness caused a false 402 on Tsumi's
+    require_feature() shortly after a premium_gating_enabled toggle+restore.
+    Never raises -- same resilience posture as the polling endpoint this
+    mirrors (public_get_settings below)."""
+    for base in (settings.pazuru_api_url, settings.tsumi_api_url):
+        url = f"{base.rstrip('/')}/jeli/settings-cache/invalidate"
+        try:
+            httpx.post(url, timeout=2)
+        except httpx.HTTPError as exc:
+            logger.warning("settings-cache invalidate failed for %s: %s", url, exc)
 
 
 class SettingPatch(BaseModel):
@@ -52,6 +70,7 @@ def admin_patch_setting(
     if body.value not in ("true", "false"):
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "value must be 'true' or 'false'")
     set_value(conn, key, body.value)
+    _invalidate_downstream_settings_caches()
     return get_all(conn)
 
 

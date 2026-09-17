@@ -64,6 +64,43 @@ def test_patch_admin_setting(setup):
     assert resp2.json()["premium_gating_enabled"] == "true"
 
 
+def test_patch_admin_setting_invalidates_downstream_caches(setup, monkeypatch):
+    """PATCH must best-effort notify Pazuru/Tsumi to drop their cached
+    settings snapshot, so a toggle+restore doesn't leave either app serving a
+    stale value for up to their SettingsCache TTL (confirmed live 2026-09-17
+    as the root cause of a false 402 on Tsumi shortly after a Foroba admin
+    premium_gating_enabled toggle+restore)."""
+    import admin_router
+
+    calls = []
+    monkeypatch.setattr(admin_router.httpx, "post", lambda url, timeout: calls.append(url))
+
+    tc, _conn, admin, _ = setup
+    tc.app.dependency_overrides[get_current_user] = lambda: admin
+    resp = tc.patch("/admin/settings/premium_gating_enabled", json={"value": "true"})
+
+    assert resp.status_code == 200
+    assert len(calls) == 2
+    assert any(url.endswith("/jeli/settings-cache/invalidate") and "8000" in url for url in calls)
+    assert any(url.endswith("/jeli/settings-cache/invalidate") and "8050" in url for url in calls)
+
+
+def test_patch_admin_setting_never_raises_when_downstream_unreachable(setup, monkeypatch):
+    """The invalidation call must never surface as a 500 -- same resilience
+    posture as the polling endpoint it mirrors."""
+    import admin_router
+
+    def _raise(url, timeout):
+        raise admin_router.httpx.ConnectError("connection refused")
+
+    monkeypatch.setattr(admin_router.httpx, "post", _raise)
+
+    tc, _conn, admin, _ = setup
+    tc.app.dependency_overrides[get_current_user] = lambda: admin
+    resp = tc.patch("/admin/settings/premium_gating_enabled", json={"value": "true"})
+    assert resp.status_code == 200
+
+
 def test_patch_invalid_value_returns_422(setup):
     tc, _conn, admin, _ = setup
     tc.app.dependency_overrides[get_current_user] = lambda: admin
