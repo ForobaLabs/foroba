@@ -47,3 +47,7 @@ def test_unknown_key_raises():
 
 def test_registry_has_public_api_key():
     assert REGISTRY["platform.public_api"] == {"audience": "base", "tier": "premium"}
+
+
+def test_registry_has_mortgage_ai_advisor_key():
+    assert REGISTRY["banking.mortgage_ai_advisor"] == {"audience": "base", "tier": "premium"}
