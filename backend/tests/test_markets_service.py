@@ -5,6 +5,8 @@ from __future__ import annotations
 import asyncio
 from typing import Any
 
+import httpx
+
 import markets_service as ms
 
 
@@ -89,6 +91,34 @@ def test_fetch_snapshot_degrades_on_one_failure(monkeypatch):
     assert snap["sentiment"] is None
     assert snap["movers"][0]["symbol"] == "ETHUSDT"
     assert snap["degraded"] is True
+
+
+def test_fetch_snapshot_distinguishes_entitlement_403_from_fetch_failure(monkeypatch):
+    """FOR-D01: a downstream 403 (Tsumi's own audience/tier gate) is a distinguishable
+    entitlement boundary, not the same "degraded" bucket as a genuine Tsumi outage —
+    otherwise support/observability can't tell "blocked by design" from "actually down"."""
+    request = httpx.Request("GET", "http://tsumi.test/api/markets/combined")
+    forbidden = httpx.HTTPStatusError(
+        "403", request=request, response=httpx.Response(403, request=request)
+    )
+    monkeypatch.setattr(
+        ms.httpx,
+        "AsyncClient",
+        _client_factory(
+            {
+                "combined": forbidden,
+                "news/sentiment": _SENTIMENT,
+                "screener/scan": RuntimeError("tsumi down"),
+            }
+        ),
+    )
+    snap = asyncio.run(ms.fetch_snapshot("BTCUSDT", "crypto"))
+    assert snap["rating"] is None
+    assert snap["movers"] is None
+    assert snap["degraded"] is True
+    assert snap["degraded_reasons"]["rating"] == "entitlement"
+    assert snap["degraded_reasons"]["movers"] == "unavailable"
+    assert "sentiment" not in snap["degraded_reasons"]
 
 
 def test_fetch_snapshot_all_down_returns_partial_not_raise(monkeypatch):

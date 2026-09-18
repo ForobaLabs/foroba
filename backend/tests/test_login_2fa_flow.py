@@ -100,15 +100,14 @@ def test_login_2fa_dispatches_to_email_otp(monkeypatch):
     monkeypatch.setattr(settings, "smtp_host", "localhost")
     monkeypatch.setattr(settings, "smtp_from", "noreply@example.com")
     sent = {}
-    monkeypatch.setattr("email_otp.send_email", lambda to, subject, body: sent.update(body=body))
+    monkeypatch.setattr(
+        "email_otp.send_otp_email", lambda to, code, **kw: sent.update(code=code)
+    )
     repo.enable_email_otp(conn, demo["id"])
     from email_otp import generate_and_send
 
     generate_and_send(conn, demo["id"], demo["email"])
-    # NOTE: the code is the first digit-only line, not the last line of the body (the last
-    # line is the "It expires in N minutes." footer) — plan's original assertion grabbed
-    # the wrong line.
-    code = next(line.strip() for line in sent["body"].splitlines() if line.strip().isdigit())
+    code = sent["code"]
     r = c.post(
         "/auth/login/2fa",
         json={"email": "demo@foroba.app", "code": code, "method": "email_otp"},

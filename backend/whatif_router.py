@@ -5,9 +5,10 @@ from __future__ import annotations
 
 import json
 import sqlite3
+from typing import Annotated
 
 from fastapi import APIRouter, Cookie, Depends, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 import db
 import whatif_service
@@ -32,13 +33,14 @@ class GoalContribution(BaseModel):
 
 
 class SimulateParams(BaseModel):
-    horizon_months: int = 24
+    horizon_months: int = Field(default=24, gt=0)
     eliminate_categories: list[str] | None = None
-    reduce_merchant_pct: dict[str, float] | None = None
-    income_delta_cents: int = 0
+    reduce_merchant_pct: dict[str, Annotated[float, Field(ge=0.0, le=100.0)]] | None = None
+    income_delta_cents: int = Field(default=0, ge=-100_000_000, le=100_000_000)
     goal_contributions: list[GoalContribution] = []
     one_off_events: list[OneOffEvent] = []
-    investment_growth_rate_pct: float = 5.0
+    investment_growth_rate_pct: float = Field(default=5.0, ge=-100.0, le=100.0)
+    include_debts: bool = False
 
 
 @router.post("/simulate")

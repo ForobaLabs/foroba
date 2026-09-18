@@ -64,6 +64,43 @@ def test_patch_admin_setting(setup):
     assert resp2.json()["premium_gating_enabled"] == "true"
 
 
+def test_patch_admin_setting_invalidates_downstream_caches(setup, monkeypatch):
+    """PATCH must best-effort notify Pazuru/Tsumi to drop their cached
+    settings snapshot, so a toggle+restore doesn't leave either app serving a
+    stale value for up to their SettingsCache TTL (confirmed live 2026-09-17
+    as the root cause of a false 402 on Tsumi shortly after a Foroba admin
+    premium_gating_enabled toggle+restore)."""
+    import admin_router
+
+    calls = []
+    monkeypatch.setattr(admin_router.httpx, "post", lambda url, timeout: calls.append(url))
+
+    tc, _conn, admin, _ = setup
+    tc.app.dependency_overrides[get_current_user] = lambda: admin
+    resp = tc.patch("/admin/settings/premium_gating_enabled", json={"value": "true"})
+
+    assert resp.status_code == 200
+    assert len(calls) == 2
+    assert any(url.endswith("/jeli/settings-cache/invalidate") and "8000" in url for url in calls)
+    assert any(url.endswith("/jeli/settings-cache/invalidate") and "8050" in url for url in calls)
+
+
+def test_patch_admin_setting_never_raises_when_downstream_unreachable(setup, monkeypatch):
+    """The invalidation call must never surface as a 500 -- same resilience
+    posture as the polling endpoint it mirrors."""
+    import admin_router
+
+    def _raise(url, timeout):
+        raise admin_router.httpx.ConnectError("connection refused")
+
+    monkeypatch.setattr(admin_router.httpx, "post", _raise)
+
+    tc, _conn, admin, _ = setup
+    tc.app.dependency_overrides[get_current_user] = lambda: admin
+    resp = tc.patch("/admin/settings/premium_gating_enabled", json={"value": "true"})
+    assert resp.status_code == 200
+
+
 def test_patch_invalid_value_returns_422(setup):
     tc, _conn, admin, _ = setup
     tc.app.dependency_overrides[get_current_user] = lambda: admin
@@ -82,6 +119,32 @@ def test_get_admin_users_returns_list(setup):
     users = resp.json()
     assert isinstance(users, list)
     assert any(u["email"] == "admin@foroba.app" for u in users)
+
+
+def test_get_admin_users_tolerates_malformed_legacy_email(setup):
+    """FOR-D05: a legacy row inserted out-of-band (email='ci@bearer.test',
+    rejected by EmailStr as a reserved TLD) must not 500 the whole list."""
+    tc, conn, admin, _ = setup
+    tc.app.dependency_overrides[get_current_user] = lambda: admin
+
+    admin_row = dict(conn.execute("SELECT * FROM users WHERE id = ?", (admin["id"],)).fetchone())
+    bad_row = dict(admin_row)
+    bad_row["email"] = "ci@bearer.test"
+    bad_row["name"] = "Legacy CI row"
+    bad_row["is_admin"] = 0
+    cols = [c for c in admin_row if c != "id"]
+    conn.execute(
+        f"INSERT INTO users ({','.join(cols)}) VALUES ({','.join('?' for _ in cols)})",
+        [bad_row[c] for c in cols],
+    )
+    conn.commit()
+
+    resp = tc.get("/admin/users")
+    assert resp.status_code == 200
+    users = resp.json()
+    emails = [u["email"] for u in users]
+    assert "admin@foroba.app" in emails
+    assert "ci@bearer.test" in emails
 
 
 def test_export_backup_requires_admin(setup):

@@ -186,15 +186,10 @@ async def simulate(
     pazuru_base = settings.pazuru_api_url.rstrip("/")
     tsumi_base = settings.tsumi_api_url.rstrip("/")
     cookies = suite_cookies(owner_cookie, stepup_pazuru=stepup_pazuru, stepup_tsumi=stepup_tsumi)
+    include_debts = params.get("include_debts", False)
 
     async with httpx.AsyncClient() as client:
-        (
-            net_worth,
-            investments_summary,
-            goals,
-            what_if_baseline,
-            what_if_adjusted,
-        ) = await asyncio.gather(
+        fetches = [
             _get_json(client, f"{pazuru_base}/api/accounts/net-worth", {"days": 90}, cookies),
             _get_json(client, f"{tsumi_base}/api/portfolio/summary", {}, cookies),
             _get_json(client, f"{pazuru_base}/api/goals", {}, cookies),
@@ -208,7 +203,12 @@ async def simulate(
                 },
                 cookies,
             ),
-        )
+        ]
+        if include_debts:
+            fetches.append(_get_json(client, f"{pazuru_base}/api/debts/net-worth", {}, cookies))
+        results = await asyncio.gather(*fetches)
+        net_worth, investments_summary, goals, what_if_baseline, what_if_adjusted = results[:5]
+        debts_summary = results[5] if include_debts else None
 
         bank_summary = net_worth.get("summary") if isinstance(net_worth, dict) else None
         bank_history = net_worth.get("history") if isinstance(net_worth, dict) else None
@@ -229,6 +229,10 @@ async def simulate(
             else 0
         )
 
+        debts_total_cents = debts_summary["total_debt_cents"] if debts_summary else 0
+        if include_debts and debts_summary is not None:
+            bank_total_cents -= debts_total_cents
+
         goal_impacts = await _goal_impacts(
             client, pazuru_base, cookies, goals or [], params.get("goal_contributions") or []
         )
@@ -244,9 +248,12 @@ async def simulate(
         investment_growth_rate_pct=params.get("investment_growth_rate_pct", 5.0),
     )
 
-    return {
+    result = {
         "points": points,
         "goal_impacts": goal_impacts,
         "degraded": degraded,
         "disclaimer": DISCLAIMER,
     }
+    if include_debts and debts_summary is not None:
+        result["debts_eur"] = round(debts_total_cents / 100, 2)
+    return result

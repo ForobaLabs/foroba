@@ -32,6 +32,7 @@ from admin_router import router as admin_router
 from auth import keys
 from auth.api_keys_router import router as api_keys_router
 from auth.dependencies import get_current_user, require_admin
+from auth.entitlements_router import require_feature
 from auth.entitlements_router import router as entitlements_router
 from auth.router import get_conn
 from auth.router import router as auth_router
@@ -44,6 +45,7 @@ from db import seed_demo_household as _seed_household
 from db import seed_mock_users as _seed
 from fx_router import router as fx_router
 from fx_scheduler import start_fx_scheduler
+from goals_router import router as goals_router
 from jeli_service import build_system_prompt, gather_context, stream_chat
 from lab_router import router as lab_router
 from monthly_report_router import router as monthly_report_router
@@ -118,6 +120,7 @@ app.include_router(twofa_router)
 app.include_router(passkeys_router)
 app.include_router(stepup_router)
 app.include_router(whatif_router)
+app.include_router(goals_router)
 app.include_router(monthly_report_router)
 app.include_router(fx_router)
 app.include_router(api_keys_router)
@@ -217,11 +220,15 @@ async def markets_snapshot(
     asset_class: str = Query("crypto"),
     suite_session: str | None = Cookie(default=None),
     stepup_tsumi: str | None = Cookie(default=None),
+    user: dict = Depends(require_feature("markets.sentiment")),
 ) -> dict:
     """Aggregate Tsumi rating + sentiment + top movers for one symbol.
 
-    Read-only superapp surface. Degrades gracefully if Tsumi is offline:
-    failed sections are null and `degraded` is true; never returns 500.
+    FOR-D01: gated server-side on markets.sentiment (tier=premium) — this route
+    delivers the premium sentiment field, unlike /markets/overview which never
+    touches it and stays free/anonymous. Read-only superapp surface. Degrades
+    gracefully if Tsumi is offline: failed sections are null and `degraded` is
+    true; never returns 500.
     """
     return await markets_service.fetch_snapshot(
         symbol, asset_class, cookie=suite_session, stepup_tsumi=stepup_tsumi

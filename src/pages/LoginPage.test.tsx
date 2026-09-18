@@ -3,6 +3,7 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router";
 import { afterEach, expect, test, vi } from "vitest";
 import { LoginPage } from "./LoginPage";
+import { AuthProvider } from "../auth/AuthProvider";
 
 vi.mock("@simplewebauthn/browser", () => ({
   startAuthentication: vi.fn(async () => ({
@@ -41,6 +42,22 @@ function renderPage() {
           <Route path="/" element={<div>Home</div>} />
         </Routes>
       </MemoryRouter>
+    </QueryClientProvider>,
+  );
+}
+
+function renderPageWithSession() {
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return render(
+    <QueryClientProvider client={qc}>
+      <AuthProvider>
+        <MemoryRouter initialEntries={["/login"]}>
+          <Routes>
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/" element={<div>Home</div>} />
+          </Routes>
+        </MemoryRouter>
+      </AuthProvider>
     </QueryClientProvider>,
   );
 }
@@ -142,6 +159,14 @@ test("supports signing in with a recovery code instead of a normal code", async 
   fireEvent.click(screen.getByRole("button", { name: "Verify" }));
 
   await waitFor(() => expect(screen.getByText("Home")).toBeInTheDocument());
+});
+
+test("FOR-D08: redirects an already-authenticated session away from the raw login form", async () => {
+  mockFetchByUrl({ "/auth/me": () => fakeUser });
+  renderPageWithSession();
+
+  await waitFor(() => expect(screen.getByText("Home")).toBeInTheDocument());
+  expect(screen.queryByLabelText("Password")).not.toBeInTheDocument();
 });
 
 test("signs in with a passkey directly, without ever submitting a password", async () => {

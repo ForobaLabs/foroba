@@ -51,6 +51,7 @@ def create_token(
     audience: str = "base",
     is_admin: bool = False,
     kid: str | None = None,
+    session_version: int = 1,
 ) -> str:
     now = datetime.now(UTC)
     payload = {
@@ -60,6 +61,7 @@ def create_token(
         "tier": tier,
         "audience": audience,
         "is_admin": is_admin,
+        "session_version": session_version,
     }
     headers = {"kid": kid} if kid else None
     return jwt.encode(payload, private_key, algorithm=_ALGO, headers=headers)

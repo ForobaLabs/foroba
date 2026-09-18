@@ -61,10 +61,16 @@ def test_totp_lifecycle(conn):
 
     u = repo.create_user(conn, email="t@f.com", name="T", password_hash="h")
     repo.set_totp_secret(conn, u["id"], "SECRET234567")
-    assert repo.get_user_by_id(conn, u["id"])["totp_secret"] == "SECRET234567"
+    # FOR-D06: generating a secret only stages it as pending — it must not appear as the
+    # live secret and must not enable MFA until enable_totp() promotes it.
+    assert repo.get_user_by_id(conn, u["id"])["totp_secret_pending"] == "SECRET234567"
+    assert repo.get_user_by_id(conn, u["id"])["totp_secret"] is None
     assert repo.get_user_by_id(conn, u["id"])["totp_enabled"] == 0
     repo.enable_totp(conn, u["id"])
-    assert repo.get_user_by_id(conn, u["id"])["totp_enabled"] == 1
+    row = repo.get_user_by_id(conn, u["id"])
+    assert row["totp_enabled"] == 1
+    assert row["totp_secret"] == "SECRET234567"
+    assert row["totp_secret_pending"] is None
     repo.disable_totp(conn, u["id"])
     row = repo.get_user_by_id(conn, u["id"])
     assert row["totp_enabled"] == 0 and row["totp_secret"] is None

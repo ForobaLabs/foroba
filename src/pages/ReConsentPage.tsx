@@ -3,10 +3,10 @@
  * (TOS or Privacy Policy was updated since the user last accepted).
  * The user must accept all stale documents before using the app.
  */
-import { useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
-import { postConsentAccept } from '../auth/api';
+import { fetchConsentStatus, postConsentAccept } from '../auth/api';
 import { PRIVACY_POLICY, TERMS_OF_SERVICE } from '../data/legal';
 
 export function ReConsentPage() {
@@ -16,13 +16,36 @@ export function ReConsentPage() {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
+  // Routing gap: /re-consent is a top-level sibling of <App> (router.tsx), with no
+  // self-guard of its own, so an already-fully-consented user landing here directly
+  // (stale bookmark, back button, etc.) would otherwise see the form again for no
+  // reason. Shares App.tsx's exact ['consents-status'] queryKey/cache.
+  const { data: consentStatus } = useQuery({
+    queryKey: ['consents-status'],
+    queryFn: fetchConsentStatus,
+  });
+
+  useEffect(() => {
+    if (consentStatus && Object.values(consentStatus).every(Boolean)) {
+      navigate('/', { replace: true });
+    }
+  }, [consentStatus, navigate]);
+
   async function handleAccept() {
     if (!checked) return;
     setSubmitting(true);
     setError(null);
     try {
       await postConsentAccept(['terms_of_service', 'privacy_policy']);
-      await queryClient.invalidateQueries({ queryKey: ['consents-status'] });
+      // Set the cache synchronously instead of invalidateQueries(): /re-consent is a
+      // top-level sibling route of <App>, so App.tsx's ['consents-status'] query has
+      // no active observer while mounted here -- invalidation only marks it stale,
+      // it doesn't refetch. Without this, <App>'s first render after navigate() below
+      // would read the still-stale cached value and bounce straight back (FOR-D07).
+      queryClient.setQueryData(['consents-status'], {
+        terms_of_service: true,
+        privacy_policy: true,
+      });
       navigate('/', { replace: true });
     } catch {
       setError('Failed to record your consent. Please try again.');

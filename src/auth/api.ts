@@ -118,9 +118,10 @@ export async function fetchHousehold(): Promise<HouseholdState> {
   return r.json();
 }
 
-export async function joinHousehold(
-  email: string,
-): Promise<{ household_id: string; members: HouseholdMember[] }> {
+export async function joinHousehold(email: string): Promise<void> {
+  // FOR-D04: this no longer merges household_id unilaterally -- it sends a
+  // consent-requiring invite (same token-based flow as household/invite).
+  // The target must accept via acceptHouseholdInvite() before any merge.
   const r = await fetch("/jeli/auth/household/join", {
     ...opts,
     method: "POST",
@@ -129,9 +130,21 @@ export async function joinHousehold(
   });
   if (!r.ok) {
     const body = await r.json().catch(() => null);
-    throw new Error(body?.detail ?? "failed to join household");
+    throw new Error(body?.detail ?? "failed to send join request");
   }
-  return r.json();
+}
+
+export async function acceptHouseholdInvite(token: string): Promise<void> {
+  const r = await fetch("/jeli/auth/household/invite/accept", {
+    ...opts,
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ token }),
+  });
+  if (!r.ok) {
+    const body = await r.json().catch(() => null);
+    throw new Error(body?.detail ?? "failed to accept invite");
+  }
 }
 
 export async function leaveHousehold(): Promise<void> {

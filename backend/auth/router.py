@@ -54,6 +54,7 @@ from auth.models import (
     UserPublic,
 )
 from auth.security import create_token, hash_password, needs_rehash, verify_password
+from auth.session_invalidation import invalidate_sessions_downstream
 from config import settings
 from email_otp import EmailNotConfiguredError, generate_and_send, generate_and_send_signup_verify
 from email_otp import verify_and_consume as verify_email_otp
@@ -81,6 +82,7 @@ def _set_session_cookie(response: Response, user: dict) -> None:
         audience=user.get("audience", "base"),
         is_admin=bool(user.get("is_admin", 0)),
         kid=kid,
+        session_version=user.get("session_version", 1),
     )
     response.set_cookie(
         "suite_session",
@@ -463,6 +465,12 @@ def logout(
 
             claims = decode_token(token, public_key)
             refresh_tokens.revoke_all_for_user(conn, int(claims["sub"]))
+            # XAPP-D03: bump the local session_version floor (invalidates
+            # every already-issued suite_session JWT for this user, closing
+            # the replay window the refresh-token revocation above doesn't
+            # cover) and best-effort push the new floor to Pazuru/Tsumi.
+            new_version = repo.bump_session_version(conn, int(claims["sub"]))
+            invalidate_sessions_downstream(int(claims["sub"]), new_version)
         except (jwt.PyJWTError, Exception):
             pass  # logout succeeds even if we can't identify the user
 
@@ -624,21 +632,21 @@ def _make_invite_token() -> tuple[str, str]:
     return raw, hashed
 
 
-@router.post("/household/invite", status_code=204)
-@limiter.limit("10/minute")
-def household_invite(
-    request: Request,
-    req: HouseholdInviteRequest,
-    user: dict = Depends(get_current_user),
-    conn: sqlite3.Connection = Depends(get_conn),
-) -> None:
-    """Send an email invite to join the current user's household (A4, foroba#180)."""
+def _send_household_invite(invited_email: str, user: dict, conn: sqlite3.Connection) -> None:
+    """Create a consent-requiring household invite and email it to invited_email.
+
+    Shared by /household/invite (A4, foroba#180) and /household/join
+    (FOR-D04) -- household membership merging is symmetric, so "invite this
+    email to my household" and "let me join that email's household" both
+    resolve to the same consent-requiring token: the invited party must
+    still call /household/invite/accept before any merge happens.
+    """
     if not settings.smtp_enabled:
         raise HTTPException(
             status.HTTP_503_SERVICE_UNAVAILABLE,
             "Email delivery is not configured on this server",
         )
-    if req.email.lower() == user["email"].lower():
+    if invited_email.lower() == user["email"].lower():
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Cannot invite yourself")
     household_id = user.get("household_id") or str(uuid.uuid4())
     if not user.get("household_id"):
@@ -649,16 +657,28 @@ def household_invite(
         conn,
         inviter_id=user["id"],
         household_id=household_id,
-        invited_email=req.email.lower(),
+        invited_email=invited_email.lower(),
         token_hash=token_hash,
         expires_at=expires_at,
     )
     send_household_invite_email(
-        req.email,
+        invited_email,
         token,
         inviter_name=user.get("first_name") or user["name"],
         country=user.get("country"),
     )
+
+
+@router.post("/household/invite", status_code=204)
+@limiter.limit("10/minute")
+def household_invite(
+    request: Request,
+    req: HouseholdInviteRequest,
+    user: dict = Depends(get_current_user),
+    conn: sqlite3.Connection = Depends(get_conn),
+) -> None:
+    """Send an email invite to join the current user's household (A4, foroba#180)."""
+    _send_household_invite(req.email, user, conn)
 
 
 @router.post("/household/invite/accept", status_code=204)
@@ -697,24 +717,22 @@ def get_household(
     }
 
 
-@router.post("/household/join")
+@router.post("/household/join", status_code=204)
+@limiter.limit("10/minute")
 def join_household(
+    request: Request,
     req: HouseholdJoinRequest,
     user: dict = Depends(get_current_user),
     conn: sqlite3.Connection = Depends(get_conn),
-) -> dict:
-    if req.email == user["email"]:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Cannot join a household with yourself")
-    other = repo.get_user_by_email(conn, req.email)
-    if other is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "No user with that email")
-    household_id = user.get("household_id") or other.get("household_id") or str(uuid.uuid4())
-    repo.set_household_id(conn, user["id"], household_id)
-    repo.set_household_id(conn, other["id"], household_id)
-    return {
-        "household_id": household_id,
-        "members": repo.get_household_members(conn, household_id),
-    }
+) -> None:
+    """Request to join another user's household (FOR-D04).
+
+    Previously merged household_id immediately with zero notification or
+    consent from the target. Now delegates to the same consent-requiring
+    invite/accept flow /household/invite uses -- the target must accept
+    before any merge happens.
+    """
+    _send_household_invite(req.email, user, conn)
 
 
 @router.post("/household/leave", status_code=204)
@@ -722,6 +740,9 @@ def leave_household(
     user: dict = Depends(get_current_user), conn: sqlite3.Connection = Depends(get_conn)
 ) -> None:
     repo.set_household_id(conn, user["id"], None)
+    # FOR-D04: a sharing opt-in given to the household being left must not
+    # silently carry over and apply to whichever household is joined next.
+    repo.clear_share_preferences(conn, user["id"])
 
 
 @router.put("/household/share", status_code=204)

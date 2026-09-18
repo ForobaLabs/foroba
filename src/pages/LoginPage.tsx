@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router";
+import { Navigate, useNavigate } from "react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { startAuthentication } from "@simplewebauthn/browser";
 import { Button, Card, Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Input } from "@foroba/ui";
+import { useAuth } from "../auth/AuthProvider";
 import {
   confirmPasswordReset,
   login,
@@ -23,6 +24,7 @@ const METHOD_LABELS: Record<"totp" | "email_otp", string> = {
 export function LoginPage() {
   const qc = useQueryClient();
   const navigate = useNavigate();
+  const { user, loading: sessionLoading } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -57,6 +59,12 @@ export function LoginPage() {
         .catch((err) => setError(err instanceof Error ? err.message : "Failed to send code."));
     }
   }, [challenge, method, emailOtpSent]);
+
+  // FOR-D08: a second tab sharing the suite_session cookie could still land on
+  // and interact with the raw login form instead of the authenticated app shell.
+  if (!sessionLoading && user) {
+    return <Navigate to="/" replace />;
+  }
 
   async function finishLogin() {
     await qc.invalidateQueries({ queryKey: ["session"] });

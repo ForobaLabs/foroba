@@ -20,18 +20,36 @@ const SHARE_RESOURCE_TYPES: { key: string; label: string; description: string }[
 ];
 
 export function HouseholdPage() {
-  const { household, join, leave, toggleShare } = useHousehold();
+  const { household, join, acceptInvite, leave, toggleShare } = useHousehold();
   const [email, setEmail] = useState('');
   const [joinError, setJoinError] = useState<string | null>(null);
+  const [joinSent, setJoinSent] = useState(false);
+  const [inviteToken, setInviteToken] = useState('');
+  const [acceptError, setAcceptError] = useState<string | null>(null);
 
   const handleJoin = async (e: FormEvent) => {
     e.preventDefault();
     setJoinError(null);
     try {
+      // FOR-D04: this only sends a consent-requiring invite -- the target
+      // must accept it (see "Accept an invite" below) before any merge
+      // happens, so there is no household to show here yet.
       await join.mutateAsync(email);
       setEmail('');
+      setJoinSent(true);
     } catch (err) {
-      setJoinError(err instanceof Error ? err.message : 'Failed to join household');
+      setJoinError(err instanceof Error ? err.message : 'Failed to send join request');
+    }
+  };
+
+  const handleAcceptInvite = async (e: FormEvent) => {
+    e.preventDefault();
+    setAcceptError(null);
+    try {
+      await acceptInvite.mutateAsync(inviteToken);
+      setInviteToken('');
+    } catch (err) {
+      setAcceptError(err instanceof Error ? err.message : 'Failed to accept invite');
     }
   };
 
@@ -80,7 +98,7 @@ export function HouseholdPage() {
               ) : (
                 <EmptyState
                   title="No household yet"
-                  message="Join a household by entering the email of a member already in one, or invite someone by sharing your email with them."
+                  message="Send a join request to someone already in a household, or invite someone by email — either way, they must accept before anything is shared."
                 />
               )}
 
@@ -90,18 +108,55 @@ export function HouseholdPage() {
                     id="household-join-email"
                     type="email"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={(e) => {
+                      setEmail(e.target.value);
+                      setJoinSent(false);
+                    }}
                     placeholder="member@example.com"
                     required
                   />
                 </FormField>
+                <p className="text-xs text-[var(--color-text-muted)]">
+                  This sends a request — they must accept it before you're merged into one
+                  household.
+                </p>
                 {joinError && (
                   <p className="text-xs text-[var(--color-negative)]" role="alert">
                     {joinError}
                   </p>
                 )}
+                {joinSent && !joinError && (
+                  <p className="text-xs text-[var(--color-positive)]">
+                    Request sent — waiting for them to accept.
+                  </p>
+                )}
                 <Button type="submit" disabled={join.isPending || !email}>
-                  {join.isPending ? 'Joining…' : 'Join household'}
+                  {join.isPending ? 'Sending…' : 'Send join request'}
+                </Button>
+              </form>
+
+              <form onSubmit={handleAcceptInvite} className="mt-6 flex flex-col gap-3">
+                <FormField label="Accept an invite" htmlFor="household-invite-token">
+                  <Input
+                    id="household-invite-token"
+                    type="text"
+                    value={inviteToken}
+                    onChange={(e) => setInviteToken(e.target.value)}
+                    placeholder="Code from your invite email"
+                    required
+                  />
+                </FormField>
+                {acceptError && (
+                  <p className="text-xs text-[var(--color-negative)]" role="alert">
+                    {acceptError}
+                  </p>
+                )}
+                <Button
+                  type="submit"
+                  variant="secondary"
+                  disabled={acceptInvite.isPending || !inviteToken}
+                >
+                  {acceptInvite.isPending ? 'Accepting…' : 'Accept invite'}
                 </Button>
               </form>
             </div>

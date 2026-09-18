@@ -13,6 +13,7 @@ export interface WhatIfParams {
   goalContributions?: GoalContribution[];
   oneOffEvents?: OneOffEvent[];
   investmentGrowthRatePct?: number;
+  includeDebts?: boolean;
 }
 
 export interface ProjectionPoint {
@@ -35,6 +36,7 @@ export interface SimulationResult {
   goalImpacts: GoalImpact[];
   degraded: boolean;
   disclaimer: string;
+  debtsEur?: number;
 }
 
 function toApiBody(params: WhatIfParams) {
@@ -50,6 +52,7 @@ function toApiBody(params: WhatIfParams) {
       month_offset: e.monthOffset, amount_cents: e.amountCents, label: e.label,
     })),
     investment_growth_rate_pct: params.investmentGrowthRatePct ?? 5.0,
+    include_debts: params.includeDebts ?? false,
   };
 }
 
@@ -58,6 +61,7 @@ interface RawSimulationResult {
   goal_impacts: Array<{ goal_id: number; name: string; original_projected_completion: string | null; new_projection: { months_needed: number | null; projected_date: string | null } | null }>;
   degraded: boolean;
   disclaimer: string;
+  debts_eur?: number;
 }
 
 function fromApiResult(raw: RawSimulationResult): SimulationResult {
@@ -73,6 +77,7 @@ function fromApiResult(raw: RawSimulationResult): SimulationResult {
     })),
     degraded: raw.degraded,
     disclaimer: raw.disclaimer,
+    debtsEur: raw.debts_eur,
   };
 }
 
@@ -104,6 +109,7 @@ interface RawWhatIfParams {
   goal_contributions?: Array<{ goal_id: number; extra_monthly_cents: number }>;
   one_off_events?: Array<{ month_offset: number; amount_cents: number; label: string }>;
   investment_growth_rate_pct?: number;
+  include_debts?: boolean;
 }
 
 function paramsFromApi(raw: RawWhatIfParams): WhatIfParams {
@@ -119,6 +125,7 @@ function paramsFromApi(raw: RawWhatIfParams): WhatIfParams {
       monthOffset: e.month_offset, amountCents: e.amount_cents, label: e.label,
     })),
     investmentGrowthRatePct: raw.investment_growth_rate_pct ?? 5.0,
+    includeDebts: raw.include_debts ?? false,
   };
 }
 

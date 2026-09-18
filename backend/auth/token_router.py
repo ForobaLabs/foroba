@@ -57,6 +57,7 @@ def _issue_pair(conn: sqlite3.Connection, user: dict, device_label: str) -> dict
         audience=user.get("audience", "base"),
         is_admin=bool(user.get("is_admin", 0)),
         kid=kid,
+        session_version=user.get("session_version", 1),
     )
     refresh = refresh_tokens.issue(conn, user["id"], device_label)
     return {
@@ -167,6 +168,7 @@ def refresh(
         audience=user.get("audience", "base"),
         is_admin=bool(user.get("is_admin", 0)),
         kid=kid,
+        session_version=user.get("session_version", 1),
     )
     return {
         "access_token": access,

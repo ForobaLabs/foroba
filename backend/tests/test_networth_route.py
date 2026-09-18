@@ -9,6 +9,7 @@ from fastapi.testclient import TestClient
 import networth_service as ns
 from auth.dependencies import get_current_user
 from main import app
+from stepup import verify_stepup_token
 
 
 async def _fake_fetch_networth(
@@ -81,9 +82,18 @@ def test_networth_route_forwards_cookie(monkeypatch):
         assert resp.status_code == 200
         body = resp.json()
         assert body["_cookie_seen"] == "tok-99"
-        # foroba#206: both per-app stepup cookies must be forwarded.
-        assert body["_stepup_pazuru_seen"] == "sp-99"
-        assert body["_stepup_tsumi_seen"] == "st-99"
+        # The route mints its own stepup_pazuru/stepup_tsumi tokens server-side
+        # (see main.py::networth_summary docstring) rather than forwarding the
+        # client-supplied cookies verbatim -- those never actually reach
+        # foroba-app.duckdns.org in production (DuckDNS PSL treats each
+        # subdomain independently), and trusting a client-supplied stepup
+        # token would defeat the point of step-up verification. So the client
+        # cookies here (sp-99/st-99) must be ignored, and instead a freshly
+        # signed, correctly-scoped token must be issued for this user.
+        pazuru_claims = verify_stepup_token(body["_stepup_pazuru_seen"], expected_app="pazuru")
+        tsumi_claims = verify_stepup_token(body["_stepup_tsumi_seen"], expected_app="tsumi")
+        assert pazuru_claims["sub"] == "1"
+        assert tsumi_claims["sub"] == "1"
     finally:
         app.dependency_overrides.pop(get_current_user, None)
 

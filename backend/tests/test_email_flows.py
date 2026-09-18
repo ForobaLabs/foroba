@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import smtplib
 import sqlite3
+from datetime import UTC, datetime, timedelta
 from typing import ClassVar
 
 import pytest
@@ -117,20 +118,36 @@ def _get_latest_otp(conn, user_id: int) -> str:
 # #184 — email_service template functions
 # ---------------------------------------------------------------------------
 
+def _decoded_parts(msg: str) -> list[str]:
+    """Non-ASCII (accented FR/IT) template text makes Python's email module
+    base64-encode the multipart/alternative parts, so the raw MIME string no
+    longer contains the plain code/text verbatim -- decode each part first."""
+    import email
+
+    parsed = email.message_from_string(msg)
+    return [
+        part.get_payload(decode=True).decode(part.get_content_charset() or "utf-8")
+        for part in parsed.walk()
+        if part.get_content_maintype() != "multipart"
+    ]
+
+
 class TestEmailTemplates:
     def test_send_otp_email_sends_html(self):
         email_service.send_otp_email("u@example.com", "123456", country="FR")
         assert FakeSMTP.instances
         _, _, msg = FakeSMTP.instances[0].sent[0]
-        assert "123456" in msg
+        parts = _decoded_parts(msg)
+        assert any("123456" in part for part in parts)
         assert "text/html" in msg
 
     def test_send_signup_verify_email(self):
         email_service.send_signup_verify_email("u@example.com", "654321", country="IT")
         _, _, msg = FakeSMTP.instances[0].sent[0]
-        assert "654321" in msg
+        parts = _decoded_parts(msg)
+        assert any("654321" in part for part in parts)
         # Italian translation should be present
-        assert "Foroba" in msg
+        assert any("Foroba" in part for part in parts)
 
     def test_send_email_change_email(self):
         email_service.send_email_change_email("new@example.com", "111222")
@@ -195,10 +212,10 @@ class TestEmailVerify:
         # Inject a known OTP directly
         from argon2 import PasswordHasher
         ph = PasswordHasher()
+        expires_at = (datetime.now(UTC) + timedelta(minutes=10)).isoformat()
         conn.execute(
-            "INSERT INTO email_otp_codes (user_id, code_hash, expires_at) "
-            "VALUES (?, ?, datetime('now', '+10 minutes'))",
-            (user_id, ph.hash("123456")),
+            "INSERT INTO email_otp_codes (user_id, code_hash, expires_at) VALUES (?, ?, ?)",
+            (user_id, ph.hash("123456"), expires_at),
         )
         conn.commit()
         resp = client.post("/auth/verify-email", json={"code": "123456"})
@@ -213,10 +230,10 @@ class TestEmailVerify:
         user_id = r.json()["id"]
         from argon2 import PasswordHasher
         ph = PasswordHasher()
+        expires_at = (datetime.now(UTC) + timedelta(minutes=10)).isoformat()
         conn.execute(
-            "INSERT INTO email_otp_codes (user_id, code_hash, expires_at) "
-            "VALUES (?, ?, datetime('now', '+10 minutes'))",
-            (user_id, ph.hash("123456")),
+            "INSERT INTO email_otp_codes (user_id, code_hash, expires_at) VALUES (?, ?, ?)",
+            (user_id, ph.hash("123456"), expires_at),
         )
         conn.commit()
         resp = client.post("/auth/verify-email", json={"code": "000000"})
@@ -304,10 +321,10 @@ class TestEmailChange:
         # Inject a known OTP
         from argon2 import PasswordHasher
         ph = PasswordHasher()
+        expires_at = (datetime.now(UTC) + timedelta(minutes=10)).isoformat()
         conn.execute(
-            "INSERT INTO email_otp_codes (user_id, code_hash, expires_at) "
-            "VALUES (?, ?, datetime('now', '+10 minutes'))",
-            (user_id, ph.hash("777888")),
+            "INSERT INTO email_otp_codes (user_id, code_hash, expires_at) VALUES (?, ?, ?)",
+            (user_id, ph.hash("777888"), expires_at),
         )
         conn.commit()
         resp = client.post("/auth/me/email/change-confirm", json={"code": "777888"})
@@ -396,9 +413,13 @@ class TestHouseholdInvite:
 
     def test_invite_accept_joins_household(self, client, conn):
         self._verified_client(client, conn, "alice@example.com")
-        # Register the invitee
+        # Register the invitee on a separate client -- registering on the
+        # shared `client` would overwrite Alice's session cookie with Bob's
+        # (register() always sets a fresh session cookie on success), making
+        # the invite call below run as Bob instead of Alice.
+        bob_register_client = TestClient(client.app)
         settings.smtp_enabled = False
-        _register(client, "bob@example.com")
+        _register(bob_register_client, "bob@example.com")
         settings.smtp_enabled = True
         bob_id = conn.execute(
             "SELECT id FROM users WHERE email = 'bob@example.com'"
@@ -439,3 +460,104 @@ class TestHouseholdInvite:
         settings.smtp_enabled = False
         resp = client.post("/auth/household/invite", json={"email": "x@example.com"})
         assert resp.status_code == 503
+
+
+# ---------------------------------------------------------------------------
+# FOR-D04 — household join must require the target's consent, and leaving
+# a household must not let stale sharing opt-ins carry over to the next one.
+# ---------------------------------------------------------------------------
+
+class TestHouseholdJoinConsent:
+    def _verified_client(self, client, conn, email="alice@example.com"):
+        r = _register(client, email)
+        user_id = r.json()["id"]
+        conn.execute("UPDATE users SET email_verified = 1 WHERE id = ?", (user_id,))
+        conn.commit()
+        return user_id
+
+    def test_household_join_requires_target_consent(self, client, conn):
+        """/household/join must no longer merge household_id unilaterally --
+        it must only send a consent-requiring invite, exactly like
+        /household/invite. No merge should happen until the target calls
+        /household/invite/accept."""
+        alice_id = self._verified_client(client, conn, "alice@example.com")
+
+        bob_register_client = TestClient(client.app)
+        settings.smtp_enabled = False
+        bob_id = _register(bob_register_client, "bob@example.com").json()["id"]
+        settings.smtp_enabled = True
+        conn.execute("UPDATE users SET email_verified = 1 WHERE id = ?", (bob_id,))
+        conn.commit()
+
+        FakeSMTP.instances.clear()
+        resp = client.post("/auth/household/join", json={"email": "bob@example.com"})
+        assert resp.status_code == 204, resp.text
+
+        # No unilateral merge -- neither party has a household_id yet.
+        alice_row = conn.execute(
+            "SELECT household_id FROM users WHERE id = ?", (alice_id,)
+        ).fetchone()
+        bob_row = conn.execute(
+            "SELECT household_id FROM users WHERE id = ?", (bob_id,)
+        ).fetchone()
+        assert alice_row["household_id"] is not None, "inviter gets a pending household_id"
+        assert bob_row["household_id"] is None, "target must not be merged before consenting"
+
+        # A real invite record was created for Bob, and he must accept it.
+        assert FakeSMTP.instances
+        import re
+        _, to_addrs, msg = FakeSMTP.instances[0].sent[0]
+        assert "bob@example.com" in to_addrs[0]
+        token = re.search(r"\b([A-F0-9]{12})\b", msg)
+        assert token, f"No token found in: {msg[:200]}"
+
+        bob_client = TestClient(client.app)
+        bob_client.post(
+            "/auth/login", json={"email": "bob@example.com", "password": "Secret1234!"}
+        )
+        accept_resp = bob_client.post(
+            "/auth/household/invite/accept", json={"token": token.group(1)}
+        )
+        assert accept_resp.status_code == 204, accept_resp.text
+
+        bob_row_after = conn.execute(
+            "SELECT household_id FROM users WHERE id = ?", (bob_id,)
+        ).fetchone()
+        assert bob_row_after["household_id"] == alice_row["household_id"]
+
+    def test_household_join_self_rejected(self, client, conn):
+        self._verified_client(client, conn, "alice@example.com")
+        resp = client.post("/auth/household/join", json={"email": "alice@example.com"})
+        assert resp.status_code == 400
+
+    def test_household_leave_clears_share_preferences_for_that_household(self, client, conn):
+        """A stale sharing opt-in must not silently apply to whichever new
+        household the user joins next -- leaving must clear it."""
+        alice_id = self._verified_client(client, conn, "alice@example.com")
+        conn.execute(
+            "UPDATE users SET household_id = 'household-1' WHERE id = ?", (alice_id,)
+        )
+        conn.commit()
+        resp = client.put(
+            "/auth/household/share", json={"resource_type": "networth", "shared": True}
+        )
+        assert resp.status_code == 204, resp.text
+        prefs = conn.execute(
+            "SELECT shared FROM share_preferences WHERE user_id = ? AND resource_type = 'networth'",
+            (alice_id,),
+        ).fetchone()
+        assert prefs is not None and prefs["shared"] == 1
+
+        resp = client.post("/auth/household/leave")
+        assert resp.status_code == 204, resp.text
+
+        prefs_after = conn.execute(
+            "SELECT shared FROM share_preferences WHERE user_id = ? AND resource_type = 'networth'",
+            (alice_id,),
+        ).fetchone()
+        assert prefs_after is None, "share_preferences must be cleared on leave"
+
+        household_row = conn.execute(
+            "SELECT household_id FROM users WHERE id = ?", (alice_id,)
+        ).fetchone()
+        assert household_row["household_id"] is None

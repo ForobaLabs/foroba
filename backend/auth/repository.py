@@ -21,6 +21,7 @@ def _decrypt_user(d: dict | None) -> dict | None:
     if d is None:
         return None
     d["totp_secret"] = safe_decrypt(d.get("totp_secret"))
+    d["totp_secret_pending"] = safe_decrypt(d.get("totp_secret_pending"))
     return d
 
 
@@ -128,6 +129,23 @@ def get_user_by_email(conn: sqlite3.Connection, email: str) -> dict | None:
 def get_user_by_id(conn: sqlite3.Connection, user_id: int) -> dict | None:
     row = conn.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
     return _decrypt_user(_row_to_dict(row))
+
+
+def get_session_version(conn: sqlite3.Connection, user_id: int) -> int:
+    """Current session_version floor for user_id (XAPP-D03). Any suite_session
+    JWT whose own session_version claim is below this value is stale/revoked."""
+    row = conn.execute("SELECT session_version FROM users WHERE id = ?", (user_id,)).fetchone()
+    return row["session_version"] if row else 1
+
+
+def bump_session_version(conn: sqlite3.Connection, user_id: int) -> int:
+    """Increment user_id's session_version, invalidating every suite_session
+    JWT already issued to them (XAPP-D03). Called on logout."""
+    conn.execute(
+        "UPDATE users SET session_version = session_version + 1 WHERE id = ?", (user_id,)
+    )
+    conn.commit()
+    return get_session_version(conn, user_id)
 
 
 def set_audience(conn: sqlite3.Connection, user_id: int, audience: str, *, locked: bool) -> None:
@@ -270,22 +288,37 @@ def redeem_invite_code(conn: sqlite3.Connection, code: str) -> bool:
 
 
 def set_totp_secret(conn: sqlite3.Connection, user_id: int, secret: str) -> None:
+    """Stage a freshly generated TOTP secret without touching the live totp_secret or
+    totp_enabled columns (FOR-D06) — only enable_totp() promotes it, on a successful verify."""
     conn.execute(
-        "UPDATE users SET totp_secret = ?, totp_enabled = 0 WHERE id = ?",
+        "UPDATE users SET totp_secret_pending = ? WHERE id = ?",
         (safe_encrypt(secret), user_id),
     )
     conn.commit()
 
 
 def enable_totp(conn: sqlite3.Connection, user_id: int) -> None:
+    """Atomically promote the pending secret (if any) to the live totp_secret column and
+    enable MFA. Uses COALESCE so a caller that set totp_secret directly (e.g. legacy
+    fixtures/tests) still works even with no pending value staged."""
     conn.execute(
-        "UPDATE users SET totp_enabled = 1, mfa_enrollment_pending = 0 WHERE id = ?", (user_id,)
+        "UPDATE users SET"
+        " totp_secret = COALESCE(totp_secret_pending, totp_secret),"
+        " totp_secret_pending = NULL,"
+        " totp_enabled = 1,"
+        " mfa_enrollment_pending = 0"
+        " WHERE id = ?",
+        (user_id,),
     )
     conn.commit()
 
 
 def disable_totp(conn: sqlite3.Connection, user_id: int) -> None:
-    conn.execute("UPDATE users SET totp_enabled = 0, totp_secret = NULL WHERE id = ?", (user_id,))
+    conn.execute(
+        "UPDATE users SET totp_enabled = 0, totp_secret = NULL, totp_secret_pending = NULL"
+        " WHERE id = ?",
+        (user_id,),
+    )
     conn.commit()
 
 
@@ -356,6 +389,17 @@ def set_share_preference(
         "shared = excluded.shared, updated_at = excluded.updated_at",
         (user_id, resource_type, 1 if shared else 0),
     )
+    conn.commit()
+
+
+def clear_share_preferences(conn: sqlite3.Connection, user_id: int) -> None:
+    """Clear this user's sharing opt-ins (FOR-D04).
+
+    Called on household leave so a stale consent given to the old household
+    doesn't silently carry over and apply to whichever household this user
+    joins next.
+    """
+    conn.execute("DELETE FROM share_preferences WHERE user_id = ?", (user_id,))
     conn.commit()
 
 

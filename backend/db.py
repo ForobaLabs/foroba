@@ -24,7 +24,8 @@ CREATE TABLE IF NOT EXISTS users (
     failed_login_attempts INTEGER NOT NULL DEFAULT 0,
     locked_until TEXT,
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
-    mfa_enrollment_pending INTEGER NOT NULL DEFAULT 0
+    mfa_enrollment_pending INTEGER NOT NULL DEFAULT 0,
+    session_version INTEGER NOT NULL DEFAULT 1
 );
 
 -- Per-user, per-resource-type opt-in sharing toggle. If a row exists with
@@ -422,6 +423,15 @@ def init_schema(conn: sqlite3.Connection) -> None:
         " ON device_push_tokens(user_id)"
     )
     conn.commit()
+    # FOR-D06: totp_secret_pending stages a newly generated TOTP secret separately from the
+    # live totp_secret column, so /auth/2fa/enroll can no longer silently disable an already
+    # -working MFA method before /verify confirms the new one (see auth/repository.py's
+    # set_totp_secret()/enable_totp()).
+    try:
+        conn.execute("ALTER TABLE users ADD COLUMN totp_secret_pending TEXT")
+        conn.commit()
+    except sqlite3.OperationalError:
+        pass  # column already exists
 
 
 # (email, name, plaintext password, tier, audience, is_admin)
