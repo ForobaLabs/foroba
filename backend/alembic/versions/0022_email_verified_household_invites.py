@@ -25,8 +25,12 @@ depends_on = None
 
 
 def upgrade() -> None:
-    op.execute("ALTER TABLE users ADD COLUMN email_verified INTEGER NOT NULL DEFAULT 1")
-    op.execute("ALTER TABLE users ADD COLUMN pending_email TEXT")
+    conn = op.get_bind()
+    existing_cols = {row[1] for row in conn.exec_driver_sql("PRAGMA table_info(users)").fetchall()}
+    if "email_verified" not in existing_cols:
+        op.execute("ALTER TABLE users ADD COLUMN email_verified INTEGER NOT NULL DEFAULT 1")
+    if "pending_email" not in existing_cols:
+        op.execute("ALTER TABLE users ADD COLUMN pending_email TEXT")
     op.execute(
         "CREATE TABLE IF NOT EXISTS household_invites ("
         " id INTEGER PRIMARY KEY AUTOINCREMENT,"
