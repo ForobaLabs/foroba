@@ -68,6 +68,7 @@ ALLOWED_ORIGINS = os.getenv(
     "ALLOWED_ORIGINS",
     "http://localhost:5175,http://localhost:5173,http://localhost:5174,http://localhost:5178",
 ).split(",")
+ENABLE_API_DOCS = os.getenv("ENABLE_API_DOCS", "true").lower() == "true"
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -77,6 +78,9 @@ app = FastAPI(
     title="Foroba Jeli API",
     description="Unified local LLM assistant — cross-domain financial advisor",
     version="0.1.0",
+    docs_url="/docs" if ENABLE_API_DOCS else None,
+    redoc_url="/redoc" if ENABLE_API_DOCS else None,
+    openapi_url="/openapi.json" if ENABLE_API_DOCS else None,
 )
 
 app.state.limiter = limiter
