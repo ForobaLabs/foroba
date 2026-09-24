@@ -28,6 +28,7 @@ import db
 import markets_service
 import networth_service
 import notification_service
+import settings_store
 from admin_router import router as admin_router
 from auth import keys
 from auth.api_keys_router import router as api_keys_router
@@ -194,13 +195,22 @@ async def health(request: Request) -> JSONResponse:
 
 @app.get("/health/detailed")
 @limiter.limit("1/second")
-async def health_detailed(request: Request, _: dict = Depends(require_admin)) -> dict:
+async def health_detailed(
+    request: Request,
+    conn: sqlite3.Connection = Depends(get_conn),
+    _: dict = Depends(require_admin),
+) -> dict:
     db_status = await _check_db()
+    drift = settings_store.check_drift(conn)
     return {
-        "status": "ok" if db_status == "ok" else "degraded",
-        "checks": {"db": db_status},
+        "status": "ok" if db_status == "ok" and not drift else "degraded",
+        "checks": {
+            "db": db_status,
+            "settings_drift": "ok" if not drift else "drifted",
+        },
         "version": "0.1.0",
         "dependencies": {},
+        "settings_drift": drift,
     }
 
 

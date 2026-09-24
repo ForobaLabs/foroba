@@ -11,7 +11,10 @@ _SCHEMA = (
 )
 
 DEFAULT_SETTINGS: dict[str, str] = {
-    "premium_gating_enabled": "false",
+    # Plan V (pazuru#152 / tsumi#230): the paywall must be enforced by default.
+    # Previously "false", which silently shipped every premium feature suite-wide
+    # unlocked for free-tier accounts and went unnoticed for weeks.
+    "premium_gating_enabled": "true",
     "onboarding_mifid_enabled": "false",
     "lab_service_enabled": "true",
     # Balance threshold (cents) below which the "low balance" notification
@@ -54,3 +57,23 @@ def set_value(conn: sqlite3.Connection, key: str, value: str) -> None:
 
 def _now() -> str:
     return datetime.now(UTC).isoformat()
+
+
+# Settings whose live value must not silently drift from this expected value
+# without the business explicitly re-deciding it (Plan V, pazuru#152 / tsumi#230):
+# premium_gating_enabled sat at "false" in production for weeks because nothing
+# monitored it. Extend this dict if another toggle needs the same guarantee.
+EXPECTED_SETTINGS: dict[str, str] = {
+    "premium_gating_enabled": "true",
+}
+
+
+def check_drift(conn: sqlite3.Connection) -> dict[str, str]:
+    """Return {key: actual_value} for each EXPECTED_SETTINGS entry whose live
+    value doesn't match what's expected. Empty dict means no drift."""
+    current = get_all(conn)
+    return {
+        key: current.get(key, "<missing>")
+        for key, expected in EXPECTED_SETTINGS.items()
+        if current.get(key) != expected
+    }
