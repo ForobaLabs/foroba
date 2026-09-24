@@ -31,6 +31,12 @@ export default defineConfig(({ mode }) => {
         },
         workbox: {
           globPatterns: ['**/*.{js,css,html,ico,svg,woff2}'],
+          // Full-page navigations (<a href> clicks, not fetch/XHR) to these backend
+          // proxy paths must reach the network and see the real response (redirects,
+          // in particular /foroba-api/auth/handoff/* — see foroba#286): Workbox's
+          // default navigateFallback otherwise intercepts every navigation request
+          // not explicitly denylisted here and serves the cached SPA shell instead.
+          navigateFallbackDenylist: [/^\/(foroba|pazuru|tsumi)-api\//, /^\/jeli\//],
           runtimeCaching: [
             {
               urlPattern: /^\/auth\//,
