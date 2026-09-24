@@ -5,7 +5,13 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
     ollama_base_url: str = "http://localhost:11434"
-    ollama_model: str = "phi3.5:latest"
+    # Must match Pazuru's OLLAMA_LLM_MODEL: the shared VPS Ollama instance has
+    # OLLAMA_MAX_LOADED_MODELS=1, so a mismatched pair forces a reload on every
+    # cross-app request. Chosen 2026-09-25 (Plan W) against the real production
+    # workload (tool-calling + concurrent-user load) — see
+    # pazuru/ARCHITECTURE_DECISIONS.md ADR-002 for the full benchmark table. The
+    # prior default, phi3.5:latest, crashed the whole Ollama process under load.
+    ollama_model: str = "qwen2.5:3b-instruct"
 
     # --- Deployment mode (GL-4.3, foroba#174) ---
     # "hosted" = multi-tenant beta on the VPS: Jeli Lab (arbitrary code-gen sandbox)

@@ -48,6 +48,7 @@ from fx_router import router as fx_router
 from fx_scheduler import start_fx_scheduler
 from goals_router import router as goals_router
 from handoff_router import router as handoff_router
+from jeli_output_guard import sanitize_reply
 from jeli_service import build_system_prompt, gather_context, stream_chat
 from lab_router import router as lab_router
 from monthly_report_router import router as monthly_report_router
@@ -354,7 +355,13 @@ async def jeli_chat(
     )
 
     async def generate():
-        async for chunk in stream_chat(system_prompt, req.message):
-            yield chunk
+        # Buffered rather than forwarded token-by-token: sanitize_reply needs the
+        # complete reply to reliably detect a fabricated monetary figure or a missing
+        # disclaimer (Plan W, 2026-09-24/25 benchmarking found both are real,
+        # reproducible defects in the shared model) — a figure or the disclaimer
+        # phrase can straddle a chunk boundary, so partial text can't be checked.
+        full_reply = "".join([chunk async for chunk in stream_chat(system_prompt, req.message)])
+        context_text = f"{pazuru_ctx}\n{tsumi_ctx}"
+        yield sanitize_reply(full_reply, context_text=context_text)
 
     return StreamingResponse(generate(), media_type="text/plain; charset=utf-8")
