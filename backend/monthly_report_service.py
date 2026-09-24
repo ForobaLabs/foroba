@@ -16,6 +16,7 @@ import db
 import jeli_service
 from config import settings
 from email_service import send_email
+from jeli_output_guard import sanitize_reply
 
 logger = logging.getLogger(__name__)
 
@@ -68,6 +69,7 @@ async def _run_generation(
         narrative = await jeli_service.generate_narrative(
             system_prompt, f"Summarize {row['year_month']} for me."
         )
+        narrative = sanitize_reply(narrative, context_text=f"{pazuru_ctx}\n{tsumi_ctx}")
         snapshot = json.dumps({"pazuru_context": pazuru_ctx, "tsumi_context": tsumi_ctx})
         updated = db.update_monthly_report_result(
             conn,
