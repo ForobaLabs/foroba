@@ -29,6 +29,14 @@ class Settings(BaseSettings):
 
     pazuru_api_url: str = "http://localhost:8000"
     tsumi_api_url: str = "http://localhost:8050"
+
+    # --- Cross-app session handoff (Plan U, pazuru#150) ---
+    # PUBLIC browser-facing origins, distinct from pazuru_api_url/tsumi_api_url above
+    # (those are internal Docker-network URLs for server-to-server calls). Used to
+    # build the redirect target for /auth/handoff/<app> — must match each app's real
+    # public domain (VITE_PAZURU_APP_URL/VITE_TSUMI_APP_URL on the frontend side).
+    pazuru_app_url: str = "http://localhost:5173"
+    tsumi_app_url: str = "http://localhost:5178"
     jeli_port: int = 8002
     sandbox_image: str = "foroba-sandbox:latest"
     # set only in docker-compose.yml (TI-B item 4, foroba#120)

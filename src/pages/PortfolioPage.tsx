@@ -25,12 +25,11 @@ import {
   useTsumiHealth,
 } from '../hooks/useServiceHealth';
 
-const TSUMI_APP_URL = import.meta.env.VITE_TSUMI_APP_URL ?? 'http://localhost:5178';
 const DEPLOYMENT_MODE = import.meta.env.VITE_DEPLOYMENT_MODE ?? 'selfhost';
 
 function ConnectInvestmentButton({ variant }: { variant?: 'outline' }) {
   return (
-    <a href={`${TSUMI_APP_URL}/settings`}>
+    <a href="/foroba-api/auth/handoff/tsumi?redirect=/settings">
       <Button variant={variant}>📈 Add a connection</Button>
     </a>
   );

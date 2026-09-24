@@ -21,11 +21,9 @@ const BANK_LABELS: Record<string, string> = {
   hype: 'Hype',
 };
 
-const PAZURU_APP_URL = import.meta.env.VITE_PAZURU_APP_URL ?? 'http://localhost:5173';
-
 function ConnectBankButton({ variant }: { variant?: 'outline' }) {
   return (
-    <a href={`${PAZURU_APP_URL}/settings`}>
+    <a href="/foroba-api/auth/handoff/pazuru?redirect=/settings">
       <Button variant={variant}>🏦 Connect a bank</Button>
     </a>
   );

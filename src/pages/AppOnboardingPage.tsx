@@ -3,16 +3,13 @@ import { OnboardingPage, useLanguage } from '@foroba/ui';
 import { useNavigate } from 'react-router';
 import { completeOnboarding } from '../auth/api';
 
-const PAZURU_APP_URL = import.meta.env.VITE_PAZURU_APP_URL ?? 'http://localhost:5173';
-const TSUMI_APP_URL = import.meta.env.VITE_TSUMI_APP_URL ?? 'http://localhost:5178';
-
 function ConnectSlot() {
   return (
     <div className="flex flex-col gap-3">
-      <a href={`${PAZURU_APP_URL}/settings`}>
+      <a href="/foroba-api/auth/handoff/pazuru?redirect=/settings">
         <Button className="w-full justify-start">🏦 Connect your bank account</Button>
       </a>
-      <a href={`${TSUMI_APP_URL}/settings`}>
+      <a href="/foroba-api/auth/handoff/tsumi?redirect=/settings">
         <Button variant="outline" className="w-full justify-start">
           📈 Add your stocks, ETFs, or crypto
         </Button>
