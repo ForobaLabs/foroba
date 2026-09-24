@@ -52,7 +52,11 @@ class Settings(BaseSettings):
     cookie_secure: bool = False  # True behind HTTPS in prod
     auth_db_path: str = "foroba_identity.db"
     seed_mock_users: bool = True
-    premium_gating_enabled: bool = True
+    # premium_gating_enabled is NOT a settings field here (Plan V, pazuru#152):
+    # its live value lives exclusively in the runtime_settings DB table via
+    # settings_store.py, and a since-removed pydantic default of True here
+    # (vs. the store's then-default of "false") was dead code nothing ever
+    # read — but it masked the actual disagreement between the two defaults.
     onboarding_mifid_enabled: bool = False
     auth_2fa_enabled: bool = True  # kill-switch only — see auth/router.py login()
 

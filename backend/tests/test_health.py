@@ -52,6 +52,24 @@ def test_health_detailed_ok_for_admin():
     body = resp.json()
     assert body["checks"]["db"] == "ok"
     assert "version" in body
+    assert body["checks"]["settings_drift"] == "ok"
+    assert body["settings_drift"] == {}
+
+
+def test_health_detailed_flags_settings_drift(monkeypatch):
+    monkeypatch.setattr(
+        main.settings_store, "check_drift", lambda conn: {"premium_gating_enabled": "false"}
+    )
+    main.app.dependency_overrides[require_admin] = lambda: {"id": 1, "is_admin": True}
+    client = TestClient(main.app)
+    resp = client.get("/health/detailed")
+    main.app.dependency_overrides.pop(require_admin, None)
+
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["status"] == "degraded"
+    assert body["checks"]["settings_drift"] == "drifted"
+    assert body["settings_drift"] == {"premium_gating_enabled": "false"}
 
 
 def test_health_rate_limited_after_burst():
