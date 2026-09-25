@@ -33,6 +33,30 @@ class LabChatRequest(BaseModel):
     allow_internet: bool = False
 
 
+class LabStatusResponse(BaseModel):
+    available: bool
+    reason: str | None = None
+
+
+@router.get("/status")
+async def lab_status(
+    user: dict = Depends(get_current_user),
+    conn=Depends(get_conn),
+) -> LabStatusResponse:
+    if settings.deployment_mode == "hosted" and not settings.lab_hosted_enabled:
+        return LabStatusResponse(
+            available=False, reason="Jeli Lab is not available in the hosted beta."
+        )
+
+    if get_all(conn).get("lab_service_enabled", "true") == "false":
+        return LabStatusResponse(
+            available=False,
+            reason="Jeli Lab is currently unavailable. Please try again later.",
+        )
+
+    return LabStatusResponse(available=True)
+
+
 @router.post("/chat")
 @limiter.limit("10/minute", key_func=session_rate_limit_key)
 async def lab_chat(

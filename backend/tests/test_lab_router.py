@@ -73,6 +73,73 @@ def test_lab_chat_hard_disabled_in_hosted_deployment_mode(monkeypatch):
         app.dependency_overrides.clear()
 
 
+def test_lab_status_available(monkeypatch):
+    conn = sqlite3.connect(":memory:", check_same_thread=False)
+    conn.row_factory = sqlite3.Row
+    init_schema(conn)
+    init_settings(conn)
+
+    app.dependency_overrides[get_conn] = lambda: conn
+    app.dependency_overrides[get_current_user] = lambda: {"id": 1, "email": "u1@test.local"}
+
+    try:
+        client = TestClient(app)
+        response = client.get("/lab/status")
+
+        assert response.status_code == 200
+        body = response.json()
+        assert body == {"available": True, "reason": None}
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_lab_status_hard_disabled_in_hosted_deployment_mode(monkeypatch):
+    conn = sqlite3.connect(":memory:", check_same_thread=False)
+    conn.row_factory = sqlite3.Row
+    init_schema(conn)
+    init_settings(conn)
+
+    import lab_router
+
+    monkeypatch.setattr(lab_router.settings, "deployment_mode", "hosted")
+
+    app.dependency_overrides[get_conn] = lambda: conn
+    app.dependency_overrides[get_current_user] = lambda: {"id": 1, "email": "u1@test.local"}
+
+    try:
+        client = TestClient(app)
+        response = client.get("/lab/status")
+
+        assert response.status_code == 200
+        body = response.json()
+        assert body["available"] is False
+        assert "hosted beta" in body["reason"].lower()
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_lab_status_disabled_returns_graceful_message(monkeypatch):
+    conn = sqlite3.connect(":memory:", check_same_thread=False)
+    conn.row_factory = sqlite3.Row
+    init_schema(conn)
+    init_settings(conn)
+    set_value(conn, "lab_service_enabled", "false")
+
+    app.dependency_overrides[get_conn] = lambda: conn
+    app.dependency_overrides[get_current_user] = lambda: {"id": 1, "email": "u1@test.local"}
+
+    try:
+        client = TestClient(app)
+        response = client.get("/lab/status")
+
+        assert response.status_code == 200
+        body = response.json()
+        assert body["available"] is False
+        assert "unavailable" in body["reason"].lower()
+    finally:
+        app.dependency_overrides.clear()
+
+
 def test_lab_chat_disabled_returns_graceful_message(monkeypatch):
     conn = sqlite3.connect(":memory:", check_same_thread=False)
     conn.row_factory = sqlite3.Row

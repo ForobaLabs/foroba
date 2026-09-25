@@ -20,11 +20,28 @@ export function JeliLabPage() {
   const [allowInternet, setAllowInternet] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
   const [sessionId] = useState(() => crypto.randomUUID());
+  const [labStatus, setLabStatus] = useState<{ available: boolean; reason: string | null } | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch('/foroba-api/lab/status', { credentials: 'include' });
+        if (!res.ok) {
+          setLabStatus({ available: true, reason: null });
+          return;
+        }
+        const body = (await res.json()) as { available: boolean; reason: string | null };
+        setLabStatus(body);
+      } catch {
+        setLabStatus({ available: true, reason: null });
+      }
+    })();
+  }, []);
 
   function patchLast(patch: Partial<Message>) {
     setMessages((prev) => {
@@ -38,7 +55,7 @@ export function JeliLabPage() {
   }
 
   async function sendMessage() {
-    if (!input.trim() || isStreaming) return;
+    if (!input.trim() || isStreaming || labStatus?.available === false) return;
 
     setMessages((prev) => [...prev, { role: 'user', content: input.trim(), artifacts: [] }]);
     const question = input.trim();
@@ -189,11 +206,21 @@ export function JeliLabPage() {
           </div>
 
           <div className="flex flex-col gap-2">
+            {labStatus?.available === false && (
+              <div className="rounded-[var(--radius-md)] border border-[var(--color-bg-border)] bg-[var(--color-bg-elevated)] px-3 py-2 text-sm text-[var(--color-text-secondary)]">
+                {labStatus.reason ?? 'Jeli Lab is currently unavailable.'}
+              </div>
+            )}
             <label
               className="flex items-center gap-1.5 text-xs text-[var(--color-text-secondary)]"
               title="Searches the public web via a local search instance; results are not saved beyond this conversation's memory."
             >
-              <input type="checkbox" checked={allowInternet} onChange={(e) => setAllowInternet(e.target.checked)} />
+              <input
+                type="checkbox"
+                checked={allowInternet}
+                onChange={(e) => setAllowInternet(e.target.checked)}
+                disabled={labStatus?.available === false}
+              />
               Allow web search for this question
             </label>
             <div className="text-[11px] text-[var(--color-text-secondary)]">
@@ -205,9 +232,10 @@ export function JeliLabPage() {
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter') void sendMessage(); }}
                 placeholder="Ask about your finances…"
-                className="flex-1 rounded-[var(--radius-md)] border border-[var(--color-bg-border)] bg-[var(--color-bg-elevated)] px-3 py-2 text-sm text-[var(--color-text-primary)]"
+                disabled={labStatus?.available === false}
+                className="flex-1 rounded-[var(--radius-md)] border border-[var(--color-bg-border)] bg-[var(--color-bg-elevated)] px-3 py-2 text-sm text-[var(--color-text-primary)] disabled:opacity-60"
               />
-              <Button onClick={() => void sendMessage()} disabled={isStreaming}>
+              <Button onClick={() => void sendMessage()} disabled={isStreaming || labStatus?.available === false}>
                 Send
               </Button>
             </div>
