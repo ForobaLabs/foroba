@@ -6,6 +6,11 @@ export function ServiceStatusBar() {
   const pazuru = usePazuruHealth();
   const tsumi = useTsumiHealth();
 
+  // pazuru#149 (PROD-PZR-D03): `data` is undefined during the initial fetch, so
+  // computing *Ok before the first result resolves would conflate "still checking"
+  // with "confirmed offline" and flash a false warning.
+  if (pazuru.isLoading || tsumi.isLoading) return null;
+
   const pazuruOk = pazuru.data?.status === 'ok';
   const tsumiOk = tsumi.data?.status === 'ok';
 

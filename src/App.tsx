@@ -16,7 +16,11 @@ export function App() {
   const { user, loading } = useAuth();
   const [jeliOpen, setJeliOpen] = useState(false);
   const { profile } = useUserProfile();
-  const { profile: suiteProfile } = useSuiteProfile();
+  // pazuru#148 (PROD-PZR-D02): gate on auth-readiness like consents-status below —
+  // otherwise this fires its own independent /jeli/auth/me call on every App mount,
+  // uncoordinated with (and able to race ahead of) the session query settling right
+  // after a fresh login+navigation.
+  const { profile: suiteProfile } = useSuiteProfile({ enabled: !loading && !!user });
   const { notifications, dismiss } = useNotifications();
   // CL-2.1 (foroba#238): check consent status once the session is resolved. The query is
   // disabled until we have an authenticated user so it never fires on the login page.
