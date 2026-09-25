@@ -83,7 +83,12 @@ export function PortfolioPage() {
         {online && <ConnectInvestmentButton variant="outline" />}
       </div>
 
-      {!online ? (
+      {health.isLoading ? (
+        // pazuru#149 (PROD-PZR-D03): `online` is false during the initial health
+        // check too (data is undefined), so without this branch the page would
+        // flash the "Offline" card before the check has actually resolved.
+        <LoadingState message="Checking Tsumi status…" />
+      ) : !online ? (
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center gap-2 mb-4">
