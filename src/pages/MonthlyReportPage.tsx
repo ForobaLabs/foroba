@@ -81,6 +81,16 @@ function MonthlyReportBody() {
     };
   }, [t]);
 
+  // Generation is now kicked off in the background and takes up to ~300s (no
+  // more request that blocks until it's done) — poll while any report is
+  // mid-generation so the badge/narrative update without a manual reload.
+  useEffect(() => {
+    if (!items.some((r) => r.status === 'generating')) return;
+    const intervalId = setInterval(() => void refresh(), 4000);
+    return () => clearInterval(intervalId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items]);
+
   async function generate() {
     setGenerating(true);
     setError(null);

@@ -60,22 +60,24 @@ def test_generate_requires_premium():
         _teardown()
 
 
-def test_generate_returns_report(monkeypatch):
+def test_generate_returns_report_immediately_without_running_generation(monkeypatch):
+    """foroba#281: the response must come back with a 'generating' row without
+    waiting for the ~300s generation — run_generation_in_background is scheduled
+    via BackgroundTasks but must not be the real (slow, network-calling) one here."""
     _override_user(_PREMIUM_USER)
-
-    async def fake_generate(
-        conn_, user, year_month, trigger, *, cookie, stepup_pazuru=None, stepup_tsumi=None
-    ):
-        return db.create_monthly_report(
-            conn_, user_id=user["id"], year_month=year_month, trigger=trigger
-        )
-
-    monkeypatch.setattr(mrs, "generate_new_report", fake_generate)
+    background_calls = []
+    monkeypatch.setattr(
+        mrs, "run_generation_in_background", lambda *a, **k: background_calls.append((a, k))
+    )
     try:
         client = TestClient(app)
         resp = client.post("/reports/monthly/generate", json={"year_month": "2026-07"})
         assert resp.status_code == 200
-        assert resp.json()["year_month"] == "2026-07"
+        body = resp.json()
+        assert body["year_month"] == "2026-07"
+        assert body["status"] == "generating"
+        assert len(background_calls) == 1
+        assert background_calls[0][0][0] == body["id"]
     finally:
         _teardown()
 
@@ -83,12 +85,10 @@ def test_generate_returns_report(monkeypatch):
 def test_generate_returns_429_on_quota_exceeded(monkeypatch):
     _override_user(_PREMIUM_USER)
 
-    async def fake_generate(
-        conn_, user, year_month, trigger, *, cookie, stepup_pazuru=None, stepup_tsumi=None
-    ):
+    def fake_start(conn_, user, year_month, trigger):
         raise mrs.QuotaExceededError(6)
 
-    monkeypatch.setattr(mrs, "generate_new_report", fake_generate)
+    monkeypatch.setattr(mrs, "start_new_report", fake_start)
     try:
         client = TestClient(app)
         resp = client.post("/reports/monthly/generate", json={"year_month": "2026-07"})
@@ -100,14 +100,45 @@ def test_generate_returns_429_on_quota_exceeded(monkeypatch):
 def test_retry_returns_409_on_invalid_retry(monkeypatch):
     _override_user(_PREMIUM_USER)
 
-    async def fake_retry(conn_, user, report_id, *, cookie, stepup_pazuru=None, stepup_tsumi=None):
+    def fake_start_retry(conn_, user, report_id):
         raise mrs.InvalidRetryError("success")
 
-    monkeypatch.setattr(mrs, "retry_report", fake_retry)
+    monkeypatch.setattr(mrs, "start_retry", fake_start_retry)
     try:
         client = TestClient(app)
         resp = client.post("/reports/monthly/1/retry")
         assert resp.status_code == 409
+    finally:
+        _teardown()
+
+
+def test_retry_returns_report_immediately_without_running_generation(monkeypatch):
+    _override_user(_PREMIUM_USER)
+    background_calls = []
+    monkeypatch.setattr(
+        mrs, "run_generation_in_background", lambda *a, **k: background_calls.append((a, k))
+    )
+    conn = app.dependency_overrides[get_conn]()
+    row = db.create_monthly_report(
+        conn, user_id=_PREMIUM_USER["id"], year_month="2026-07", trigger="manual"
+    )
+    db.update_monthly_report_result(
+        conn,
+        row["id"],
+        status="failed",
+        narrative_text=None,
+        context_snapshot_json=None,
+        error_message="boom",
+        attempt_count=1,
+    )
+    try:
+        client = TestClient(app)
+        resp = client.post(f"/reports/monthly/{row['id']}/retry")
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["status"] == "generating"
+        assert body["error_message"] is None
+        assert len(background_calls) == 1
     finally:
         _teardown()
 

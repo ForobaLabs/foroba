@@ -7,6 +7,7 @@ Pazuru/Tsumi context gathering — no new upstream endpoints.
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import sqlite3
@@ -14,6 +15,7 @@ from pathlib import Path
 
 import db
 import jeli_service
+from auth.conn import get_conn
 from config import settings
 from email_service import send_email
 from jeli_output_guard import sanitize_reply
@@ -90,53 +92,93 @@ async def _run_generation(
         logger.exception(
             "Monthly report generation failed for user %s (%s)", user["id"], row["year_month"]
         )
+        error_text = str(exc) or type(exc).__name__
         return db.update_monthly_report_result(
             conn,
             row["id"],
             status="failed",
             narrative_text=row["narrative_text"],
             context_snapshot_json=row["context_snapshot_json"],
-            error_message=str(exc)[:500],
+            error_message=error_text[:500],
             attempt_count=attempt_count,
         )
 
 
-async def generate_new_report(
+def start_new_report(
     conn: sqlite3.Connection,
     user: dict,
     year_month: str,
     trigger: str,
-    *,
-    cookie: str | None,
-    stepup_pazuru: str | None = None,
-    stepup_tsumi: str | None = None,
-) -> sqlite3.Row:
-    """Create a new report row and run generation once. Consumes quota — raises
-    QuotaExceededError if the (user, year_month) cap is already reached."""
+) -> dict:
+    """Quota-check and create the row for a new report. Fast/synchronous — does NOT
+    run generation; the caller schedules run_generation_in_background separately so
+    the ~300s LLM call never blocks the HTTP response. Raises QuotaExceededError if
+    the (user, year_month) cap is already reached."""
     count = db.count_monthly_reports_this_month(conn, user_id=user["id"], year_month=year_month)
     if count >= MONTHLY_REPORT_LIMIT:
         raise QuotaExceededError(MONTHLY_REPORT_LIMIT)
-    row = db.create_monthly_report(conn, user_id=user["id"], year_month=year_month, trigger=trigger)
-    return await _run_generation(
-        conn, row, user, cookie=cookie, stepup_pazuru=stepup_pazuru, stepup_tsumi=stepup_tsumi
+    return db.create_monthly_report(
+        conn, user_id=user["id"], year_month=year_month, trigger=trigger
     )
 
 
-async def retry_report(
-    conn: sqlite3.Connection,
-    user: dict,
-    report_id: int,
-    *,
-    cookie: str | None,
-    stepup_pazuru: str | None = None,
-    stepup_tsumi: str | None = None,
-) -> sqlite3.Row:
-    """Retry a failed report in place — never consumes quota."""
+def start_retry(conn: sqlite3.Connection, user: dict, report_id: int) -> dict:
+    """Validate a failed report and flip it back to 'generating'. Fast/synchronous —
+    does NOT run generation; the caller schedules run_generation_in_background
+    separately. Never consumes quota."""
     row = db.get_monthly_report(conn, report_id, user_id=user["id"])
     if row is None:
         raise ReportNotFoundError(report_id)
     if row["status"] != "failed":
         raise InvalidRetryError(row["status"])
-    return await _run_generation(
+    return db.update_monthly_report_result(
+        conn,
+        report_id,
+        status="generating",
+        narrative_text=row["narrative_text"],
+        context_snapshot_json=row["context_snapshot_json"],
+        error_message=None,
+        attempt_count=row["attempt_count"],
+    )
+
+
+def run_generation_in_background(
+    report_id: int,
+    user: dict,
+    *,
+    cookie: str | None,
+    stepup_pazuru: str | None = None,
+    stepup_tsumi: str | None = None,
+) -> None:
+    """Sync entry point for FastAPI's BackgroundTasks, which runs it on its own
+    worker thread (not the request's) — mirrors report_scheduler.py's
+    sync-wrapper-over-asyncio.run pattern for the same reason: fetch a fresh
+    thread-local conn via get_conn() here rather than reusing the request's
+    connection object, since that object is tied to whichever thread served the
+    request and reusing it from a different thread would reintroduce the
+    cross-thread shared-connection race fixed in foroba#170 (see auth/conn.py)."""
+    asyncio.run(
+        _run_generation_in_background_async(
+            report_id, user, cookie=cookie, stepup_pazuru=stepup_pazuru, stepup_tsumi=stepup_tsumi
+        )
+    )
+
+
+async def _run_generation_in_background_async(
+    report_id: int,
+    user: dict,
+    *,
+    cookie: str | None,
+    stepup_pazuru: str | None,
+    stepup_tsumi: str | None,
+) -> None:
+    conn = get_conn()
+    row = db.get_monthly_report(conn, report_id, user_id=user["id"])
+    if row is None:
+        logger.error(
+            "Background generation could not find report %s for user %s", report_id, user["id"]
+        )
+        return
+    await _run_generation(
         conn, row, user, cookie=cookie, stepup_pazuru=stepup_pazuru, stepup_tsumi=stepup_tsumi
     )

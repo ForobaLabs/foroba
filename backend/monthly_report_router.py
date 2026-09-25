@@ -5,7 +5,7 @@ from __future__ import annotations
 import sqlite3
 from datetime import date
 
-from fastapi import APIRouter, Cookie, Depends, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Cookie, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
@@ -69,6 +69,7 @@ class GenerateIn(BaseModel):
 @router.post("/generate")
 async def generate(
     body: GenerateIn,
+    background_tasks: BackgroundTasks,
     user: dict = Depends(require_feature(FEATURE_KEY)),
     conn: sqlite3.Connection = Depends(get_conn),
     suite_session: str | None = Cookie(default=None),
@@ -77,17 +78,20 @@ async def generate(
     # never forwarded to foroba-app.duckdns.org — mint server-side instead.
     stepup = issue_stepup_cookies(user["id"])
     try:
-        row = await mrs.generate_new_report(
-            conn,
-            user,
-            body.year_month,
-            trigger="manual",
-            cookie=suite_session,
-            stepup_pazuru=stepup["pazuru"],
-            stepup_tsumi=stepup["tsumi"],
-        )
+        row = mrs.start_new_report(conn, user, body.year_month, trigger="manual")
     except mrs.QuotaExceededError as exc:
         raise HTTPException(429, {"error": "monthly_limit_reached", "limit": exc.limit}) from exc
+    # Generation is CPU-bound and takes ~300s on the VPS — kick it off in the
+    # background and return the 'generating' row immediately instead of holding
+    # the request open (was hitting nginx's 60s proxy_read_timeout, foroba#281).
+    background_tasks.add_task(
+        mrs.run_generation_in_background,
+        row["id"],
+        user,
+        cookie=suite_session,
+        stepup_pazuru=stepup["pazuru"],
+        stepup_tsumi=stepup["tsumi"],
+    )
     return _to_out(row)
 
 
@@ -106,24 +110,26 @@ def get_report(
 @router.post("/{report_id}/retry")
 async def retry(
     report_id: int,
+    background_tasks: BackgroundTasks,
     user: dict = Depends(require_feature(FEATURE_KEY)),
     conn: sqlite3.Connection = Depends(get_conn),
     suite_session: str | None = Cookie(default=None),
 ) -> ReportOut:
     stepup = issue_stepup_cookies(user["id"])
     try:
-        row = await mrs.retry_report(
-            conn,
-            user,
-            report_id,
-            cookie=suite_session,
-            stepup_pazuru=stepup["pazuru"],
-            stepup_tsumi=stepup["tsumi"],
-        )
+        row = mrs.start_retry(conn, user, report_id)
     except mrs.ReportNotFoundError as exc:
         raise HTTPException(404, "Report not found") from exc
     except mrs.InvalidRetryError as exc:
         raise HTTPException(409, {"error": "not_failed", "status": str(exc)}) from exc
+    background_tasks.add_task(
+        mrs.run_generation_in_background,
+        row["id"],
+        user,
+        cookie=suite_session,
+        stepup_pazuru=stepup["pazuru"],
+        stepup_tsumi=stepup["tsumi"],
+    )
     return _to_out(row)
 
 
