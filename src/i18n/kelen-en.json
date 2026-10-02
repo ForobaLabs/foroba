@@ -1,0 +1,59 @@
+{
+  "kelenNav": {
+    "dashboard": "Dashboard",
+    "accounts": "Accounts",
+    "portfolio": "Portfolio",
+    "markets": "Markets",
+    "goals": "Goals",
+    "whatif": "What-If",
+    "monthlyReport": "Monthly report",
+    "household": "Household",
+    "developer": "API & Webhooks",
+    "lab": "Jeli Lab",
+    "admin": "Admin",
+    "settings": "Settings",
+    "profile": "Profile",
+    "security": "Security",
+    "help": "Help",
+    "legal": "Legal",
+    "about": "About",
+    "status": "Status"
+  },
+  "navGroups": {
+    "overview": "Overview",
+    "wealth": "Wealth",
+    "plan": "Plan",
+    "people": "People",
+    "build": "Build"
+  },
+  "accountMenu": {
+    "label": "Account menu",
+    "profile": "Profile",
+    "dataStays": "Your data stays on your server",
+    "appearance": "Appearance",
+    "language": "Language",
+    "currency": "Display currency",
+    "currencyHint": "Change in Settings"
+  },
+  "sidebar": {
+    "lightMode": "Light mode",
+    "darkMode": "Dark mode",
+    "systemMode": "System"
+  },
+  "jeli": {
+    "emptyTitle": "Ask Jeli about your wealth",
+    "emptyBody": "Jeli can explain your net worth, goals and portfolio. Ask in plain words.",
+    "inputLabel": "Message for Jeli",
+    "placeholder": "Ask a question…",
+    "send": "Send",
+    "stop": "Stop",
+    "newChat": "Start a new chat",
+    "unavailable": "Jeli isn't available right now. Check that the assistant service is running, then try again.",
+    "unreachable": "We couldn't reach Jeli. Check your connection and try again."
+  },
+  "switcher": {
+    "kelen": "Net worth, goals, simulation",
+    "yiriba": "ETFs, crypto, markets",
+    "naforo": "Bank accounts and budgets"
+  }
+}

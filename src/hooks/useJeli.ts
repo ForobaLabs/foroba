@@ -1,4 +1,5 @@
 import { useCallback, useRef, useState } from 'react';
+import i18n from '../i18n';
 
 export interface JeliMessage {
   role: 'user' | 'assistant';
@@ -83,20 +84,21 @@ export function useJeli(userName?: string) {
           const updated = [...prev];
           updated[updated.length - 1] = {
             ...updated[updated.length - 1],
-            content: 'Jeli is unavailable (AI offline). Make sure Ollama is running on this device.',
+            content: i18n.t('jeli.unavailable'),
           };
           return updated;
         });
       }
     } catch (err) {
       if ((err as Error).name !== 'AbortError') {
-        const msg = err instanceof Error ? err.message : 'Unknown error';
-        setError(`Jeli is not reachable: ${msg}`);
+        const serverSide = err instanceof Error && err.message.startsWith('HTTP');
+        const friendly = i18n.t(serverSide ? 'jeli.unavailable' : 'jeli.unreachable');
+        setError(friendly);
         setMessages((prev) => {
           const updated = [...prev];
           updated[updated.length - 1] = {
             ...updated[updated.length - 1],
-            content: 'Sorry, I could not connect to Jeli. Make sure the backend is running on port 8002.',
+            content: friendly,
           };
           return updated;
         });

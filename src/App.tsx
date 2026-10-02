@@ -1,9 +1,8 @@
-import { AppShell, Footer, NotificationBell, Sidebar, Spinner, Topbar, UserMenu, useSuiteProfile, useTheme, useUserProfile } from '@foroba/ui';
-import { useEffect, useState } from 'react';
-import { Navigate, Outlet, useLocation, useNavigate } from 'react-router';
+import { NotificationBell, Spinner, useTheme, useUserProfile } from '@foroba/ui';
+import { useEffect } from 'react';
+import { Navigate, Outlet, useLocation } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
-import { getNavItems } from './components/AppNavItems';
-import { JeliPanel } from './components/JeliPanel';
+import { KelenShell } from './components/KelenShell';
 import { useAuth } from './auth/AuthProvider';
 import { useNotifications } from './hooks/useNotifications';
 import { fetchConsentStatus } from './auth/api';
@@ -12,15 +11,8 @@ import i18n from './i18n';
 export function App() {
   useTheme(); // Applies dark/light class on mount
   const location = useLocation();
-  const navigate = useNavigate();
   const { user, loading } = useAuth();
-  const [jeliOpen, setJeliOpen] = useState(false);
   const { profile } = useUserProfile();
-  // pazuru#148 (PROD-PZR-D02): gate on auth-readiness like consents-status below —
-  // otherwise this fires its own independent /jeli/auth/me call on every App mount,
-  // uncoordinated with (and able to race ahead of) the session query settling right
-  // after a fresh login+navigation.
-  const { profile: suiteProfile } = useSuiteProfile({ enabled: !loading && !!user });
   const { notifications, dismiss } = useNotifications();
   // CL-2.1 (foroba#238): check consent status once the session is resolved. The query is
   // disabled until we have an authenticated user so it never fires on the login page.
@@ -67,65 +59,12 @@ export function App() {
     return <Navigate to="/" replace />;
   }
 
-  const navItems = getNavItems(user);
-
   return (
-    <>
-      <AppShell
-        sidebar={
-          <Sidebar
-            navItems={navItems}
-            activePath={location.pathname}
-            onNavigate={(href) => navigate(href)}
-            logo={
-              <span className="font-semibold tracking-tight text-[var(--color-text-primary)]">
-                Foroba
-              </span>
-            }
-          />
-        }
-        header={
-          <Topbar
-            hasSidebar={false}
-            breadcrumbs={[
-              { label: 'Foroba', href: '/' },
-              {
-                label:
-                  navItems.find((n) => n.href === location.pathname)?.label ??
-                  'Dashboard',
-              },
-            ]}
-            right={
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <NotificationBell notifications={notifications} onDismiss={dismiss} />
-
-                <UserMenu profile={suiteProfile} profileHref="/profile" />
-
-                <button
-                  onClick={() => setJeliOpen((o) => !o)}
-                  style={{
-                    padding: '6px 14px',
-                    borderRadius: '8px',
-                    border: '1px solid var(--color-accent)',
-                    backgroundColor: jeliOpen ? 'var(--color-accent)' : 'transparent',
-                    color: jeliOpen ? '#fff' : 'var(--color-accent)',
-                    fontSize: '13px',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    transition: 'all 0.15s',
-                  }}
-                >
-                  Jeli
-                </button>
-              </div>
-            }
-          />
-        }
-        footer={<Footer appName="Foroba" />}
-      >
-        <Outlet />
-      </AppShell>
-      <JeliPanel open={jeliOpen} onClose={() => setJeliOpen(false)} userName={profile.name || undefined} />
-    </>
+    <KelenShell
+      isAdmin={user.is_admin}
+      notifications={<NotificationBell notifications={notifications} onDismiss={dismiss} />}
+    >
+      <Outlet />
+    </KelenShell>
   );
 }

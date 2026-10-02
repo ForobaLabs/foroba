@@ -7,6 +7,7 @@ import i18n from './i18n';
 import { router } from './router';
 import { AuthProvider } from './auth/AuthProvider';
 import { CurrencyProvider } from './contexts/CurrencyContext';
+import { PrivacyProvider } from './contexts/PrivacyContext';
 import '@fontsource-variable/geist';
 import '@fontsource-variable/geist-mono';
 import './global.css';
@@ -31,9 +32,11 @@ createRoot(rootEl).render(
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <CurrencyProvider>
-          <I18nextProvider i18n={i18n}>
-            <RouterProvider router={router} />
-          </I18nextProvider>
+          <PrivacyProvider>
+            <I18nextProvider i18n={i18n}>
+              <RouterProvider router={router} />
+            </I18nextProvider>
+          </PrivacyProvider>
         </CurrencyProvider>
       </AuthProvider>
     </QueryClientProvider>

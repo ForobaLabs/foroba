@@ -1,0 +1,59 @@
+{
+  "kelenNav": {
+    "dashboard": "Tableau de bord",
+    "accounts": "Comptes",
+    "portfolio": "Portefeuille",
+    "markets": "Marchés",
+    "goals": "Objectifs",
+    "whatif": "Et si…",
+    "monthlyReport": "Rapport mensuel",
+    "household": "Foyer",
+    "developer": "API et webhooks",
+    "lab": "Jeli Lab",
+    "admin": "Admin",
+    "settings": "Paramètres",
+    "profile": "Profil",
+    "security": "Sécurité",
+    "help": "Aide",
+    "legal": "Mentions légales",
+    "about": "À propos",
+    "status": "État"
+  },
+  "navGroups": {
+    "overview": "Aperçu",
+    "wealth": "Patrimoine",
+    "plan": "Planifier",
+    "people": "Proches",
+    "build": "Développement"
+  },
+  "accountMenu": {
+    "label": "Menu du compte",
+    "profile": "Profil",
+    "dataStays": "Vos données restent sur votre serveur",
+    "appearance": "Apparence",
+    "language": "Langue",
+    "currency": "Devise d'affichage",
+    "currencyHint": "À modifier dans les Paramètres"
+  },
+  "sidebar": {
+    "lightMode": "Mode clair",
+    "darkMode": "Mode sombre",
+    "systemMode": "Système"
+  },
+  "jeli": {
+    "emptyTitle": "Demandez à Jeli pour votre patrimoine",
+    "emptyBody": "Jeli peut expliquer votre patrimoine net, vos objectifs et votre portefeuille. Posez votre question simplement.",
+    "inputLabel": "Message pour Jeli",
+    "placeholder": "Posez une question…",
+    "send": "Envoyer",
+    "stop": "Arrêter",
+    "newChat": "Nouvelle conversation",
+    "unavailable": "Jeli n'est pas disponible pour le moment. Vérifiez que le service assistant fonctionne, puis réessayez.",
+    "unreachable": "Impossible de joindre Jeli. Vérifiez votre connexion et réessayez."
+  },
+  "switcher": {
+    "kelen": "Patrimoine, objectifs, simulation",
+    "yiriba": "ETF, crypto, marchés",
+    "naforo": "Comptes bancaires et budgets"
+  }
+}
