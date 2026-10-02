@@ -458,7 +458,7 @@
       "4": "Strong"
     },
     "intent": "You are signing up for {{app}}.",
-    "intentPremium": "Paid plans are not available yet — you start on the Free plan and we keep your interest in Premium on this device only."
+    "intentPremium": "Paid plans are not available yet — you start on the Free plan and we keep your interest in a paid plan on this device only."
   },
   "enroll": {
     "errPasskey": "Passkey setup failed.",

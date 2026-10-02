@@ -73,6 +73,15 @@ test("shows the sign-up intent from the site and stays honest about paid plans",
   window.history.pushState({}, "", "/");
 });
 
+test("accepts the expert plan intent and stays honest about paid plans", () => {
+  sessionStorage.clear();
+  window.history.pushState({}, "", "/register?app=yiriba&plan=expert");
+  renderPage();
+  expect(screen.getByRole("note")).toHaveTextContent(/not available yet/i);
+  expect(JSON.parse(sessionStorage.getItem("foroba.signupIntent") ?? "{}")).toEqual({ app: "yiriba", plan: "expert" });
+  window.history.pushState({}, "", "/");
+});
+
 test("ignores a hostile intent", () => {
   sessionStorage.clear();
   window.history.pushState({}, "", "/register?app=https://evil.example&plan=premium");

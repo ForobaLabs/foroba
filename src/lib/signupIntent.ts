@@ -1,12 +1,12 @@
 // Sign-up intent carried from the Foroba Labs site (?app=&plan=). Client-only and
 // advisory: it never grants a plan and is never sent to the server.
 export type IntentApp = 'naforo' | 'yiriba' | 'kelen';
-export type IntentPlan = 'free' | 'premium';
+export type IntentPlan = 'free' | 'premium' | 'expert';
 export interface SignupIntent { app: IntentApp; plan: IntentPlan }
 
 const KEY = 'foroba.signupIntent';
 const APPS: readonly IntentApp[] = ['naforo', 'yiriba', 'kelen'];
-const PLANS: readonly IntentPlan[] = ['free', 'premium'];
+const PLANS: readonly IntentPlan[] = ['free', 'premium', 'expert'];
 const HANDOFF: Record<IntentApp, string | null> = { naforo: 'pazuru', yiriba: 'tsumi', kelen: null };
 
 const asApp = (v: unknown): IntentApp | null => (APPS as readonly unknown[]).includes(v) ? (v as IntentApp) : null;

@@ -106,7 +106,7 @@ export function RegisterPage() {
         {intent && (
           <p role="note" className="mb-4 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-3 text-sm text-[var(--color-text-secondary)]">
             {t("register.intent", { app: intent.app.charAt(0).toUpperCase() + intent.app.slice(1) })}
-            {intent.plan === "premium" && <> {t("register.intentPremium")}</>}
+            {intent.plan !== "free" && <> {t("register.intentPremium")}</>}
           </p>
         )}
         <form onSubmit={onSubmit} className="flex flex-col gap-4">
