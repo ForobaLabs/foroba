@@ -36,6 +36,7 @@ export function GoalsPage() {
   const [form, setForm] = useState({ title: '', target: '', current: '0', date: '', contribution: '0' });
   const [touched, setTouched] = useState(false);
   const [confirmId, setConfirmId] = useState<string | null>(null);
+  const [saveFailed, setSaveFailed] = useState(false);
   const refs = useRef<Partial<Record<GoalField, HTMLInputElement | null>>>({});
 
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
@@ -78,14 +79,26 @@ export function GoalsPage() {
     setTouched(false);
   };
 
-  const handleAdd = () => {
+  // Writes go through Naforo; if it is unreachable the hook rejects, so say so instead of failing silently.
+  const guarded = async (fn: () => Promise<unknown>): Promise<boolean> => {
+    setSaveFailed(false);
+    try {
+      await fn();
+      return true;
+    } catch {
+      setSaveFailed(true);
+      return false;
+    }
+  };
+
+  const handleAdd = async () => {
     setTouched(true);
     const { values, firstInvalid } = validation;
     if (!values) {
       if (firstInvalid) refs.current[firstInvalid]?.focus();
       return;
     }
-    addGoal({
+    const ok = await guarded(() => addGoal({
       title: values.title,
       // Pazuru's Goal model has no category field yet — every goal is
       // 'other' until (if ever) the upstream schema grows one; a selector
@@ -96,7 +109,8 @@ export function GoalsPage() {
       currency,
       targetDate: values.date,
       monthlyContribution: values.contribution,
-    });
+    }));
+    if (!ok) return;
     setForm({ title: '', target: '', current: '0', date: '', contribution: '0' });
     closeForm();
   };
@@ -136,14 +150,14 @@ export function GoalsPage() {
   const renderGoal = (goal: (typeof goals)[number], completed: boolean) => (
     <div key={goal.id}>
       <div className="[overflow-wrap:anywhere]">
-        <GoalCard goal={goal} onUpdate={completed ? undefined : (g) => updateGoal(g.id, g)} />
+        <GoalCard goal={goal} onUpdate={completed ? undefined : (g) => void guarded(() => updateGoal(g.id, g))} />
       </div>
       {confirmId === goal.id ? (
         <div role="alertdialog" aria-label={t('goals.removeAria', { title: goal.title })} className="mt-2 flex flex-wrap items-center gap-2 rounded-lg border border-[var(--color-negative)]/40 px-3 py-2">
           <p className="min-w-0 flex-1 text-sm text-[var(--color-text-primary)] [overflow-wrap:anywhere]">
             {t('goals.confirmRemove', { title: goal.title })}
           </p>
-          <button type="button" className={`${ghostBtn} text-[var(--color-negative)]`} onClick={() => { removeGoal(goal.id); setConfirmId(null); }}>
+          <button type="button" className={`${ghostBtn} text-[var(--color-negative)]`} onClick={() => { void guarded(() => removeGoal(goal.id)); setConfirmId(null); }}>
             {t('goals.confirmYes')}
           </button>
           <button type="button" className={ghostBtn} onClick={() => setConfirmId(null)}>{t('goals.keep')}</button>
@@ -154,7 +168,7 @@ export function GoalsPage() {
             <button
               type="button"
               aria-label={t('goals.doneAria', { title: goal.title })}
-              onClick={() => updateGoal(goal.id, { currentAmount: goal.targetAmount })}
+              onClick={() => void guarded(() => updateGoal(goal.id, { currentAmount: goal.targetAmount }))}
               className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg px-3 text-sm font-medium text-[var(--color-positive)] hover:bg-[var(--color-positive)]/10"
             >
               {t('goals.done')}
@@ -183,10 +197,16 @@ export function GoalsPage() {
         className="mb-6 flex-wrap"
       />
 
+      {saveFailed && (
+        <p role="alert" className="mb-4 rounded-lg border border-[var(--color-negative)]/40 px-3 py-2 text-sm text-[var(--color-negative)]">
+          {t('goals.saveError')}
+        </p>
+      )}
+
       {showForm && (
         <form
           noValidate
-          onSubmit={(e) => { e.preventDefault(); handleAdd(); }}
+          onSubmit={(e) => { e.preventDefault(); void handleAdd(); }}
           className="mb-6 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-5"
         >
           <h2 className="mb-4 text-sm font-semibold text-[var(--color-text-primary)]">{t('goals.newTitle')}</h2>

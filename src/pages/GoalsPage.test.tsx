@@ -100,4 +100,18 @@ describe('GoalsPage', () => {
     expect(screen.queryByText('Inserisci un numero, per esempio 5000')).toBeNull();
     expect(screen.getByRole('heading', { level: 1, name: 'Obiettivi finanziari' })).toBeInTheDocument();
   });
+
+  it('keeps the form open and tells the user when saving fails', async () => {
+    vi.stubGlobal('fetch', vi.fn((u: string, i?: RequestInit) =>
+      i?.method === 'POST'
+        ? Promise.resolve({ ok: false, status: 502, json: async () => ({}) } as Response)
+        : fakeGoalsApi(u, i)));
+    mount();
+    await userEvent.click(screen.getByRole('button', { name: /New goal/ }));
+    await userEvent.type(screen.getByLabelText('Title'), 'Trip');
+    await userEvent.type(screen.getByLabelText(/Target amount/), '5000');
+    await userEvent.click(screen.getByRole('button', { name: 'Save goal' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent(/couldn't save/i);
+    expect(screen.getByLabelText('Title')).toHaveValue('Trip');
+  });
 });

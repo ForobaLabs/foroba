@@ -188,7 +188,8 @@
       "title": "Ancora nessun obiettivo",
       "message": "Scegli per cosa risparmiare, fissa un importo e Kelen ti mostrerà quanto ci vuole.",
       "action": "Crea il tuo primo obiettivo"
-    }
+    },
+    "saveError": "Non siamo riusciti a salvare la modifica. Controlla la connessione e riprova."
   },
   "household": {
     "title": "Famiglia",

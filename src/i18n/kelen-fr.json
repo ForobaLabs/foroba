@@ -188,7 +188,8 @@
       "title": "Aucun objectif pour l'instant",
       "message": "Choisissez pour quoi épargner, fixez un montant et Kelen vous montre le temps nécessaire.",
       "action": "Créer votre premier objectif"
-    }
+    },
+    "saveError": "Nous n'avons pas pu enregistrer votre modification. Vérifiez votre connexion et réessayez."
   },
   "household": {
     "title": "Foyer",
