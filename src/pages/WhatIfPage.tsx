@@ -168,7 +168,7 @@ function WhatIfBuilder() {
           className={inputCls}
         />
         {err ? (
-          <p id={`whatif-${id}-err`} className={errCls}>{t(`whatif.errors.${err}`, MESSAGES[err])}</p>
+          <p id={`whatif-${id}-err`} role="alert" className={errCls}>{t(`whatif.errors.${err}`, MESSAGES[err])}</p>
         ) : (
           <p id={`whatif-${id}-help`} className={helpCls}>{help}</p>
         )}
@@ -291,7 +291,7 @@ function WhatIfBuilder() {
             </Card>
           )}
           {lastPoint ? (
-            <Card>
+            <Card className={validation.values ? undefined : 'opacity-50'}>
               <CardContent className="space-y-4 p-4">
                 <div
                   aria-live="polite"
