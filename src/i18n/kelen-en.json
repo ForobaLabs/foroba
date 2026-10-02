@@ -111,7 +111,8 @@
     "soon": "Premium isn't available to buy yet. This page will unlock automatically when it is.",
     "whatif": "See how a small monthly change adds up over the years, side by side with your current path.",
     "monthlyReport": "A plain-language summary of your month, written by Jeli and ready as a PDF.",
-    "developer": "Create API keys and webhooks to connect Kelen to your own tools."
+    "developer": "Create API keys and webhooks to connect Kelen to your own tools.",
+    "hidden": "This page is not part of your current profile, so there's nothing to set up here."
   },
   "dashboard": {
     "title": "Dashboard",

@@ -111,7 +111,8 @@
     "soon": "Premium non è ancora acquistabile. Questa pagina si sbloccherà da sola quando lo sarà.",
     "whatif": "Scopri come una piccola variazione mensile cresce negli anni, accanto alla tua strada attuale.",
     "monthlyReport": "Un riepilogo del tuo mese in parole semplici, scritto da Jeli e pronto in PDF.",
-    "developer": "Crea chiavi API e webhook per collegare Kelen ai tuoi strumenti."
+    "developer": "Crea chiavi API e webhook per collegare Kelen ai tuoi strumenti.",
+    "hidden": "Questa pagina non fa parte del tuo profilo attuale, quindi qui non c'è nulla da configurare."
   },
   "dashboard": {
     "title": "Dashboard",

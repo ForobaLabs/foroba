@@ -18,8 +18,6 @@ export function DeveloperPage() {
   const { t } = useTranslation();
   const { visible, unlocked } = useEntitlement('platform.public_api');
 
-  if (!visible) return null;
-
   return (
     <PageContainer>
       <SectionHeader as="h1" title={t('developer.title', 'API & Webhooks')} />

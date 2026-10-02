@@ -23,8 +23,6 @@ export function MonthlyReportPage() {
   const { t } = useTranslation();
   const { visible, unlocked } = useEntitlement('banking.monthly_ai_report');
 
-  if (!visible) return null;
-
   return (
     <PageContainer>
       <SectionHeader as="h1" title={t('monthlyReport.title', 'Monthly Report')} />

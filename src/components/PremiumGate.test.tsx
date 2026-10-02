@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { I18nextProvider } from 'react-i18next';
+import { MemoryRouter } from 'react-router';
 import { describe, expect, it } from 'vitest';
 import i18n from '../i18n';
 import { PremiumGate } from './PremiumGate';
@@ -27,5 +28,21 @@ describe('PremiumGate', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Unlock Premium' }));
     expect(screen.getByRole('status')).toHaveTextContent(/isn't available to buy yet/);
     expect(screen.queryByText(/free trial/i)).toBeNull();
+  });
+
+  it('explains itself instead of rendering a blank page when the feature is hidden for this profile', async () => {
+    await i18n.changeLanguage('en');
+    render(
+      <I18nextProvider i18n={i18n}>
+        <MemoryRouter>
+          <PremiumGate visible={false} unlocked={false} feature="What-If" description="Desc">
+            <p>builder</p>
+          </PremiumGate>
+        </MemoryRouter>
+      </I18nextProvider>,
+    );
+    expect(screen.queryByText('builder')).toBeNull();
+    expect(screen.getByRole('status')).toHaveTextContent(/not part of your current profile/i);
+    expect(screen.getByRole('link', { name: /dashboard/i })).toHaveAttribute('href', '/');
   });
 });

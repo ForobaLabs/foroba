@@ -111,7 +111,8 @@
     "soon": "Premium n'est pas encore disponible à l'achat. Cette page se débloquera automatiquement le moment venu.",
     "whatif": "Voyez comment un petit changement mensuel s'accumule au fil des ans, à côté de votre trajectoire actuelle.",
     "monthlyReport": "Un résumé de votre mois en langage clair, rédigé par Jeli et disponible en PDF.",
-    "developer": "Créez des clés API et des webhooks pour relier Kelen à vos propres outils."
+    "developer": "Créez des clés API et des webhooks pour relier Kelen à vos propres outils.",
+    "hidden": "Cette page ne fait pas partie de votre profil actuel, il n'y a donc rien à configurer ici."
   },
   "dashboard": {
     "title": "Tableau de bord",

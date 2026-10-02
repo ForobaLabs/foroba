@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { LockedFeatureCard } from '@foroba/ui';
+import { Link } from 'react-router';
+import { EmptyState, LockedFeatureCard } from '@foroba/ui';
 
 interface PremiumGateProps {
   visible: boolean;
@@ -19,7 +20,24 @@ interface PremiumGateProps {
 export function PremiumGate({ visible, unlocked, feature, description, children }: PremiumGateProps) {
   const { t } = useTranslation();
   const [noticed, setNoticed] = useState(false);
-  if (!visible) return null;
+  if (!visible) {
+    return (
+      <>
+        <EmptyState
+          title={feature}
+          message={t('premium.hidden')}
+          action={
+            <Link
+              to="/"
+              className="inline-flex min-h-11 items-center justify-center rounded-lg bg-[var(--color-accent)] px-4 text-sm font-semibold text-[var(--color-accent-fg,#fff)] hover:opacity-90"
+            >
+              {t('notFound.home')}
+            </Link>
+          }
+        />
+      </>
+    );
+  }
   if (unlocked) return <>{children}</>;
   return (
     <div className="mx-auto max-w-lg">

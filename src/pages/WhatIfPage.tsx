@@ -31,8 +31,6 @@ export function WhatIfPage() {
   const { t } = useTranslation();
   const { visible, unlocked } = useEntitlement('household.whatif_simulator');
 
-  if (!visible) return null;
-
   return (
     <PageContainer>
       <SectionHeader as="h1" title={t('whatif.title')} description={t('whatif.subtitle')} />
