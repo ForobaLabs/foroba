@@ -17,6 +17,7 @@ from auth.dependencies import get_current_user
 from billing.events import parse_paddle_event
 from billing.paddle_signature import SignatureError, verify_signature
 from billing.service import apply_event, tier_for
+from billing.sweep import sweep_expired
 from config import settings
 from main import app
 
@@ -282,3 +283,42 @@ def test_checkout_disabled_returns_503(client, monkeypatch):
         client.post("/billing/checkout-session", json={"plan": "premium_monthly"}).status_code
         == 503
     )
+
+
+# --- multi-subscription tier + past_due sweep -----------------------------------
+def test_second_subscription_keeps_premium_when_first_cancels(conn):
+    apply_event(conn, parse_paddle_event(payload(sub="sub_1")), now=NOW)
+    apply_event(conn, parse_paddle_event(payload(event_id="evt_b", sub="sub_2")), now=NOW)
+    cancel = payload(
+        event_id="evt_c",
+        etype="subscription.canceled",
+        status="canceled",
+        sub="sub_1",
+        occurred="2026-11-02T10:00:00Z",
+    )
+    apply_event(conn, parse_paddle_event(cancel), now=NOW)
+    assert user(conn)["tier"] == "premium"
+
+
+def test_sweep_downgrades_expired_past_due(conn):
+    ev = payload(status="past_due", etype="subscription.past_due", occurred="2026-11-01T10:00:00Z")
+    apply_event(conn, parse_paddle_event(ev), now=NOW)
+    assert user(conn)["tier"] == "premium"  # inside grace
+    assert sweep_expired(conn, now=NOW + timedelta(days=8), grace_days=7) == 1
+    assert user(conn)["tier"] == "free"
+    assert sweep_expired(conn, now=NOW + timedelta(days=9), grace_days=7) == 0
+
+
+def test_sweep_leaves_in_grace_and_active_alone(conn):
+    apply_event(conn, parse_paddle_event(payload()), now=NOW)
+    assert sweep_expired(conn, now=NOW + timedelta(days=30), grace_days=7) == 0
+    assert user(conn)["tier"] == "premium"
+
+
+def test_sweep_skips_admins(conn):
+    ev = payload(status="past_due", etype="subscription.past_due")
+    apply_event(conn, parse_paddle_event(ev), now=NOW)
+    conn.execute("UPDATE users SET is_admin=1, tier='premium'")
+    conn.commit()
+    sweep_expired(conn, now=NOW + timedelta(days=30), grace_days=7)
+    assert user(conn)["tier"] == "premium"

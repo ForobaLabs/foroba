@@ -41,6 +41,7 @@ from auth.token_router import router as token_router
 from auth.webhooks_router import router as webhooks_router
 from backup_scheduler import start_backup_scheduler
 from billing.router import router as billing_router
+from billing.sweep import start_billing_sweep_scheduler
 from config import settings
 from db import purge_mock_users as _purge
 from db import seed_demo_household as _seed_household
@@ -158,6 +159,7 @@ def _startup() -> None:
     start_webhook_dispatch_scheduler()
     start_backup_scheduler()
     start_retention_scheduler()
+    start_billing_sweep_scheduler()
 
 
 class Personality(BaseModel):

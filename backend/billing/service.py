@@ -23,6 +23,23 @@ def _iso(value: datetime | None) -> str | None:
     return value.astimezone(UTC).isoformat() if value else None
 
 
+def recompute_tier(
+    conn: sqlite3.Connection, user_id: int, *, now: datetime, grace_days: int
+) -> str:
+    """Premium if ANY of the user's subscriptions currently grants it. Caller commits."""
+    rows = conn.execute(
+        "SELECT status, last_event_at FROM subscriptions WHERE user_id = ?", (user_id,)
+    ).fetchall()
+    tier = "free"
+    for row in rows:
+        since = datetime.fromisoformat(row["last_event_at"])
+        if tier_for(row["status"], since, now, grace_days) == "premium":
+            tier = "premium"
+            break
+    conn.execute("UPDATE users SET tier = ? WHERE id = ?", (tier, user_id))
+    return tier
+
+
 def apply_event(
     conn: sqlite3.Connection,
     ev: SubscriptionEvent,
@@ -77,9 +94,6 @@ def apply_event(
         ),
     )
     if not user["is_admin"]:
-        conn.execute(
-            "UPDATE users SET tier = ? WHERE id = ?",
-            (tier_for(ev.status, ev.occurred_at, now, grace_days), ev.user_id),
-        )
+        recompute_tier(conn, ev.user_id, now=now, grace_days=grace_days)
     conn.commit()
     return "applied"
