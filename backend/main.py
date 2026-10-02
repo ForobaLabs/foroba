@@ -40,6 +40,7 @@ from auth.router import router as auth_router
 from auth.token_router import router as token_router
 from auth.webhooks_router import router as webhooks_router
 from backup_scheduler import start_backup_scheduler
+from billing.router import router as billing_router
 from config import settings
 from db import purge_mock_users as _purge
 from db import seed_demo_household as _seed_household
@@ -134,6 +135,7 @@ app.include_router(fx_router)
 app.include_router(api_keys_router)
 app.include_router(webhooks_router)
 app.include_router(public_api_router)
+app.include_router(billing_router)
 
 
 @app.on_event("startup")

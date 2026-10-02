@@ -13,6 +13,13 @@ class Settings(BaseSettings):
     # prior default, phi3.5:latest, crashed the whole Ollama process under load.
     ollama_model: str = "qwen2.5:3b-instruct"
 
+    # --- Subscription billing (BR-12). Off by default: routes return 503 and no
+    # tier is ever changed by a payment event until explicitly enabled. ---
+    billing_enabled: bool = False
+    billing_provider: str = "fake"  # fake | paddle
+    paddle_webhook_secret: str = ""
+    billing_grace_days: int = 7
+
     # --- Deployment mode (GL-4.3, foroba#174) ---
     # "hosted" = multi-tenant beta on the VPS: Jeli Lab (arbitrary code-gen sandbox)
     # is hard-disabled regardless of the lab_service_enabled runtime toggle, since

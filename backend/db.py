@@ -137,6 +137,30 @@ CREATE TABLE IF NOT EXISTS api_keys (
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+-- Subscription billing (BR-12). Provider ids only: no card data, no raw webhook payloads.
+CREATE TABLE IF NOT EXISTS subscriptions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    provider TEXT NOT NULL,
+    provider_subscription_id TEXT NOT NULL,
+    provider_customer_id TEXT,
+    status TEXT NOT NULL,
+    current_period_end TEXT,
+    cancel_at_period_end INTEGER NOT NULL DEFAULT 0,
+    last_event_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    UNIQUE (provider, provider_subscription_id)
+);
+CREATE INDEX IF NOT EXISTS idx_subscriptions_user ON subscriptions (user_id);
+
+-- Idempotency ledger: one row per processed webhook event id.
+CREATE TABLE IF NOT EXISTS billing_events (
+    event_id TEXT PRIMARY KEY,
+    event_type TEXT NOT NULL,
+    occurred_at TEXT NOT NULL,
+    received_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
 -- Registered webhook targets (foroba#165, TI-D item 5, Plan A). signing_secret is
 -- stored plaintext — it is needed on every delivery to compute the outgoing HMAC,
 -- unlike a login credential it is never used to authenticate an inbound request.
