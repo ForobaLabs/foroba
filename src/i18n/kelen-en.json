@@ -489,5 +489,29 @@
     "copied": "Copied",
     "downloadCodes": "Download as text file",
     "saved": "I've saved these codes"
+  },
+  "positionDetail": {
+    "back": "Back to portfolio",
+    "loading": "Loading position…",
+    "error": "Could not load this position from Yiriba.",
+    "notFound": "Position not found.",
+    "value": "Value",
+    "quantity": "Quantity",
+    "avgCost": "Average cost",
+    "currentPrice": "Current price",
+    "accountType": "Account type",
+    "purchaseDate": "Purchase date",
+    "currency": "Currency"
+  },
+  "profilePage": {
+    "title": "Profile",
+    "description": "Your identity is shared across Foroba, Naforo and Yiriba.",
+    "changePhoto": "Change photo",
+    "firstName": "First name",
+    "lastName": "Last name",
+    "saving": "Saving…",
+    "saveName": "Save name",
+    "localNote": "Preferences below are stored on this device only. Your name and photo above are shared across the whole suite.",
+    "avatarAlt": "Profile photo"
   }
 }

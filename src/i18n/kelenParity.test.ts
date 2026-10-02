@@ -19,3 +19,12 @@ test('data-page keys exist in en, it and fr', () => {
   expect(flat(it.data).sort()).toEqual(keys);
   expect(flat(fr.data).sort()).toEqual(keys);
 });
+
+test('position-detail and profile-page keys exist in en, it and fr', () => {
+  for (const section of ['positionDetail', 'profilePage'] as const) {
+    const keys = flat(en[section]).sort();
+    expect(keys.length).toBeGreaterThan(5);
+    expect(flat(it[section]).sort()).toEqual(keys);
+    expect(flat(fr[section]).sort()).toEqual(keys);
+  }
+});

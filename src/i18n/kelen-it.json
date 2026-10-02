@@ -489,5 +489,29 @@
     "copied": "Copiato",
     "downloadCodes": "Scarica come file di testo",
     "saved": "Ho salvato questi codici"
+  },
+  "positionDetail": {
+    "back": "Torna al portafoglio",
+    "loading": "Caricamento della posizione…",
+    "error": "Impossibile caricare questa posizione da Yiriba.",
+    "notFound": "Posizione non trovata.",
+    "value": "Valore",
+    "quantity": "Quantità",
+    "avgCost": "Costo medio",
+    "currentPrice": "Prezzo attuale",
+    "accountType": "Tipo di conto",
+    "purchaseDate": "Data di acquisto",
+    "currency": "Valuta"
+  },
+  "profilePage": {
+    "title": "Profilo",
+    "description": "La tua identità è condivisa tra Foroba, Naforo e Yiriba.",
+    "changePhoto": "Cambia foto",
+    "firstName": "Nome",
+    "lastName": "Cognome",
+    "saving": "Salvataggio…",
+    "saveName": "Salva nome",
+    "localNote": "Le preferenze qui sotto sono salvate solo su questo dispositivo. Nome e foto sopra sono condivisi in tutta la suite.",
+    "avatarAlt": "Foto del profilo"
   }
 }

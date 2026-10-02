@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ProfileEditor, useUserProfile, useSuiteProfile, PageContainer, SectionHeader, FinanceLevelBadge } from '@foroba/ui';
 
 // GL-12: this page only renders within Foroba itself, so nginx's /jeli/*
@@ -7,6 +8,7 @@ import { ProfileEditor, useUserProfile, useSuiteProfile, PageContainer, SectionH
 // that leaked into hosted builds whenever VITE_FOROBA_API_URL wasn't set.
 
 export function ProfilePage() {
+  const { t } = useTranslation();
   const { profile, updateProfile } = useUserProfile();
   const { profile: suiteProfile, refetch } = useSuiteProfile();
   // Local draft overrides the fetched suite profile while the user is editing;
@@ -48,8 +50,8 @@ export function ProfilePage() {
   return (
     <PageContainer>
       <SectionHeader
-        title="Profile"
-        description="Your identity is shared across Foroba, Naforo, and Yiriba"
+        title={t('profilePage.title')}
+        description={t('profilePage.description')}
         className="mb-6"
       />
 
@@ -59,7 +61,7 @@ export function ProfilePage() {
             {suiteProfile?.avatarUrl ? (
               <img
                 src={suiteProfile.avatarUrl}
-                alt={suiteProfile.fullName}
+                alt={suiteProfile.fullName || t('profilePage.avatarAlt')}
                 className="h-14 w-14 rounded-full object-cover"
               />
             ) : (
@@ -67,8 +69,8 @@ export function ProfilePage() {
                 {suiteProfile ? `${suiteProfile.firstName.slice(0, 1)}${suiteProfile.lastName.slice(0, 1)}`.toUpperCase() : '?'}
               </div>
             )}
-            <label className="text-sm text-[var(--color-accent)] cursor-pointer">
-              Change photo
+            <label className="inline-flex min-h-11 cursor-pointer items-center text-sm text-[var(--color-accent)]">
+              {t('profilePage.changePhoto')}
               <input type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={uploadAvatar} />
             </label>
           </div>
@@ -76,22 +78,24 @@ export function ProfilePage() {
             <input
               value={firstName}
               onChange={(e) => setNameDraft({ firstName: e.target.value, lastName })}
-              placeholder="First name"
+              placeholder={t('profilePage.firstName')}
+              aria-label={t('profilePage.firstName')}
               className="w-full rounded-lg border border-[var(--color-border)] bg-transparent px-3 py-2 text-sm"
             />
             <input
               value={lastName}
               onChange={(e) => setNameDraft({ firstName, lastName: e.target.value })}
-              placeholder="Last name"
+              placeholder={t('profilePage.lastName')}
+              aria-label={t('profilePage.lastName')}
               className="w-full rounded-lg border border-[var(--color-border)] bg-transparent px-3 py-2 text-sm"
             />
           </div>
           <button
             onClick={saveName}
             disabled={saving || !firstName.trim()}
-            className="mt-3 rounded-lg bg-[var(--color-accent)] px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+            className="mt-3 min-h-11 rounded-lg bg-[var(--color-accent)] px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
           >
-            {saving ? 'Saving…' : 'Save name'}
+            {saving ? t('profilePage.saving') : t('profilePage.saveName')}
           </button>
         </div>
 
@@ -104,8 +108,7 @@ export function ProfilePage() {
         </div>
 
         <p className="mt-4 text-center text-xs text-[var(--color-text-muted)]">
-          Preferences below are stored locally on this device. Name and photo above are
-          shared across the whole suite.
+          {t('profilePage.localNote')}
         </p>
       </div>
     </PageContainer>
