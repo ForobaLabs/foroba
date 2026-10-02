@@ -281,5 +281,93 @@
     "themeSystem": "Système",
     "themeLight": "Clair",
     "themeDark": "Sombre"
+  },
+  "data": {
+    "common": {
+      "offline": "Hors ligne",
+      "unavailable": "Indisponible",
+      "partial": "Données partielles : certaines sections sont indisponibles pour le moment",
+      "total": "Total",
+      "retryHint": "Réessayez dans un instant."
+    },
+    "accounts": {
+      "title": "Comptes",
+      "description": "Vos comptes bancaires et vos flux de trésorerie, depuis Naforo",
+      "connect": "Connecter une banque",
+      "checking": "Vérification de Naforo…",
+      "status": "État de Naforo",
+      "unreachable": "Naforo est injoignable pour le moment. Réessayez dans un instant.",
+      "loading": "Chargement des comptes…",
+      "error": "Impossible de charger vos comptes. Vérifiez votre connexion et réessayez.",
+      "emptyTitle": "Aucun compte",
+      "emptyBody": "Ajoutez un compte bancaire ou saisissez un solde à la main pour voir votre argent ici.",
+      "mixed": "Devises mixtes"
+    },
+    "portfolio": {
+      "title": "Portefeuille",
+      "description": "Vos positions ETF et crypto, depuis Yiriba",
+      "connect": "Ajouter une connexion",
+      "checking": "Vérification de Yiriba…",
+      "status": "État de Yiriba",
+      "unreachable": "Yiriba est injoignable pour le moment. Réessayez dans un instant.",
+      "loading": "Chargement du portefeuille…",
+      "error": "Impossible de charger vos positions. Vérifiez votre connexion et réessayez.",
+      "emptyTitle": "Aucune position",
+      "emptyBody": "Ajoutez un ETF ou une crypto pour suivre sa valeur dans le temps.",
+      "pnl": "Gain / perte",
+      "positions": "Positions",
+      "byAssetClass": "Par classe d’actifs",
+      "byBroker": "Par courtier",
+      "byCurrency": "Par devise",
+      "label": "Nom",
+      "value": "Valeur"
+    },
+    "accountDetail": {
+      "back": "Retour aux comptes",
+      "description": "Détail du compte, depuis Naforo",
+      "loading": "Chargement du compte…",
+      "error": "Impossible de charger ce compte. Vérifiez votre connexion et réessayez.",
+      "balance": "Solde",
+      "income": "Revenus du mois",
+      "expense": "Dépenses du mois",
+      "savings": "Épargne du mois",
+      "recent": "Transactions récentes",
+      "txLoading": "Chargement des transactions…",
+      "txError": "Impossible de charger les transactions. Vérifiez votre connexion et réessayez.",
+      "txEmptyTitle": "Aucune transaction",
+      "txEmptyBody": "Elles apparaîtront ici dès qu’un compte sera connecté ou un relevé importé.",
+      "date": "Date",
+      "merchant": "Commerçant",
+      "category": "Catégorie",
+      "amount": "Montant",
+      "other": "autre"
+    },
+    "markets": {
+      "title": "Marchés",
+      "description": "Actualités, plus fortes variations et détail des actifs, depuis Yiriba",
+      "assetClass": "Classe d’actifs",
+      "crypto": "Crypto",
+      "equity": "Actions",
+      "etf": "ETF",
+      "bond": "Obligations",
+      "loading": "Chargement des marchés…",
+      "error": "Les données de marché ne sont pas disponibles pour le moment. Réessayez dans un instant.",
+      "empty": "Pas encore de données de marché. Revenez bientôt.",
+      "news": "Actualités des marchés",
+      "gainers": "Plus fortes hausses",
+      "losers": "Plus fortes baisses",
+      "symbol": "Symbole",
+      "change": "Variation"
+    },
+    "marketDetail": {
+      "back": "Retour aux marchés",
+      "description": "{{assetClass}} · note, sentiment et plus fortes variations, depuis Yiriba",
+      "loading": "Chargement…",
+      "empty": "Pas encore de données de marché pour ce symbole.",
+      "rating": "{{symbol}} · note",
+      "sentiment": "Sentiment",
+      "movers": "Plus fortes variations",
+      "fallbackTitle": "Actif"
+    }
   }
 }

@@ -15,6 +15,7 @@ import {
   TableRow,
 } from '@foroba/ui';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
 import type { AssetClass, MarketMover } from '../api/markets';
 import { useMarketOverview } from '../hooks/useMarketSnapshot';
@@ -28,17 +29,18 @@ function MoversTable({
   movers: MarketMover[] | null;
   onSelect: (symbol: string) => void;
 }) {
+  const { t } = useTranslation();
   return (
     <div>
       <p className="mb-2 text-sm font-medium text-[var(--color-text-primary)]">{title}</p>
       {!movers || movers.length === 0 ? (
-        <p className="text-sm text-[var(--color-text-muted)]">Unavailable</p>
+        <p className="text-sm text-[var(--color-text-muted)]">{t('data.common.unavailable')}</p>
       ) : (
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Symbol</TableHead>
-              <TableHead className="text-right">Change</TableHead>
+              <TableHead>{t('data.markets.symbol')}</TableHead>
+              <TableHead className="text-right">{t('data.markets.change')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -69,6 +71,7 @@ function MoversTable({
 }
 
 export function MarketsPage() {
+  const { t } = useTranslation();
   const [assetClass, setAssetClass] = useState<AssetClass>('crypto');
   const { data, isLoading, isError, refetch } = useMarketOverview(assetClass);
   const navigate = useNavigate();
@@ -78,44 +81,44 @@ export function MarketsPage() {
   return (
     <PageContainer>
       <SectionHeader
-        title="Markets"
-        description="Market news, top movers, and asset detail — powered by Yiriba"
+        title={t('data.markets.title')}
+        description={t('data.markets.description')}
         className="mb-6"
       />
 
       <div className="mb-6 flex flex-wrap items-center gap-3">
         <select
-          aria-label="Asset class"
+          aria-label={t('data.markets.assetClass')}
           value={assetClass}
           onChange={(e) => setAssetClass(e.target.value as AssetClass)}
-          className="rounded border border-[var(--color-border)] bg-[var(--color-bg-elevated)] px-3 py-1.5 text-sm"
+          className="min-h-11 rounded border border-[var(--color-border)] bg-[var(--color-bg-elevated)] px-3 text-base"
         >
-          <option value="crypto">Crypto</option>
-          <option value="equity">Equity</option>
-          <option value="etf">ETF</option>
-          <option value="bond">Bond</option>
+          <option value="crypto">{t('data.markets.crypto')}</option>
+          <option value="equity">{t('data.markets.equity')}</option>
+          <option value="etf">{t('data.markets.etf')}</option>
+          <option value="bond">{t('data.markets.bond')}</option>
         </select>
       </div>
 
       {isLoading ? (
-        <LoadingState message="Loading markets…" />
+        <LoadingState message={t('data.markets.loading')} />
       ) : isError ? (
         <ErrorState
-          message="Market data is currently unavailable. Make sure Yiriba is running."
+          message={t('data.markets.error')}
           onRetry={() => refetch()}
         />
       ) : !data ? (
-        <EmptyState message="No market data available yet." />
+        <EmptyState message={t('data.markets.empty')} />
       ) : (
         <div className="space-y-6">
           {data.degraded && (
-            <Badge variant="warning">Partial data — some sections offline</Badge>
+            <Badge variant="warning">{t('data.common.partial')}</Badge>
           )}
 
           <Card>
             <CardContent className="p-6">
               <p className="mb-3 text-sm font-medium text-[var(--color-text-primary)]">
-                Market news
+                {t('data.markets.news')}
               </p>
               {data.news && data.news.items.length > 0 ? (
                 <ul className="space-y-2">
@@ -136,7 +139,7 @@ export function MarketsPage() {
                   ))}
                 </ul>
               ) : (
-                <p className="text-sm text-[var(--color-text-muted)]">Unavailable</p>
+                <p className="text-sm text-[var(--color-text-muted)]">{t('data.common.unavailable')}</p>
               )}
             </CardContent>
           </Card>
@@ -144,12 +147,12 @@ export function MarketsPage() {
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
             <Card>
               <CardContent className="p-6">
-                <MoversTable title="Top gainers" movers={data.gainers} onSelect={goToDetail} />
+                <MoversTable title={t('data.markets.gainers')} movers={data.gainers} onSelect={goToDetail} />
               </CardContent>
             </Card>
             <Card>
               <CardContent className="p-6">
-                <MoversTable title="Top losers" movers={data.losers} onSelect={goToDetail} />
+                <MoversTable title={t('data.markets.losers')} movers={data.losers} onSelect={goToDetail} />
               </CardContent>
             </Card>
           </div>

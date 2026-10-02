@@ -16,6 +16,7 @@ import {
   TableHeader,
   TableRow,
 } from '@foroba/ui';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
 import type { PortfolioAllocationGroup } from '../api/tsumi';
 import {
@@ -25,29 +26,29 @@ import {
   useTsumiHealth,
 } from '../hooks/useServiceHealth';
 
-const DEPLOYMENT_MODE = import.meta.env.VITE_DEPLOYMENT_MODE ?? 'selfhost';
-
 function ConnectInvestmentButton({ variant }: { variant?: 'outline' }) {
+  const { t } = useTranslation();
   return (
     <a href="/foroba-api/auth/handoff/tsumi?redirect=/settings">
-      <Button variant={variant}>📈 Add a connection</Button>
+      <Button variant={variant} className="min-h-11">{t('data.portfolio.connect')}</Button>
     </a>
   );
 }
 
-function formatCurrency(amount: number, currency = 'EUR') {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(amount);
+function formatCurrency(amount: number, currency = 'EUR', lang = 'en') {
+  return new Intl.NumberFormat(lang, { style: 'currency', currency }).format(amount);
 }
 
 function AllocationTable({ title, groups }: { title: string; groups: PortfolioAllocationGroup[] }) {
+  const { t, i18n } = useTranslation();
   return (
     <div>
       <p className="mb-2 text-sm font-medium text-[var(--color-text-primary)]">{title}</p>
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Label</TableHead>
-            <TableHead className="text-right">Value</TableHead>
+            <TableHead>{t('data.portfolio.label')}</TableHead>
+            <TableHead className="text-right">{t('data.portfolio.value')}</TableHead>
             <TableHead className="text-right">%</TableHead>
           </TableRow>
         </TableHeader>
@@ -55,7 +56,7 @@ function AllocationTable({ title, groups }: { title: string; groups: PortfolioAl
           {groups.map((g) => (
             <TableRow key={g.label}>
               <TableCell>{g.label}</TableCell>
-              <TableCell className="text-right">{formatCurrency(g.valueEur)}</TableCell>
+              <TableCell className="text-right">{formatCurrency(g.valueEur, 'EUR', i18n.language)}</TableCell>
               <TableCell className="text-right">{g.pct.toFixed(1)}%</TableCell>
             </TableRow>
           ))}
@@ -66,6 +67,8 @@ function AllocationTable({ title, groups }: { title: string; groups: PortfolioAl
 }
 
 export function PortfolioPage() {
+  const { t, i18n } = useTranslation();
+  const lang = i18n.language;
   const health = useTsumiHealth();
   const online = health.data?.status === 'ok';
   const summary = usePortfolioSummary();
@@ -77,8 +80,8 @@ export function PortfolioPage() {
     <PageContainer>
       <div className="flex items-start justify-between mb-6">
         <SectionHeader
-          title="Portfolio"
-          description="ETF & crypto positions powered by Yiriba"
+          title={t('data.portfolio.title')}
+          description={t('data.portfolio.description')}
         />
         {online && <ConnectInvestmentButton variant="outline" />}
       </div>
@@ -87,70 +90,60 @@ export function PortfolioPage() {
         // pazuru#149 (PROD-PZR-D03): `online` is false during the initial health
         // check too (data is undefined), so without this branch the page would
         // flash the "Offline" card before the check has actually resolved.
-        <LoadingState message="Checking Yiriba status…" />
+        <LoadingState message={t('data.portfolio.checking')} />
       ) : !online ? (
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center gap-2 mb-4">
-              <span className="text-sm font-medium text-[var(--color-text-primary)]">Yiriba status</span>
-              <Badge variant="warning">Offline</Badge>
+              <span className="text-sm font-medium text-[var(--color-text-primary)]">{t('data.portfolio.status')}</span>
+              <Badge variant="warning">{t('data.common.offline')}</Badge>
             </div>
             <p className="text-sm text-[var(--color-text-muted)]">
-              {DEPLOYMENT_MODE === 'selfhost' ? (
-                <>
-                  Yiriba is not reachable. Start it at{' '}
-                  <code className="rounded bg-[var(--color-bg-elevated)] px-1 text-xs">
-                    {import.meta.env.VITE_TSUMI_API_URL ?? 'http://localhost:8050'}
-                  </code>{' '}
-                  to see your portfolio here.
-                </>
-              ) : (
-                'Portfolio data is temporarily unavailable. Please try again in a moment.'
-              )}
+              {t('data.portfolio.unreachable')}
             </p>
           </CardContent>
         </Card>
       ) : positions.isLoading ? (
-        <LoadingState message="Loading portfolio…" />
+        <LoadingState message={t('data.portfolio.loading')} />
       ) : positions.isError ? (
         <ErrorState
-          message="Could not load portfolio positions from Yiriba."
+          message={t('data.portfolio.error')}
           onRetry={() => positions.refetch()}
         />
       ) : !positions.data || positions.data.length === 0 ? (
         <EmptyState
-          title="No positions yet"
-          message="Add a position in Yiriba to see your portfolio here."
+          title={t('data.portfolio.emptyTitle')}
+          message={t('data.portfolio.emptyBody')}
           action={<ConnectInvestmentButton />}
         />
       ) : (
         <>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 mb-6">
             <KpiCard
-              label="Total"
-              value={formatCurrency(summary.data?.totalValueEur ?? 0)}
+              label={t('data.common.total')}
+              value={formatCurrency(summary.data?.totalValueEur ?? 0, 'EUR', lang)}
             />
             <KpiCard
-              label="P&L"
-              value={formatCurrency(summary.data?.pnlEur ?? 0)}
+              label={t('data.portfolio.pnl')}
+              value={formatCurrency(summary.data?.pnlEur ?? 0, 'EUR', lang)}
               delta={summary.data?.pnlEur}
               deltaPct={summary.data?.pnlPct}
             />
             <KpiCard
-              label="Positions"
+              label={t('data.portfolio.positions')}
               value={String(summary.data?.positionCount ?? positions.data.length)}
             />
           </div>
 
           {allocations.data && (
             <div className="mb-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
-              <AllocationTable title="By asset class" groups={allocations.data.byAssetClass} />
-              <AllocationTable title="By broker" groups={allocations.data.byBroker} />
-              <AllocationTable title="By currency" groups={allocations.data.byCurrency} />
+              <AllocationTable title={t('data.portfolio.byAssetClass')} groups={allocations.data.byAssetClass} />
+              <AllocationTable title={t('data.portfolio.byBroker')} groups={allocations.data.byBroker} />
+              <AllocationTable title={t('data.portfolio.byCurrency')} groups={allocations.data.byCurrency} />
             </div>
           )}
 
-          <SectionHeader title="Positions" className="mb-3" />
+          <SectionHeader title={t('data.portfolio.positions')} className="mb-3" />
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {positions.data.map((p) => (
               <button
@@ -161,7 +154,7 @@ export function PortfolioPage() {
               >
                 <KpiCard
                   label={`${p.name} (${p.isin})`}
-                  value={formatCurrency(p.valueEur, p.currency)}
+                  value={formatCurrency(p.valueEur, p.currency, lang)}
                   delta={p.pnlEur}
                   deltaPct={p.pnlPct}
                   subtitle={`${p.quantity} · ${p.source}`}

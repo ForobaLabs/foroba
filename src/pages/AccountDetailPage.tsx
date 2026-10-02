@@ -14,6 +14,7 @@ import {
   TableRow,
 } from '@foroba/ui';
 import { ArrowLeft } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router';
 import { useAccountDetail, useAccountTransactions } from '../hooks/useServiceHealth';
 
@@ -24,11 +25,14 @@ const BANK_LABELS: Record<string, string> = {
   hype: 'Hype',
 };
 
-function formatCurrency(amount: number, currency: string) {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(amount);
+function formatCurrency(amount: number, currency: string, lang: string) {
+  return new Intl.NumberFormat(lang, { style: 'currency', currency }).format(amount);
 }
 
 export function AccountDetailPage() {
+  const { t, i18n } = useTranslation();
+  const lang = i18n.language;
+  const money = (amount: number, currency: string) => formatCurrency(amount, currency, lang);
   const { id } = useParams<{ id: string }>();
   const accountId = Number(id);
   const navigate = useNavigate();
@@ -47,85 +51,88 @@ export function AccountDetailPage() {
         className="mb-4 inline-flex items-center gap-1.5"
       >
         <ArrowLeft className="h-4 w-4" />
-        Back to accounts
+        {t('data.accountDetail.back')}
       </Button>
 
       {detail.isLoading ? (
-        <LoadingState message="Loading account…" />
+        <LoadingState message={t('data.accountDetail.loading')} />
       ) : detail.isError || !detail.data ? (
         <ErrorState
-          message="Could not load this account from Naforo."
+          message={t('data.accountDetail.error')}
           onRetry={() => detail.refetch()}
         />
       ) : (
         <>
           <SectionHeader
             title={`${BANK_LABELS[detail.data.bankName] ?? detail.data.bankName} — ${detail.data.displayName}`}
-            description="Account detail powered by Naforo"
+            description={t('data.accountDetail.description')}
             className="mb-6"
           />
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-6">
             <KpiCard
-              label="Balance"
-              value={formatCurrency(detail.data.balance, detail.data.currency)}
+              label={t('data.accountDetail.balance')}
+              value={money(detail.data.balance, detail.data.currency)}
             />
             <KpiCard
-              label="Income this month"
+              label={t('data.accountDetail.income')}
               value={
                 latestMonth
-                  ? formatCurrency(latestMonth.incomeCents / 100, detail.data.currency)
-                  : formatCurrency(0, detail.data.currency)
+                  ? money(latestMonth.incomeCents / 100, detail.data.currency)
+                  : money(0, detail.data.currency)
               }
             />
             <KpiCard
-              label="Expense this month"
+              label={t('data.accountDetail.expense')}
               value={
                 latestMonth
-                  ? formatCurrency(latestMonth.expenseCents / 100, detail.data.currency)
-                  : formatCurrency(0, detail.data.currency)
+                  ? money(latestMonth.expenseCents / 100, detail.data.currency)
+                  : money(0, detail.data.currency)
               }
             />
             <KpiCard
-              label="Savings this month"
+              label={t('data.accountDetail.savings')}
               value={
                 latestMonth
-                  ? formatCurrency(latestMonth.savingsCents / 100, detail.data.currency)
-                  : formatCurrency(0, detail.data.currency)
+                  ? money(latestMonth.savingsCents / 100, detail.data.currency)
+                  : money(0, detail.data.currency)
               }
             />
           </div>
 
-          <SectionHeader title="Recent transactions" className="mb-3" />
+          <SectionHeader title={t('data.accountDetail.recent')} className="mb-3" />
           {transactions.isLoading ? (
-            <LoadingState message="Loading transactions…" />
+            <LoadingState message={t('data.accountDetail.txLoading')} />
           ) : transactions.isError ? (
             <ErrorState
-              message="Could not load transactions for this account."
+              message={t('data.accountDetail.txError')}
               onRetry={() => transactions.refetch()}
             />
           ) : !transactions.data || transactions.data.length === 0 ? (
-            <EmptyState title="No transactions" message="This account has no transactions yet." />
+            <EmptyState
+              title={t('data.accountDetail.txEmptyTitle')}
+              message={t('data.accountDetail.txEmptyBody')}
+            />
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Merchant</TableHead>
-                  <TableHead>Category</TableHead>
-                  <TableHead className="text-right">Amount</TableHead>
+                  <TableHead>{t('data.accountDetail.date')}</TableHead>
+                  <TableHead>{t('data.accountDetail.merchant')}</TableHead>
+                  <TableHead>{t('data.accountDetail.category')}</TableHead>
+                  <TableHead className="text-right">{t('data.accountDetail.amount')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {transactions.data.map((t) => (
-                  <TableRow key={t.id}>
-                    <TableCell>{t.bookedDate}</TableCell>
-                    <TableCell>{t.merchant}</TableCell>
-                    <TableCell>{t.category ?? 'other'}</TableCell>
+                {transactions.data.map((tx) => (
+                  <TableRow key={tx.id}>
+                    <TableCell>{tx.bookedDate}</TableCell>
+                    <TableCell>{tx.merchant}</TableCell>
+                    <TableCell>{tx.category ?? t('data.accountDetail.other')}</TableCell>
                     <TableCell
-                      className={`text-right ${t.amount < 0 ? 'text-[var(--color-negative)]' : 'text-[var(--color-positive)]'}`}
+                      className={`text-right ${tx.amount < 0 ? 'text-[var(--color-negative)]' : 'text-[var(--color-positive)]'}`}
                     >
-                      {formatCurrency(t.amount, t.currency)}
+                      {money(tx.amount, tx.currency)}
                     </TableCell>
                   </TableRow>
                 ))}

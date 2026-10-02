@@ -281,5 +281,93 @@
     "themeSystem": "Sistema",
     "themeLight": "Chiaro",
     "themeDark": "Scuro"
+  },
+  "data": {
+    "common": {
+      "offline": "Non raggiungibile",
+      "unavailable": "Non disponibile",
+      "partial": "Dati parziali: alcune sezioni non sono disponibili al momento",
+      "total": "Totale",
+      "retryHint": "Riprova tra poco."
+    },
+    "accounts": {
+      "title": "Conti",
+      "description": "I tuoi conti bancari e i flussi di cassa, da Naforo",
+      "connect": "Collega una banca",
+      "checking": "Controllo di Naforo…",
+      "status": "Stato di Naforo",
+      "unreachable": "Al momento non riusciamo a raggiungere Naforo. Riprova tra poco.",
+      "loading": "Caricamento dei conti…",
+      "error": "Non siamo riusciti a caricare i conti. Controlla la connessione e riprova.",
+      "emptyTitle": "Nessun conto",
+      "emptyBody": "Aggiungi un conto bancario o inserisci un saldo a mano per vedere qui i tuoi soldi.",
+      "mixed": "Valute miste"
+    },
+    "portfolio": {
+      "title": "Portafoglio",
+      "description": "Le tue posizioni in ETF e crypto, da Yiriba",
+      "connect": "Aggiungi un collegamento",
+      "checking": "Controllo di Yiriba…",
+      "status": "Stato di Yiriba",
+      "unreachable": "Al momento non riusciamo a raggiungere Yiriba. Riprova tra poco.",
+      "loading": "Caricamento del portafoglio…",
+      "error": "Non siamo riusciti a caricare le posizioni. Controlla la connessione e riprova.",
+      "emptyTitle": "Nessuna posizione",
+      "emptyBody": "Aggiungi un ETF o una crypto per seguirne il valore nel tempo.",
+      "pnl": "Guadagno / perdita",
+      "positions": "Posizioni",
+      "byAssetClass": "Per classe di attivo",
+      "byBroker": "Per broker",
+      "byCurrency": "Per valuta",
+      "label": "Nome",
+      "value": "Valore"
+    },
+    "accountDetail": {
+      "back": "Torna ai conti",
+      "description": "Dettaglio del conto, da Naforo",
+      "loading": "Caricamento del conto…",
+      "error": "Non siamo riusciti a caricare questo conto. Controlla la connessione e riprova.",
+      "balance": "Saldo",
+      "income": "Entrate del mese",
+      "expense": "Spese del mese",
+      "savings": "Risparmio del mese",
+      "recent": "Transazioni recenti",
+      "txLoading": "Caricamento delle transazioni…",
+      "txError": "Non siamo riusciti a caricare le transazioni. Controlla la connessione e riprova.",
+      "txEmptyTitle": "Nessuna transazione",
+      "txEmptyBody": "Compariranno qui quando un conto sarà collegato o un estratto conto importato.",
+      "date": "Data",
+      "merchant": "Esercente",
+      "category": "Categoria",
+      "amount": "Importo",
+      "other": "altro"
+    },
+    "markets": {
+      "title": "Mercati",
+      "description": "Notizie, maggiori variazioni e dettagli sugli asset, da Yiriba",
+      "assetClass": "Classe di attivo",
+      "crypto": "Crypto",
+      "equity": "Azioni",
+      "etf": "ETF",
+      "bond": "Obbligazioni",
+      "loading": "Caricamento dei mercati…",
+      "error": "I dati di mercato non sono disponibili al momento. Riprova tra poco.",
+      "empty": "Ancora nessun dato di mercato. Riprova più tardi.",
+      "news": "Notizie di mercato",
+      "gainers": "Maggiori rialzi",
+      "losers": "Maggiori ribassi",
+      "symbol": "Simbolo",
+      "change": "Variazione"
+    },
+    "marketDetail": {
+      "back": "Torna ai mercati",
+      "description": "{{assetClass}} · rating, sentiment e maggiori variazioni, da Yiriba",
+      "loading": "Caricamento…",
+      "empty": "Ancora nessun dato di mercato per questo simbolo.",
+      "rating": "{{symbol}} · rating",
+      "sentiment": "Sentiment",
+      "movers": "Maggiori variazioni",
+      "fallbackTitle": "Asset"
+    }
   }
 }

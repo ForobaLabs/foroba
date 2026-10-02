@@ -10,11 +10,13 @@ import {
   SectionHeader,
 } from '@foroba/ui';
 import { ArrowLeft } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router';
 import type { AssetClass } from '../api/markets';
 import { useMarketSnapshot } from '../hooks/useMarketSnapshot';
 
 export function MarketDetailPage() {
+  const { t } = useTranslation();
   const { assetClass, symbol } = useParams<{ assetClass: AssetClass; symbol: string }>();
   const navigate = useNavigate();
   const { data, isLoading, isError, refetch } = useMarketSnapshot(
@@ -31,63 +33,63 @@ export function MarketDetailPage() {
         className="mb-4 inline-flex items-center gap-1.5"
       >
         <ArrowLeft className="h-4 w-4" />
-        Back to markets
+        {t('data.marketDetail.back')}
       </Button>
 
       <SectionHeader
-        title={symbol ?? 'Asset'}
-        description={`${assetClass} · rating, sentiment & movers powered by Yiriba`}
+        title={symbol ?? t('data.marketDetail.fallbackTitle')}
+        description={t('data.marketDetail.description', { assetClass })}
         className="mb-6"
       />
 
       <Card>
         <CardContent className="p-6">
-          {isLoading && <LoadingState message="Loading snapshot…" />}
+          {isLoading && <LoadingState message={t('data.marketDetail.loading')} />}
 
           {!isLoading && isError && (
             <ErrorState
-              message="Market data is currently unavailable. Make sure Yiriba is running."
+              message={t('data.markets.error')}
               onRetry={() => refetch()}
             />
           )}
 
           {!isLoading && !isError && !data && (
-            <EmptyState message="No market data available for this symbol yet." />
+            <EmptyState message={t('data.marketDetail.empty')} />
           )}
 
           {!isLoading && !isError && data && (
             <div className="space-y-4">
               {data.degraded && (
-                <Badge variant="warning">Partial data — some sections offline</Badge>
+                <Badge variant="warning">{t('data.common.partial')}</Badge>
               )}
 
               <div>
                 <h3 className="mb-1 text-sm font-medium text-[var(--color-text-primary)]">
-                  {data.symbol} · rating
+                  {t('data.marketDetail.rating', { symbol: data.symbol })}
                 </h3>
                 {data.rating ? (
                   <Badge variant="positive">
                     {data.rating.label} ({data.rating.score.toFixed(2)})
                   </Badge>
                 ) : (
-                  <span className="text-sm text-[var(--color-text-muted)]">Unavailable</span>
+                  <span className="text-sm text-[var(--color-text-muted)]">{t('data.common.unavailable')}</span>
                 )}
               </div>
 
               <div>
                 <h3 className="mb-1 text-sm font-medium text-[var(--color-text-primary)]">
-                  Sentiment
+                  {t('data.marketDetail.sentiment')}
                 </h3>
                 <span className="text-sm text-[var(--color-text-secondary)]">
                   {data.sentiment
                     ? `${data.sentiment.sentiment.label} (${data.sentiment.sentiment.score.toFixed(2)})`
-                    : 'Unavailable'}
+                    : t('data.common.unavailable')}
                 </span>
               </div>
 
               <div>
                 <h3 className="mb-1 text-sm font-medium text-[var(--color-text-primary)]">
-                  Top movers
+                  {t('data.marketDetail.movers')}
                 </h3>
                 {data.movers && data.movers.length > 0 ? (
                   <ul className="space-y-1">
@@ -102,7 +104,7 @@ export function MarketDetailPage() {
                     ))}
                   </ul>
                 ) : (
-                  <span className="text-sm text-[var(--color-text-muted)]">Unavailable</span>
+                  <span className="text-sm text-[var(--color-text-muted)]">{t('data.common.unavailable')}</span>
                 )}
               </div>
 

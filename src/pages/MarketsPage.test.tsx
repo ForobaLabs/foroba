@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
+import '../i18n';
 import { MarketsPage } from './MarketsPage';
 
 function renderPage() {
@@ -67,7 +68,7 @@ test('renders ErrorState with a working Retry button when the query fails', asyn
 
   await waitFor(() =>
     expect(
-      screen.getByText(/market data is currently unavailable/i),
+      screen.getByText(/market data isn't available right now/i),
     ).toBeInTheDocument(),
   );
 

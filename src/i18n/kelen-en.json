@@ -281,5 +281,93 @@
     "themeSystem": "System",
     "themeLight": "Light",
     "themeDark": "Dark"
+  },
+  "data": {
+    "common": {
+      "offline": "Offline",
+      "unavailable": "Unavailable",
+      "partial": "Partial data: some sections are unavailable right now",
+      "total": "Total",
+      "retryHint": "Try again in a moment."
+    },
+    "accounts": {
+      "title": "Accounts",
+      "description": "Your bank accounts and cash flow, from Naforo",
+      "connect": "Connect a bank",
+      "checking": "Checking Naforo…",
+      "status": "Naforo status",
+      "unreachable": "We can't reach Naforo right now. Try again in a moment.",
+      "loading": "Loading accounts…",
+      "error": "We couldn't load your accounts. Check your connection and try again.",
+      "emptyTitle": "No accounts yet",
+      "emptyBody": "Add a bank account or enter a balance by hand to see your money here.",
+      "mixed": "Mixed currencies"
+    },
+    "portfolio": {
+      "title": "Portfolio",
+      "description": "Your ETF and crypto positions, from Yiriba",
+      "connect": "Add a connection",
+      "checking": "Checking Yiriba…",
+      "status": "Yiriba status",
+      "unreachable": "We can't reach Yiriba right now. Try again in a moment.",
+      "loading": "Loading portfolio…",
+      "error": "We couldn't load your positions. Check your connection and try again.",
+      "emptyTitle": "No positions yet",
+      "emptyBody": "Add an ETF or crypto holding to follow its value over time.",
+      "pnl": "Gain / loss",
+      "positions": "Positions",
+      "byAssetClass": "By asset class",
+      "byBroker": "By broker",
+      "byCurrency": "By currency",
+      "label": "Name",
+      "value": "Value"
+    },
+    "accountDetail": {
+      "back": "Back to accounts",
+      "description": "Account detail, from Naforo",
+      "loading": "Loading account…",
+      "error": "We couldn't load this account. Check your connection and try again.",
+      "balance": "Balance",
+      "income": "Income this month",
+      "expense": "Spending this month",
+      "savings": "Savings this month",
+      "recent": "Recent transactions",
+      "txLoading": "Loading transactions…",
+      "txError": "We couldn't load the transactions. Check your connection and try again.",
+      "txEmptyTitle": "No transactions yet",
+      "txEmptyBody": "They will appear here once an account is connected or a statement is imported.",
+      "date": "Date",
+      "merchant": "Merchant",
+      "category": "Category",
+      "amount": "Amount",
+      "other": "other"
+    },
+    "markets": {
+      "title": "Markets",
+      "description": "News, top movers and asset detail, from Yiriba",
+      "assetClass": "Asset class",
+      "crypto": "Crypto",
+      "equity": "Equity",
+      "etf": "ETF",
+      "bond": "Bond",
+      "loading": "Loading markets…",
+      "error": "Market data isn't available right now. Try again in a moment.",
+      "empty": "No market data yet. Check back soon.",
+      "news": "Market news",
+      "gainers": "Top gainers",
+      "losers": "Top losers",
+      "symbol": "Symbol",
+      "change": "Change"
+    },
+    "marketDetail": {
+      "back": "Back to markets",
+      "description": "{{assetClass}} · rating, sentiment and top movers, from Yiriba",
+      "loading": "Loading…",
+      "empty": "No market data for this symbol yet.",
+      "rating": "{{symbol}} · rating",
+      "sentiment": "Sentiment",
+      "movers": "Top movers",
+      "fallbackTitle": "Asset"
+    }
   }
 }
