@@ -478,6 +478,7 @@ def delete_user(conn: sqlite3.Connection, user_id: int) -> None:
         )
     conn.execute("DELETE FROM webhooks WHERE user_id = ?", (user_id,))
     conn.execute("DELETE FROM api_keys WHERE user_id = ?", (user_id,))
+    conn.execute("DELETE FROM subscriptions WHERE user_id = ?", (user_id,))
     conn.execute("DELETE FROM monthly_reports WHERE user_id = ?", (user_id,))
     conn.execute("DELETE FROM whatif_scenarios WHERE created_by_user_id = ?", (user_id,))
     conn.execute("DELETE FROM recurring_amount_baselines WHERE user_id = ?", (user_id,))

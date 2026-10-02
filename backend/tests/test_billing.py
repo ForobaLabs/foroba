@@ -322,3 +322,26 @@ def test_sweep_skips_admins(conn):
     conn.commit()
     sweep_expired(conn, now=NOW + timedelta(days=30), grace_days=7)
     assert user(conn)["tier"] == "premium"
+
+
+# --- GDPR: erasure and portability -------------------------------------------------
+def test_delete_user_erases_subscriptions(conn):
+    apply_event(conn, parse_paddle_event(payload()), now=NOW)
+    other = repo.create_user(conn, email="o@test.local", name="O", password_hash="x")
+    apply_event(
+        conn,
+        parse_paddle_event(payload(event_id="evt_o", sub="sub_o", user_id=str(other["id"]))),
+        now=NOW,
+    )
+    repo.delete_user(conn, 1)
+    rows = conn.execute("SELECT user_id FROM subscriptions").fetchall()
+    assert [r["user_id"] for r in rows] == [other["id"]]
+
+
+def test_account_export_includes_billing(client):
+    post_webhook(client, payload())
+    # export contacts the other apps over HTTP; unreachable here, so only the foroba section matters
+    body = client.get("/auth/account/export").json()
+    sub = body["foroba"]["subscriptions"]
+    assert sub[0]["status"] == "active"
+    assert "provider_customer_id" in sub[0]

@@ -256,8 +256,18 @@ async def export_account(
     pazuru_data = await _get_app_data(f"{settings.pazuru_api_url.rstrip('/')}/account/export")
     tsumi_data = await _get_app_data(f"{settings.tsumi_api_url.rstrip('/')}/account/export")
 
+    subscriptions = [
+        dict(row)
+        for row in conn.execute(
+            "SELECT provider, provider_subscription_id, provider_customer_id, status, "
+            "current_period_end, cancel_at_period_end, last_event_at FROM subscriptions "
+            "WHERE user_id = ?",
+            (user["id"],),
+        ).fetchall()
+    ]
+
     return {
-        "foroba": {"profile": profile, "consents": consents},
+        "foroba": {"profile": profile, "consents": consents, "subscriptions": subscriptions},
         "pazuru": pazuru_data,
         "tsumi": tsumi_data,
     }
