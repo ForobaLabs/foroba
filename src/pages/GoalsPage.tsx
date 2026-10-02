@@ -24,6 +24,8 @@ const primaryBtn =
 const ghostBtn =
   'inline-flex min-h-11 items-center justify-center rounded-lg border border-[var(--color-border)] px-4 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-elevated)]';
 
+const NAFORO_APP_URL = import.meta.env.VITE_NAFORO_APP_URL ?? 'http://localhost:5173';
+
 export function GoalsPage() {
   const { t, i18n } = useTranslation();
   const lang = i18n.language;
@@ -196,6 +198,11 @@ export function GoalsPage() {
         action={newButton}
         className="mb-6 flex-wrap"
       />
+
+      <p data-testid="goals-separate-note" className="mb-4 text-sm text-[var(--color-text-secondary)]">
+        {t('goals.separateNote')}{' '}
+        <a href={`${NAFORO_APP_URL}/goals`} className="underline">{t('goals.separateLink')}</a>
+      </p>
 
       {saveFailed && (
         <p role="alert" className="mb-4 rounded-lg border border-[var(--color-negative)]/40 px-3 py-2 text-sm text-[var(--color-negative)]">

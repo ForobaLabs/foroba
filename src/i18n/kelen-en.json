@@ -189,7 +189,9 @@
       "message": "Pick something to save for, set a target and Kelen will show how long it takes.",
       "action": "Create your first goal"
     },
-    "saveError": "We couldn't save your change. Check your connection and try again."
+    "saveError": "We couldn't save your change. Check your connection and try again.",
+    "separateNote": "These goals are separate from the goals in Naforo. The two lists are not merged.",
+    "separateLink": "Open the Naforo goals"
   },
   "household": {
     "title": "Household",

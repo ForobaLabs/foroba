@@ -57,6 +57,13 @@ describe('GoalsPage', () => {
     expect(screen.getByLabelText('Title')).toBeInTheDocument();
   });
 
+  it('says the Kelen list is separate from Naforo and links to it', async () => {
+    mount();
+    const note = await screen.findByTestId('goals-separate-note');
+    expect(note).toHaveTextContent(/separate from the goals in Naforo/i);
+    expect(within(note).getByRole('link', { name: /Naforo/ })).toHaveAttribute('href', expect.stringMatching(/\/goals$/));
+  });
+
   it('shows human validation errors, focuses the first invalid field, and saves nothing', async () => {
     mount();
     await userEvent.click(screen.getByRole('button', { name: /New goal/ }));

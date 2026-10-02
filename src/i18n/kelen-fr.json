@@ -189,7 +189,9 @@
       "message": "Choisissez pour quoi épargner, fixez un montant et Kelen vous montre le temps nécessaire.",
       "action": "Créer votre premier objectif"
     },
-    "saveError": "Nous n'avons pas pu enregistrer votre modification. Vérifiez votre connexion et réessayez."
+    "saveError": "Nous n'avons pas pu enregistrer votre modification. Vérifiez votre connexion et réessayez.",
+    "separateNote": "Ces objectifs sont distincts de ceux de Naforo. Les deux listes ne sont pas fusionnées.",
+    "separateLink": "Ouvrir les objectifs de Naforo"
   },
   "household": {
     "title": "Foyer",
