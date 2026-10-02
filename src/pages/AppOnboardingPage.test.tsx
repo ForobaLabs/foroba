@@ -89,3 +89,17 @@ test('copy no longer claims data lives only on this device', () => {
   setup();
   expect(document.body.textContent).not.toMatch(/only on this device|never see/i);
 });
+
+test('puts the app chosen on the site first and clears the intent when leaving', async () => {
+  sessionStorage.setItem('foroba.signupIntent', JSON.stringify({ app: 'yiriba', plan: 'free' }));
+  const user = userEvent.setup();
+  setup();
+  await user.click(screen.getByRole('button', { name: 'Continue' }));
+  const links = screen.getAllByRole('link');
+  const portfolio = links.find((l) => l.getAttribute('href')?.includes('/handoff/tsumi'))!;
+  const bank = links.find((l) => l.getAttribute('href')?.includes('/handoff/pazuru'))!;
+  expect(portfolio).toHaveStyle({ order: '1' });
+  expect(bank).toHaveStyle({ order: '2' });
+  await user.click(portfolio);
+  expect(sessionStorage.getItem('foroba.signupIntent')).toBeNull();
+});

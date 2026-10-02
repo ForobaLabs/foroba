@@ -456,7 +456,9 @@
       "2": "Moyen",
       "3": "Bon",
       "4": "Fort"
-    }
+    },
+    "intent": "Vous vous inscrivez à {{app}}.",
+    "intentPremium": "Les offres payantes ne sont pas encore disponibles : vous démarrez avec l'offre Free et votre intérêt pour Premium reste uniquement sur cet appareil."
   },
   "enroll": {
     "errPasskey": "Échec de la configuration de la passkey.",

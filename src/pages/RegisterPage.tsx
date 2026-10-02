@@ -13,6 +13,7 @@ import {
   SelectValue,
 } from "@foroba/ui";
 import { register } from "../auth/api";
+import { loadIntent, parseIntent, saveIntent } from "../lib/signupIntent";
 
 const COUNTRY_CODES = ["IT", "FR", "DE", "ES", "NL", "BE", "GB", "US"];
 
@@ -39,6 +40,11 @@ export function RegisterPage() {
   }, [i18n.language]);
   const qc = useQueryClient();
   const navigate = useNavigate();
+  const intent = useMemo(() => {
+    const fromUrl = parseIntent(window.location.search);
+    if (fromUrl) saveIntent(fromUrl);
+    return fromUrl ?? loadIntent();
+  }, []);
   const [email, setEmail] = useState("");
   const [emailConfirm, setEmailConfirm] = useState("");
   const [name, setName] = useState("");
@@ -97,6 +103,12 @@ export function RegisterPage() {
         <p className="mb-6 text-sm text-[var(--color-text-secondary)]">
           {t("register.intro")}
         </p>
+        {intent && (
+          <p role="note" className="mb-4 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-elevated)] p-3 text-sm text-[var(--color-text-secondary)]">
+            {t("register.intent", { app: intent.app.charAt(0).toUpperCase() + intent.app.slice(1) })}
+            {intent.plan === "premium" && <> {t("register.intentPremium")}</>}
+          </p>
+        )}
         <form onSubmit={onSubmit} className="flex flex-col gap-4">
           <div className="flex flex-col gap-1">
             <label htmlFor="name" className="text-sm text-[var(--color-text-secondary)]">

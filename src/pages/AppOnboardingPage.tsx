@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
 import { useLanguage, useTheme, useUserProfile } from '@foroba/ui';
 import { completeOnboarding } from '../auth/api';
+import { clearIntent, handoffHref, loadIntent } from '../lib/signupIntent';
 
 type Lang = 'en' | 'it' | 'fr';
 type Theme = 'system' | 'light' | 'dark';
@@ -30,6 +31,8 @@ export function AppOnboardingPage() {
   const { theme, setTheme } = useTheme();
   const { updateProfile } = useUserProfile();
   const [step, setStep] = useState(0);
+  const intent = useMemo(() => loadIntent(), []);
+  const intentFirst = intent?.app === 'yiriba';
   const current = STEPS[step];
   const lang = (['en', 'it', 'fr'].includes(i18n.language) ? i18n.language : 'en') as Lang;
 
@@ -43,10 +46,12 @@ export function AppOnboardingPage() {
   const finish = () => {
     localStorage.setItem('foroba.onboarding.done', '1');
     void completeOnboarding();
+    clearIntent();
     navigate('/');
   };
   // Hand-off links leave the SPA, so mark onboarding done before following them.
   const markDone = () => {
+    clearIntent();
     localStorage.setItem('foroba.onboarding.done', '1');
     void completeOnboarding();
   };
@@ -102,10 +107,10 @@ export function AppOnboardingPage() {
 
         {current === 'account' && (
           <div className="mt-2 flex flex-col gap-3">
-            <a className={primary} href="/foroba-api/auth/handoff/pazuru?redirect=/settings" onClick={markDone}>
+            <a className={intentFirst ? secondary : primary} style={intentFirst ? { order: 2 } : undefined} href={handoffHref('naforo') ?? ''} onClick={markDone}>
               {t('onboarding.bank')}
             </a>
-            <a className={secondary} href="/foroba-api/auth/handoff/tsumi?redirect=/settings" onClick={markDone}>
+            <a className={intentFirst ? primary : secondary} style={intentFirst ? { order: 1 } : undefined} href={handoffHref('yiriba') ?? ''} onClick={markDone}>
               {t('onboarding.portfolio')}
             </a>
             <p className="text-xs text-[var(--color-text-muted)]">{t('onboarding.later')}</p>

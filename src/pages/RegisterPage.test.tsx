@@ -62,3 +62,21 @@ test("blocks submission until the Terms of Service checkbox is checked", () => {
 
   expect(screen.getByRole("button", { name: "Create account" })).toBeDisabled();
 });
+
+test("shows the sign-up intent from the site and stays honest about paid plans", () => {
+  sessionStorage.clear();
+  window.history.pushState({}, "", "/register?app=naforo&plan=premium");
+  renderPage();
+  expect(screen.getByRole("note")).toHaveTextContent(/signing up for Naforo/i);
+  expect(screen.getByRole("note")).toHaveTextContent(/not available yet/i);
+  expect(JSON.parse(sessionStorage.getItem("foroba.signupIntent") ?? "{}")).toEqual({ app: "naforo", plan: "premium" });
+  window.history.pushState({}, "", "/");
+});
+
+test("ignores a hostile intent", () => {
+  sessionStorage.clear();
+  window.history.pushState({}, "", "/register?app=https://evil.example&plan=premium");
+  renderPage();
+  expect(screen.queryByRole("note")).toBeNull();
+  window.history.pushState({}, "", "/");
+});

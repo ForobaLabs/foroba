@@ -456,7 +456,9 @@
       "2": "Discreta",
       "3": "Buona",
       "4": "Forte"
-    }
+    },
+    "intent": "Ti stai registrando a {{app}}.",
+    "intentPremium": "I piani a pagamento non sono ancora disponibili: parti dal piano Free e l'interesse per Premium resta solo su questo dispositivo."
   },
   "enroll": {
     "errPasskey": "Configurazione della passkey non riuscita.",
