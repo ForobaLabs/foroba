@@ -7,9 +7,10 @@ import { describe, expect, it } from 'vitest';
 describe('mobile form-control CSS', () => {
   const css = readFileSync(join(__dirname, 'global.css'), 'utf8');
   const block =
-    css.match(/@media \(max-width: 767px\)\s*{[^]*?}\s*}/g)?.find((b) => b.includes('input')) ?? '';
+    css.match(/@media \(max-width: 767px\)(, \(pointer: coarse\))?\s*{[^]*?}\s*}/g)?.find((b) => b.includes('input')) ?? '';
 
-  it('keeps inputs at 16px / 44px on phones', () => {
+  it('keeps inputs at 16px / 44px on phones and touch tablets', () => {
+    expect(block).toContain('(pointer: coarse)');
     expect(block).toContain('font-size: 16px');
     expect(block).toContain('min-height: 44px');
     expect(block).toMatch(/input:not\(\[type='checkbox'\]\)/);

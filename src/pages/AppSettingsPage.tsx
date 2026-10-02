@@ -194,11 +194,12 @@ export function AppSettingsPage() {
               onChange={(e) => handleCurrencyChange(e.target.value)}
               style={{
                 padding: '4px 10px',
+                minHeight: '44px',
                 borderRadius: '6px',
                 border: '1px solid var(--color-border)',
                 backgroundColor: 'var(--color-bg-primary)',
                 color: 'var(--color-text-primary)',
-                fontSize: '13px',
+                fontSize: '16px',
               }}
             >
               <option value="EUR">EUR</option>

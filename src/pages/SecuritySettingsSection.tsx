@@ -320,7 +320,7 @@ export function SecuritySettingsSection() {
                     aria-label={`Add ${label}`}
                     disabled={savingKey !== null}
                     onClick={() => handleStartAdd(key)}
-                    className="text-xs font-semibold text-[var(--color-accent)] disabled:cursor-not-allowed"
+                    className="inline-flex min-h-11 min-w-11 items-center justify-center px-2 text-xs font-semibold text-[var(--color-accent)] disabled:cursor-not-allowed"
                   >
                     Add
                   </button>

@@ -52,8 +52,8 @@ body {
   }
 }
 
-/* Mobile: 16px text stops iOS Safari zooming on focus; 44px is the minimum touch target. */
-@media (max-width: 767px) {
+/* Phones and touch tablets: 16px text stops iOS Safari zooming on focus; 44px is the minimum touch target. */
+@media (max-width: 767px), (pointer: coarse) {
   input:not([type='checkbox']):not([type='radio']):not([type='range']),
   select,
   textarea {
@@ -61,8 +61,12 @@ body {
     min-height: 44px;
   }
 
-  main button:not([role='switch']):not([role='checkbox']):not([role='radio']),
-  main [role='combobox'] {
+  button:not([role='switch']):not([role='checkbox']):not([role='radio']),
+  [role='combobox'] {
+    min-height: 44px;
+  }
+
+  :is(aside, nav) a {
     min-height: 44px;
   }
 }
