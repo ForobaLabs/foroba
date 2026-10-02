@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { PremiumGate } from '../components/PremiumGate';
 import {
-  Badge, Button, Card, CardContent, ErrorState, LockedFeature, PageContainer, SectionHeader,
+  Badge, Button, Card, CardContent, ErrorState, PageContainer, SectionHeader,
   Spinner, useEntitlement,
 } from '@foroba/ui';
 import { createApiKey, listApiKeys, revokeApiKey, type ApiKey, type ApiKeyCreated } from '../api/apiKeys';
@@ -21,13 +22,13 @@ export function DeveloperPage() {
 
   return (
     <PageContainer>
-      <SectionHeader title={t('developer.title', 'API & Webhooks')} />
-      <LockedFeature visible={visible} unlocked={unlocked} label={t('developer.title', 'API & Webhooks')}>
+      <SectionHeader as="h1" title={t('developer.title', 'API & Webhooks')} />
+      <PremiumGate visible={visible} unlocked={unlocked} feature={t('developer.title', 'API & Webhooks')} description={t('premium.developer')}>
         <div className="space-y-6">
           <ApiKeysPanel />
           <WebhooksPanel />
         </div>
-      </LockedFeature>
+      </PremiumGate>
     </PageContainer>
   );
 }

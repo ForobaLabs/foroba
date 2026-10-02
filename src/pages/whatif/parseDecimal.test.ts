@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseDecimal } from './parseDecimal';
+import { parseDecimal } from '../../lib/parseDecimal';
 import { MESSAGES, validateScenario } from './validateScenario';
 import en from '../../i18n/kelen-en.json';
 import it_ from '../../i18n/kelen-it.json';

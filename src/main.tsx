@@ -31,13 +31,13 @@ createRoot(rootEl).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <CurrencyProvider>
-          <PrivacyProvider>
+        <PrivacyProvider>
+          <CurrencyProvider>
             <I18nextProvider i18n={i18n}>
               <RouterProvider router={router} />
             </I18nextProvider>
-          </PrivacyProvider>
-        </CurrencyProvider>
+          </CurrencyProvider>
+        </PrivacyProvider>
       </AuthProvider>
     </QueryClientProvider>
   </StrictMode>

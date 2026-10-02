@@ -104,5 +104,145 @@
     "scenarioName": "Nom du scénario",
     "save": "Enregistrer",
     "delete": "Supprimer"
+  },
+  "premium": {
+    "pill": "Premium",
+    "cta": "Débloquer Premium",
+    "soon": "Premium n'est pas encore disponible à l'achat. Cette page se débloquera automatiquement le moment venu.",
+    "whatif": "Voyez comment un petit changement mensuel s'accumule au fil des ans, à côté de votre trajectoire actuelle.",
+    "monthlyReport": "Un résumé de votre mois en langage clair, rédigé par Jeli et disponible en PDF.",
+    "developer": "Créez des clés API et des webhooks pour relier Kelen à vos propres outils."
+  },
+  "dashboard": {
+    "title": "Tableau de bord",
+    "greeting": {
+      "morning": "Bonjour",
+      "afternoon": "Bon après-midi",
+      "evening": "Bonsoir",
+      "withName": "{{greeting}}, {{name}}"
+    },
+    "subtitle": "Votre argent, tous comptes confondus, au même endroit",
+    "ctaAddAccount": "Ajouter un compte",
+    "ctaSetGoal": "Fixer un objectif",
+    "partial": "Des données manquent : {{sources}} est injoignable pour le moment",
+    "includeManual": "Inclure les actifs manuels",
+    "cash": "Liquidités",
+    "cashHint": "Comptes bancaires",
+    "portfolio": "Portefeuille",
+    "portfolioHint": "ETF et crypto",
+    "debts": "Dettes",
+    "debtsHint": "Dettes saisies à la main",
+    "openAccounts": "Ouvrir {{label}}",
+    "netWorthOverTime": "Patrimoine net dans le temps",
+    "allocation": "Répartition",
+    "empty": {
+      "title": "Rien à afficher pour l'instant",
+      "message": "Ajoutez votre premier compte et votre patrimoine net apparaîtra ici.",
+      "action": "Ajouter un compte"
+    },
+    "error": {
+      "title": "Impossible de charger votre patrimoine net",
+      "message": "Vos données sont en sécurité. Vérifiez votre connexion et réessayez."
+    }
+  },
+  "goals": {
+    "title": "Objectifs financiers",
+    "subtitle": "Suivez vos progrès vers ce qui compte",
+    "new": "Nouvel objectif",
+    "newTitle": "Nouvel objectif",
+    "fields": {
+      "title": "Titre",
+      "target": "Montant cible ({{cur}})",
+      "current": "Montant actuel ({{cur}})",
+      "date": "Date cible (facultative)",
+      "monthly": "Versement mensuel ({{cur}})",
+      "titlePlaceholder": "ex. Épargne de précaution"
+    },
+    "save": "Enregistrer l'objectif",
+    "cancel": "Annuler",
+    "errors": {
+      "titleRequired": "Donnez un nom à votre objectif",
+      "titleLong": "{{max}} caractères maximum",
+      "targetNaN": "Saisissez un nombre, par exemple 5000",
+      "targetMin": "Saisissez une cible supérieure à 0",
+      "amountMax": "Saisissez un montant de 1 000 000 000 ou moins",
+      "currentNaN": "Saisissez un nombre, par exemple 0",
+      "negative": "Saisissez 0 ou plus",
+      "dateInvalid": "Choisissez une date future"
+    },
+    "suggest": {
+      "pill": "Suggestion",
+      "byDate": "À raison de {{amount}} par mois, vous atteindrez cet objectif d'ici le {{date}}.",
+      "byMonthly": "Pour tenir l'échéance du {{date}}, mettez de côté {{amount}} par mois."
+    },
+    "done": "Marquer comme atteint",
+    "doneAria": "Marquer « {{title}} » comme atteint",
+    "remove": "Supprimer",
+    "removeAria": "Supprimer « {{title}} »",
+    "confirmRemove": "Supprimer « {{title}} » ? Cette action est irréversible.",
+    "confirmYes": "Oui, supprimer",
+    "keep": "Le garder",
+    "completed": "Atteints",
+    "empty": {
+      "title": "Aucun objectif pour l'instant",
+      "message": "Choisissez pour quoi épargner, fixez un montant et Kelen vous montre le temps nécessaire.",
+      "action": "Créer votre premier objectif"
+    }
+  },
+  "household": {
+    "title": "Foyer",
+    "subtitle": "Partagez certaines données avec des personnes de confiance. Tout est privé par défaut.",
+    "invite": "Inviter quelqu'un",
+    "loading": "Chargement du foyer…",
+    "loadError": {
+      "title": "Impossible de charger votre foyer",
+      "message": "Vos données sont en sécurité. Vérifiez votre connexion et réessayez."
+    },
+    "members": "Membres",
+    "leave": "Quitter le foyer",
+    "leaving": "Départ en cours…",
+    "empty": {
+      "title": "Pas encore de foyer",
+      "message": "Invitez quelqu'un par e-mail, ou saisissez un code reçu. Rien n'est partagé tant que la personne n'a pas accepté et que vous n'avez pas activé une catégorie."
+    },
+    "joinLabel": "Inviter par e-mail",
+    "joinPlaceholder": "membre@exemple.fr",
+    "joinHint": "Elle reçoit une demande et doit l'accepter avant que quoi que ce soit soit partagé.",
+    "joinSend": "Envoyer l'invitation",
+    "joinSending": "Envoi…",
+    "joinSent": "Invitation envoyée. En attente de son acceptation.",
+    "acceptLabel": "Accepter une invitation",
+    "acceptPlaceholder": "Code reçu dans votre e-mail d'invitation",
+    "acceptSend": "Accepter l'invitation",
+    "acceptSending": "Acceptation…",
+    "sharing": "Préférences de partage",
+    "sharingHint": "Activez une catégorie pour la rendre visible aux membres. Tout reste privé tant que vous ne le faites pas.",
+    "sharingNeedsHousehold": "Rejoignez un foyer pour activer le partage.",
+    "footer": "Le partage est facultatif par catégorie. Rien n'est partagé tant que vous ne l'activez pas.",
+    "shareToggle": "Partager {{label}} avec le foyer",
+    "resources": {
+      "accounts": {
+        "label": "Comptes bancaires",
+        "description": "Comptes et soldes Naforo"
+      },
+      "goals": {
+        "label": "Objectifs",
+        "description": "Objectifs d'épargne et de dépenses Naforo"
+      },
+      "budgets": {
+        "label": "Budgets",
+        "description": "Catégories et plafonds de budget Naforo"
+      },
+      "portfolio": {
+        "label": "Portefeuille",
+        "description": "Positions ETF et crypto Yiriba"
+      }
+    },
+    "errors": {
+      "join": "Impossible d'envoyer l'invitation. Vérifiez l'adresse e-mail et réessayez.",
+      "accept": "Ce code n'a pas fonctionné. Vérifiez-le et réessayez, ou demandez une nouvelle invitation.",
+      "leave": "Impossible de vous retirer du foyer. Veuillez réessayer.",
+      "share": "Impossible d'enregistrer ce changement. Veuillez réessayer."
+    }
   }
 }

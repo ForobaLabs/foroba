@@ -1,4 +1,4 @@
-import { parseDecimal } from './parseDecimal';
+import { parseDecimal } from '../../lib/parseDecimal';
 
 export type ScenarioField = 'amount' | 'years' | 'rate';
 

@@ -104,5 +104,145 @@
     "scenarioName": "Nome dello scenario",
     "save": "Salva",
     "delete": "Elimina"
+  },
+  "premium": {
+    "pill": "Premium",
+    "cta": "Sblocca Premium",
+    "soon": "Premium non è ancora acquistabile. Questa pagina si sbloccherà da sola quando lo sarà.",
+    "whatif": "Scopri come una piccola variazione mensile cresce negli anni, accanto alla tua strada attuale.",
+    "monthlyReport": "Un riepilogo del tuo mese in parole semplici, scritto da Jeli e pronto in PDF.",
+    "developer": "Crea chiavi API e webhook per collegare Kelen ai tuoi strumenti."
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "greeting": {
+      "morning": "Buongiorno",
+      "afternoon": "Buon pomeriggio",
+      "evening": "Buonasera",
+      "withName": "{{greeting}}, {{name}}"
+    },
+    "subtitle": "I tuoi soldi, su tutti i conti, in un solo posto",
+    "ctaAddAccount": "Aggiungi un conto",
+    "ctaSetGoal": "Crea un obiettivo",
+    "partial": "Alcuni dati mancano: {{sources}} non è raggiungibile in questo momento",
+    "includeManual": "Includi i beni manuali",
+    "cash": "Liquidità",
+    "cashHint": "Conti bancari",
+    "portfolio": "Portafoglio",
+    "portfolioHint": "ETF e crypto",
+    "debts": "Debiti",
+    "debtsHint": "Debiti manuali",
+    "openAccounts": "Apri {{label}}",
+    "netWorthOverTime": "Patrimonio netto nel tempo",
+    "allocation": "Allocazione",
+    "empty": {
+      "title": "Ancora niente da mostrare",
+      "message": "Aggiungi il tuo primo conto e qui comparirà il tuo patrimonio netto.",
+      "action": "Aggiungi un conto"
+    },
+    "error": {
+      "title": "Non siamo riusciti a caricare il tuo patrimonio netto",
+      "message": "I tuoi dati sono al sicuro. Controlla la connessione e riprova."
+    }
+  },
+  "goals": {
+    "title": "Obiettivi finanziari",
+    "subtitle": "Segui i progressi verso ciò che conta",
+    "new": "Nuovo obiettivo",
+    "newTitle": "Nuovo obiettivo",
+    "fields": {
+      "title": "Titolo",
+      "target": "Importo obiettivo ({{cur}})",
+      "current": "Importo attuale ({{cur}})",
+      "date": "Data obiettivo (facoltativa)",
+      "monthly": "Versamento mensile ({{cur}})",
+      "titlePlaceholder": "es. Fondo di emergenza"
+    },
+    "save": "Salva obiettivo",
+    "cancel": "Annulla",
+    "errors": {
+      "titleRequired": "Dai un nome al tuo obiettivo",
+      "titleLong": "Usa al massimo {{max}} caratteri",
+      "targetNaN": "Inserisci un numero, per esempio 5000",
+      "targetMin": "Inserisci un obiettivo maggiore di 0",
+      "amountMax": "Inserisci un importo di 1.000.000.000 o meno",
+      "currentNaN": "Inserisci un numero, per esempio 0",
+      "negative": "Inserisci 0 o più",
+      "dateInvalid": "Scegli una data futura"
+    },
+    "suggest": {
+      "pill": "Suggerimento",
+      "byDate": "Con {{amount}} al mese raggiungerai questo obiettivo entro il {{date}}.",
+      "byMonthly": "Per rispettare la scadenza del {{date}}, metti da parte {{amount}} al mese."
+    },
+    "done": "Segna come fatto",
+    "doneAria": "Segna \"{{title}}\" come fatto",
+    "remove": "Rimuovi",
+    "removeAria": "Rimuovi \"{{title}}\"",
+    "confirmRemove": "Rimuovere \"{{title}}\"? L'operazione non si può annullare.",
+    "confirmYes": "Sì, rimuovi",
+    "keep": "Tienilo",
+    "completed": "Completati",
+    "empty": {
+      "title": "Ancora nessun obiettivo",
+      "message": "Scegli per cosa risparmiare, fissa un importo e Kelen ti mostrerà quanto ci vuole.",
+      "action": "Crea il tuo primo obiettivo"
+    }
+  },
+  "household": {
+    "title": "Famiglia",
+    "subtitle": "Condividi dati selezionati con persone di cui ti fidi. Tutto è privato per impostazione predefinita.",
+    "invite": "Invita qualcuno",
+    "loading": "Caricamento della famiglia…",
+    "loadError": {
+      "title": "Non siamo riusciti a caricare la tua famiglia",
+      "message": "I tuoi dati sono al sicuro. Controlla la connessione e riprova."
+    },
+    "members": "Membri",
+    "leave": "Esci dalla famiglia",
+    "leaving": "Uscita in corso…",
+    "empty": {
+      "title": "Ancora nessuna famiglia",
+      "message": "Invita qualcuno via email, oppure inserisci un codice ricevuto. Nulla viene condiviso finché l'altra persona non accetta e tu non attivi una categoria."
+    },
+    "joinLabel": "Invita via email",
+    "joinPlaceholder": "membro@esempio.it",
+    "joinHint": "Riceveranno una richiesta e dovranno accettarla prima che venga condiviso qualcosa.",
+    "joinSend": "Invia invito",
+    "joinSending": "Invio in corso…",
+    "joinSent": "Invito inviato. In attesa che accettino.",
+    "acceptLabel": "Accetta un invito",
+    "acceptPlaceholder": "Codice dalla tua email di invito",
+    "acceptSend": "Accetta invito",
+    "acceptSending": "Accettazione in corso…",
+    "sharing": "Preferenze di condivisione",
+    "sharingHint": "Attiva una categoria per renderla visibile ai membri. Tutto resta privato finché non lo fai.",
+    "sharingNeedsHousehold": "Unisciti a una famiglia per attivare la condivisione.",
+    "footer": "La condivisione è facoltativa per categoria. Nulla è condiviso finché non lo attivi.",
+    "shareToggle": "Condividi {{label}} con la famiglia",
+    "resources": {
+      "accounts": {
+        "label": "Conti bancari",
+        "description": "Conti e saldi di Naforo"
+      },
+      "goals": {
+        "label": "Obiettivi",
+        "description": "Obiettivi di risparmio e spesa di Naforo"
+      },
+      "budgets": {
+        "label": "Budget",
+        "description": "Categorie e limiti di budget di Naforo"
+      },
+      "portfolio": {
+        "label": "Portafoglio",
+        "description": "Posizioni ETF e crypto di Yiriba"
+      }
+    },
+    "errors": {
+      "join": "Non siamo riusciti a inviare l'invito. Controlla l'indirizzo email e riprova.",
+      "accept": "Quel codice non ha funzionato. Controllalo e riprova, oppure chiedi un nuovo invito.",
+      "leave": "Non siamo riusciti a farti uscire dalla famiglia. Riprova.",
+      "share": "Non siamo riusciti a salvare la modifica. Riprova."
+    }
   }
 }

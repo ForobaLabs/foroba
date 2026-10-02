@@ -1,4 +1,5 @@
-import { useState, type FormEvent } from 'react';
+import { useRef, useState, type FormEvent } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Button,
   EmptyState,
@@ -12,15 +13,12 @@ import {
 } from '@foroba/ui';
 import { useHousehold } from '../auth/useHousehold';
 
-const SHARE_RESOURCE_TYPES: { key: string; label: string; description: string }[] = [
-  { key: 'accounts', label: 'Bank accounts', description: 'Naforo accounts and balances' },
-  { key: 'goals', label: 'Goals', description: 'Naforo savings and spending goals' },
-  { key: 'budgets', label: 'Budgets', description: 'Naforo budget categories and limits' },
-  { key: 'portfolio', label: 'Portfolio', description: 'Yiriba ETF and crypto positions' },
-];
+const SHARE_RESOURCE_KEYS = ['accounts', 'goals', 'budgets', 'portfolio'] as const;
 
 export function HouseholdPage() {
+  const { t } = useTranslation();
   const { household, join, acceptInvite, leave, toggleShare } = useHousehold();
+  const joinInputRef = useRef<HTMLInputElement>(null);
   const [email, setEmail] = useState('');
   const [joinError, setJoinError] = useState<string | null>(null);
   const [joinSent, setJoinSent] = useState(false);
@@ -37,8 +35,9 @@ export function HouseholdPage() {
       await join.mutateAsync(email);
       setEmail('');
       setJoinSent(true);
-    } catch (err) {
-      setJoinError(err instanceof Error ? err.message : 'Failed to send join request');
+    } catch {
+      // Generic on purpose: the raw server message can reveal whether an address has an account.
+      setJoinError(t('household.errors.join'));
     }
   };
 
@@ -48,39 +47,54 @@ export function HouseholdPage() {
     try {
       await acceptInvite.mutateAsync(inviteToken);
       setInviteToken('');
-    } catch (err) {
-      setAcceptError(err instanceof Error ? err.message : 'Failed to accept invite');
+    } catch {
+      setAcceptError(t('household.errors.accept'));
     }
+  };
+
+  const inHousehold = !!household.data?.household_id;
+  const focusInvite = () => {
+    joinInputRef.current?.scrollIntoView?.({ block: 'center' });
+    joinInputRef.current?.focus();
   };
 
   return (
     <PageContainer>
       <SectionHeader
-        title="Household"
-        description="Share select data with household members you trust — everything is private by default"
-        className="mb-6"
+        as="h1"
+        title={t('household.title')}
+        description={t('household.subtitle')}
+        action={
+          household.data ? (
+            <Button type="button" onClick={focusInvite} className="min-h-11">
+              {t('household.invite')}
+            </Button>
+          ) : undefined
+        }
+        className="mb-6 flex-wrap"
       />
       <div className="mx-auto max-w-lg">
         {household.isLoading ? (
-          <LoadingState message="Loading household…" />
+          <LoadingState message={t('household.loading')} />
         ) : household.isError || !household.data ? (
           <ErrorState
-            message="Could not load your household."
+            title={t('household.loadError.title')}
+            message={t('household.loadError.message')}
             onRetry={() => household.refetch()}
           />
         ) : (
           <>
             <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-6">
-              {household.data.household_id ? (
+              {inHousehold ? (
                 <>
-                  <h3 className="mb-3 text-sm font-medium text-[var(--color-text-primary)]">
-                    Members
-                  </h3>
+                  <h2 className="mb-3 text-sm font-medium text-[var(--color-text-primary)]">
+                    {t('household.members')}
+                  </h2>
                   <ul className="mb-4 flex flex-col gap-2">
                     {household.data.members.map((m) => (
                       <li
                         key={m.id}
-                        className="flex items-center justify-between rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm"
+                        className="flex flex-wrap items-center justify-between gap-x-3 rounded-lg border border-[var(--color-border)] px-3 py-2 text-sm [overflow-wrap:anywhere]"
                       >
                         <span className="text-[var(--color-text-primary)]">{m.name}</span>
                         <span className="text-[var(--color-text-muted)]">{m.email}</span>
@@ -89,60 +103,63 @@ export function HouseholdPage() {
                   </ul>
                   <Button
                     variant="secondary"
+                    className="min-h-11"
                     onClick={() => leave.mutate()}
                     disabled={leave.isPending}
                   >
-                    {leave.isPending ? 'Leaving…' : 'Leave household'}
+                    {leave.isPending ? t('household.leaving') : t('household.leave')}
                   </Button>
+                  {leave.isError && (
+                    <p className="mt-2 text-xs text-[var(--color-negative)]" role="alert">
+                      {t('household.errors.leave')}
+                    </p>
+                  )}
                 </>
               ) : (
-                <EmptyState
-                  title="No household yet"
-                  message="Send a join request to someone already in a household, or invite someone by email — either way, they must accept before anything is shared."
-                />
+                <EmptyState title={t('household.empty.title')} message={t('household.empty.message')} />
               )}
 
               <form onSubmit={handleJoin} className="mt-6 flex flex-col gap-3">
-                <FormField label="Join by email" htmlFor="household-join-email">
+                <FormField label={t('household.joinLabel')} htmlFor="household-join-email">
                   <Input
                     id="household-join-email"
+                    ref={joinInputRef}
                     type="email"
+                    className="min-h-11 text-base"
                     value={email}
                     onChange={(e) => {
                       setEmail(e.target.value);
                       setJoinSent(false);
                     }}
-                    placeholder="member@example.com"
+                    placeholder={t('household.joinPlaceholder')}
                     required
                   />
                 </FormField>
-                <p className="text-xs text-[var(--color-text-muted)]">
-                  This sends a request — they must accept it before you're merged into one
-                  household.
-                </p>
+                <p className="text-xs text-[var(--color-text-muted)]">{t('household.joinHint')}</p>
                 {joinError && (
                   <p className="text-xs text-[var(--color-negative)]" role="alert">
                     {joinError}
                   </p>
                 )}
                 {joinSent && !joinError && (
-                  <p className="text-xs text-[var(--color-positive)]">
-                    Request sent — waiting for them to accept.
+                  <p className="text-xs text-[var(--color-positive)]" role="status">
+                    {t('household.joinSent')}
                   </p>
                 )}
-                <Button type="submit" disabled={join.isPending || !email}>
-                  {join.isPending ? 'Sending…' : 'Send join request'}
+                <Button type="submit" className="min-h-11" disabled={join.isPending || !email}>
+                  {join.isPending ? t('household.joinSending') : t('household.joinSend')}
                 </Button>
               </form>
 
               <form onSubmit={handleAcceptInvite} className="mt-6 flex flex-col gap-3">
-                <FormField label="Accept an invite" htmlFor="household-invite-token">
+                <FormField label={t('household.acceptLabel')} htmlFor="household-invite-token">
                   <Input
                     id="household-invite-token"
                     type="text"
+                    className="min-h-11 text-base"
                     value={inviteToken}
                     onChange={(e) => setInviteToken(e.target.value)}
-                    placeholder="Code from your invite email"
+                    placeholder={t('household.acceptPlaceholder')}
                     required
                   />
                 </FormField>
@@ -154,43 +171,53 @@ export function HouseholdPage() {
                 <Button
                   type="submit"
                   variant="secondary"
+                  className="min-h-11"
                   disabled={acceptInvite.isPending || !inviteToken}
                 >
-                  {acceptInvite.isPending ? 'Accepting…' : 'Accept invite'}
+                  {acceptInvite.isPending ? t('household.acceptSending') : t('household.acceptSend')}
                 </Button>
               </form>
             </div>
 
             <div className="mt-6 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-card)] p-6">
-              <h3 className="mb-1 text-sm font-medium text-[var(--color-text-primary)]">
-                Sharing preferences
-              </h3>
+              <h2 className="mb-1 text-sm font-medium text-[var(--color-text-primary)]">
+                {t('household.sharing')}
+              </h2>
               <p className="mb-4 text-xs text-[var(--color-text-muted)]">
-                Turn on sharing per category to make your data visible to household members.
-                Everything is private until you opt in.
+                {inHousehold ? t('household.sharingHint') : t('household.sharingNeedsHousehold')}
               </p>
-              <ul className="flex flex-col gap-4">
-                {SHARE_RESOURCE_TYPES.map((r) => (
-                  <li key={r.key} className="flex items-center justify-between gap-4">
-                    <div>
-                      <p className="text-sm text-[var(--color-text-primary)]">{r.label}</p>
-                      <p className="text-xs text-[var(--color-text-muted)]">{r.description}</p>
-                    </div>
-                    <Switch
-                      checked={household.data.share_preferences[r.key] ?? false}
-                      disabled={!household.data.household_id || toggleShare.isPending}
-                      onCheckedChange={(checked) =>
-                        toggleShare.mutate({ resourceType: r.key, shared: checked })
-                      }
-                    />
-                  </li>
-                ))}
+              <ul className="flex flex-col gap-2">
+                {SHARE_RESOURCE_KEYS.map((key) => {
+                  const label = t(`household.resources.${key}.label`);
+                  return (
+                    <li key={key} className="flex min-h-11 items-center justify-between gap-4">
+                      <label htmlFor={`share-${key}`} className="min-w-0 flex-1 cursor-pointer">
+                        <span className="block text-sm text-[var(--color-text-primary)]">{label}</span>
+                        <span className="block text-xs text-[var(--color-text-muted)]">
+                          {t(`household.resources.${key}.description`)}
+                        </span>
+                      </label>
+                      <Switch
+                        id={`share-${key}`}
+                        aria-label={t('household.shareToggle', { label })}
+                        checked={household.data.share_preferences[key] ?? false}
+                        disabled={!inHousehold || toggleShare.isPending}
+                        onCheckedChange={(checked) =>
+                          toggleShare.mutate({ resourceType: key, shared: checked })
+                        }
+                      />
+                    </li>
+                  );
+                })}
               </ul>
+              {toggleShare.isError && (
+                <p className="mt-3 text-xs text-[var(--color-negative)]" role="alert">
+                  {t('household.errors.share')}
+                </p>
+              )}
             </div>
 
-            <p className="mt-4 text-center text-xs text-[var(--color-text-muted)]">
-              Sharing is opt-in per category — nothing is shared until you switch it on.
-            </p>
+            <p className="mt-4 text-center text-xs text-[var(--color-text-muted)]">{t('household.footer')}</p>
           </>
         )}
       </div>

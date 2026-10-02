@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { PremiumGate } from '../components/PremiumGate';
 import {
   Area, AreaChart, CartesianGrid, Legend, Line, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts';
 import {
-  Button, Card, CardContent, ErrorState, LockedFeature, PageContainer, SectionHeader, Spinner,
+  Button, Card, CardContent, ErrorState, PageContainer, SectionHeader, Spinner,
   formatCurrency, useEntitlement,
 } from '@foroba/ui';
 import { useRechartsTheme } from '@foroba/ui/charts';
@@ -35,9 +36,9 @@ export function WhatIfPage() {
   return (
     <PageContainer>
       <SectionHeader as="h1" title={t('whatif.title')} description={t('whatif.subtitle')} />
-      <LockedFeature visible={visible} unlocked={unlocked} label={t('whatif.title')}>
+      <PremiumGate visible={visible} unlocked={unlocked} feature={t('whatif.title')} description={t('premium.whatif')}>
         <WhatIfBuilder />
-      </LockedFeature>
+      </PremiumGate>
     </PageContainer>
   );
 }

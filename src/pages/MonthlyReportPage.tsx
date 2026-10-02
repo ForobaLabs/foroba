@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { PremiumGate } from '../components/PremiumGate';
 import {
-  Badge, Button, Card, CardContent, ErrorState, LockedFeature, PageContainer, SectionHeader,
+  Badge, Button, Card, CardContent, ErrorState, PageContainer, SectionHeader,
   Spinner, useEntitlement,
 } from '@foroba/ui';
 import {
@@ -26,10 +27,10 @@ export function MonthlyReportPage() {
 
   return (
     <PageContainer>
-      <SectionHeader title={t('monthlyReport.title', 'Monthly Report')} />
-      <LockedFeature visible={visible} unlocked={unlocked} label={t('monthlyReport.title', 'Monthly Report')}>
+      <SectionHeader as="h1" title={t('monthlyReport.title', 'Monthly Report')} />
+      <PremiumGate visible={visible} unlocked={unlocked} feature={t('monthlyReport.title', 'Monthly Report')} description={t('premium.monthlyReport')}>
         <MonthlyReportBody />
-      </LockedFeature>
+      </PremiumGate>
     </PageContainer>
   );
 }

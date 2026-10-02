@@ -29,8 +29,9 @@ describe('MonthlyReportPage', () => {
     render(<MonthlyReportPage />);
 
     await waitFor(() => {
-      expect(screen.getByRole('heading', { name: /monthly report/i })).toBeInTheDocument();
+      expect(screen.getByRole('heading', { level: 1, name: /monthly report/i })).toBeInTheDocument();
     });
+    expect(screen.getByRole('region', { name: /monthly report/i })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /generate/i })).not.toBeInTheDocument();
   });
 

@@ -104,5 +104,145 @@
     "scenarioName": "Scenario name",
     "save": "Save",
     "delete": "Delete"
+  },
+  "premium": {
+    "pill": "Premium",
+    "cta": "Unlock Premium",
+    "soon": "Premium isn't available to buy yet. This page will unlock automatically when it is.",
+    "whatif": "See how a small monthly change adds up over the years, side by side with your current path.",
+    "monthlyReport": "A plain-language summary of your month, written by Jeli and ready as a PDF.",
+    "developer": "Create API keys and webhooks to connect Kelen to your own tools."
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "greeting": {
+      "morning": "Good morning",
+      "afternoon": "Good afternoon",
+      "evening": "Good evening",
+      "withName": "{{greeting}}, {{name}}"
+    },
+    "subtitle": "Your money across all accounts, in one place",
+    "ctaAddAccount": "Add an account",
+    "ctaSetGoal": "Set a goal",
+    "partial": "Some data is missing: {{sources}} can't be reached right now",
+    "includeManual": "Include manual assets",
+    "cash": "Cash",
+    "cashHint": "Bank accounts",
+    "portfolio": "Portfolio",
+    "portfolioHint": "ETF and crypto",
+    "debts": "Debts",
+    "debtsHint": "Manual debts",
+    "openAccounts": "Open {{label}}",
+    "netWorthOverTime": "Net worth over time",
+    "allocation": "Allocation",
+    "empty": {
+      "title": "Nothing to show yet",
+      "message": "Add your first account and your net worth will appear here.",
+      "action": "Add an account"
+    },
+    "error": {
+      "title": "We couldn't load your net worth",
+      "message": "Your data is safe. Check your connection and try again."
+    }
+  },
+  "goals": {
+    "title": "Financial goals",
+    "subtitle": "Track your progress toward what matters",
+    "new": "New goal",
+    "newTitle": "New goal",
+    "fields": {
+      "title": "Title",
+      "target": "Target amount ({{cur}})",
+      "current": "Current amount ({{cur}})",
+      "date": "Target date (optional)",
+      "monthly": "Monthly contribution ({{cur}})",
+      "titlePlaceholder": "e.g. Emergency fund"
+    },
+    "save": "Save goal",
+    "cancel": "Cancel",
+    "errors": {
+      "titleRequired": "Give your goal a name",
+      "titleLong": "Keep the name to {{max}} characters or fewer",
+      "targetNaN": "Enter a number, for example 5000",
+      "targetMin": "Enter a target greater than 0",
+      "amountMax": "Enter an amount of 1,000,000,000 or less",
+      "currentNaN": "Enter a number, for example 0",
+      "negative": "Enter 0 or more",
+      "dateInvalid": "Choose a date in the future"
+    },
+    "suggest": {
+      "pill": "Suggested",
+      "byDate": "At {{amount}} a month you'll reach this goal by {{date}}.",
+      "byMonthly": "To hit your {{date}} deadline, put aside {{amount}} a month."
+    },
+    "done": "Mark done",
+    "doneAria": "Mark \"{{title}}\" as done",
+    "remove": "Remove",
+    "removeAria": "Remove \"{{title}}\"",
+    "confirmRemove": "Remove \"{{title}}\"? This can't be undone.",
+    "confirmYes": "Yes, remove",
+    "keep": "Keep it",
+    "completed": "Completed",
+    "empty": {
+      "title": "No goals yet",
+      "message": "Pick something to save for, set a target and Kelen will show how long it takes.",
+      "action": "Create your first goal"
+    }
+  },
+  "household": {
+    "title": "Household",
+    "subtitle": "Share selected data with people you trust. Everything is private by default.",
+    "invite": "Invite someone",
+    "loading": "Loading your household…",
+    "loadError": {
+      "title": "We couldn't load your household",
+      "message": "Your data is safe. Check your connection and try again."
+    },
+    "members": "Members",
+    "leave": "Leave household",
+    "leaving": "Leaving…",
+    "empty": {
+      "title": "No household yet",
+      "message": "Invite someone by email, or enter a code you received. Nothing is shared until they accept and you switch a category on."
+    },
+    "joinLabel": "Invite by email",
+    "joinPlaceholder": "member@example.com",
+    "joinHint": "They get a request and must accept it before anything is shared.",
+    "joinSend": "Send invitation",
+    "joinSending": "Sending…",
+    "joinSent": "Invitation sent. Waiting for them to accept.",
+    "acceptLabel": "Accept an invite",
+    "acceptPlaceholder": "Code from your invite email",
+    "acceptSend": "Accept invite",
+    "acceptSending": "Accepting…",
+    "sharing": "Sharing preferences",
+    "sharingHint": "Switch a category on to make it visible to household members. Everything stays private until you do.",
+    "sharingNeedsHousehold": "Join a household to turn sharing on.",
+    "footer": "Sharing is opt-in per category. Nothing is shared until you switch it on.",
+    "shareToggle": "Share {{label}} with household",
+    "resources": {
+      "accounts": {
+        "label": "Bank accounts",
+        "description": "Naforo accounts and balances"
+      },
+      "goals": {
+        "label": "Goals",
+        "description": "Naforo savings and spending goals"
+      },
+      "budgets": {
+        "label": "Budgets",
+        "description": "Naforo budget categories and limits"
+      },
+      "portfolio": {
+        "label": "Portfolio",
+        "description": "Yiriba ETF and crypto positions"
+      }
+    },
+    "errors": {
+      "join": "We couldn't send the invitation. Check the email address and try again.",
+      "accept": "That code didn't work. Check it and try again, or ask for a new invitation.",
+      "leave": "We couldn't remove you from the household. Please try again.",
+      "share": "We couldn't save that change. Please try again."
+    }
   }
 }

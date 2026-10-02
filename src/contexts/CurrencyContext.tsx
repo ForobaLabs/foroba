@@ -1,7 +1,10 @@
 import { createContext, useContext, useMemo, type ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
+import { formatCurrency } from '@foroba/ui';
 import { fetchFxRates } from '../api/foroba';
 import { useAuth } from '../auth/AuthProvider';
+import { usePrivacy } from './PrivacyContext';
 
 interface CurrencyContextValue {
   displayCurrency: string;
@@ -12,13 +15,14 @@ interface CurrencyContextValue {
 
 const Ctx = createContext<CurrencyContextValue>({
   displayCurrency: 'EUR',
-  formatMoney: (amountEur) =>
-    `€ ${amountEur.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+  formatMoney: (amountEur) => formatCurrency(amountEur, 'EUR', 'en'),
   loading: true,
 });
 
 export function CurrencyProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
+  const { i18n } = useTranslation();
+  const { isPrivate } = usePrivacy();
   const { data, isLoading } = useQuery({
     queryKey: ['fxRates'],
     queryFn: fetchFxRates,
@@ -29,19 +33,15 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
     const displayCurrency = user?.display_currency ?? 'EUR';
     const rateToEur = displayCurrency === 'EUR' ? 1 : data?.rates[displayCurrency];
 
+    // Locale follows the UI language; hidden amounts honour the shell's privacy toggle everywhere.
     const formatMoney = (amountEur: number): string => {
-      if (displayCurrency === 'EUR' || !rateToEur) {
-        return `€ ${amountEur.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-      }
-      const converted = amountEur / rateToEur;
-      return converted.toLocaleString('en-US', {
-        style: 'currency', currency: displayCurrency,
-        minimumFractionDigits: 2, maximumFractionDigits: 2,
-      });
+      const converted = displayCurrency === 'EUR' || !rateToEur ? amountEur : amountEur / rateToEur;
+      const currency = displayCurrency === 'EUR' || !rateToEur ? 'EUR' : displayCurrency;
+      return formatCurrency(converted, currency, i18n.language, { hidden: isPrivate });
     };
 
     return { displayCurrency, formatMoney, loading: isLoading };
-  }, [user?.display_currency, data, isLoading]);
+  }, [user?.display_currency, data, isLoading, i18n.language, isPrivate]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
