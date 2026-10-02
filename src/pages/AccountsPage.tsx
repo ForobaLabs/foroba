@@ -41,13 +41,13 @@ export function AccountsPage() {
 
   return (
     <PageContainer>
-      <div className="flex items-start justify-between mb-6">
+      <div className="flex flex-wrap items-start justify-between gap-3 mb-6">
         <SectionHeader
           title={t('data.accounts.title')}
           description={t('data.accounts.description')}
         />
         {online && (
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <ConnectBankButton variant="outline" />
             <ExportButton onExport={(fmt) => { window.location.href = `/pazuru-api/export/transactions?format=${fmt}`; }} />
           </div>
