@@ -277,6 +277,28 @@ def test_checkout_uses_provider_and_never_trusts_client_price(client):
     assert client.post("/billing/checkout-session", json={"plan": "../../evil"}).status_code == 422
 
 
+@pytest.mark.parametrize("plan", ["expert_monthly", "expert_yearly", "premium_yearly"])
+def test_checkout_accepts_expert_and_yearly_plans(client, plan):
+    r = client.post("/billing/checkout-session", json={"plan": plan})
+    assert r.status_code == 200 and r.json()["url"].endswith(f"plan={plan}")
+
+
+def test_paddle_provider_needs_a_server_side_price_id(monkeypatch):
+    from billing.provider import BillingProviderError, PaddleProvider
+
+    monkeypatch.setattr(settings, "paddle_price_ids", "")
+    with pytest.raises(BillingProviderError):
+        PaddleProvider().create_checkout(user_id=1, email="a@b.c", plan="expert_monthly")
+    monkeypatch.setattr(settings, "paddle_price_ids", "not json")
+    with pytest.raises(BillingProviderError):
+        PaddleProvider().create_checkout(user_id=1, email="a@b.c", plan="expert_monthly")
+    monkeypatch.setattr(settings, "paddle_price_ids", '{"expert_monthly": "pri_x"}')
+    with pytest.raises(BillingProviderError, match="not implemented"):
+        PaddleProvider().create_checkout(user_id=1, email="a@b.c", plan="expert_monthly")
+    with pytest.raises(BillingProviderError, match="no price"):
+        PaddleProvider().create_checkout(user_id=1, email="a@b.c", plan="premium_monthly")
+
+
 def test_checkout_disabled_returns_503(client, monkeypatch):
     monkeypatch.setattr(settings, "billing_enabled", False)
     assert (

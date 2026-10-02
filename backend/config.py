@@ -19,6 +19,8 @@ class Settings(BaseSettings):
     billing_provider: str = "fake"  # fake | paddle
     paddle_webhook_secret: str = ""
     billing_grace_days: int = 7
+    # JSON map plan -> Paddle price id (server-side only; the client never sends a price).
+    paddle_price_ids: str = ""
 
     # --- Deployment mode (GL-4.3, foroba#174) ---
     # "hosted" = multi-tenant beta on the VPS: Jeli Lab (arbitrary code-gen sandbox)

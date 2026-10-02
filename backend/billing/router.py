@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import json
 import sqlite3
-from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
@@ -13,7 +12,7 @@ from auth.conn import get_conn
 from auth.dependencies import get_current_user
 from billing.events import parse_paddle_event
 from billing.paddle_signature import SignatureError, verify_signature
-from billing.provider import BillingProviderError, get_provider
+from billing.provider import BillingProviderError, Plan, get_provider
 from billing.service import apply_event
 from config import settings
 
@@ -26,7 +25,7 @@ def _require_enabled() -> None:
 
 
 class CheckoutRequest(BaseModel):
-    plan: Literal["premium_monthly", "premium_yearly"]
+    plan: Plan
 
 
 @router.post("/webhook")
