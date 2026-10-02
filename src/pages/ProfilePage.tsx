@@ -49,7 +49,7 @@ export function ProfilePage() {
     <PageContainer>
       <SectionHeader
         title="Profile"
-        description="Your identity is shared across Foroba, Pazuru, and Tsumi"
+        description="Your identity is shared across Foroba, Naforo, and Yiriba"
         className="mb-6"
       />
 

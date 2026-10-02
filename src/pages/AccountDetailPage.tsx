@@ -54,14 +54,14 @@ export function AccountDetailPage() {
         <LoadingState message="Loading account…" />
       ) : detail.isError || !detail.data ? (
         <ErrorState
-          message="Could not load this account from Pazuru."
+          message="Could not load this account from Naforo."
           onRetry={() => detail.refetch()}
         />
       ) : (
         <>
           <SectionHeader
             title={`${BANK_LABELS[detail.data.bankName] ?? detail.data.bankName} — ${detail.data.displayName}`}
-            description="Account detail powered by Pazuru"
+            description="Account detail powered by Naforo"
             className="mb-6"
           />
 

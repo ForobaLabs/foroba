@@ -21,10 +21,10 @@ export function ServiceStatusBar() {
       <AlertCircle className="h-4 w-4 shrink-0 text-[var(--color-warning)]" />
       <span className="text-sm text-[var(--color-warning)]">Some services are unavailable:</span>
       {!pazuruOk && (
-        <Badge variant="warning">Pazuru offline</Badge>
+        <Badge variant="warning">Naforo offline</Badge>
       )}
       {!tsumiOk && (
-        <Badge variant="warning">Tsumi offline</Badge>
+        <Badge variant="warning">Yiriba offline</Badge>
       )}
     </div>
   );

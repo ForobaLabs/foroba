@@ -78,7 +78,7 @@ export function PortfolioPage() {
       <div className="flex items-start justify-between mb-6">
         <SectionHeader
           title="Portfolio"
-          description="ETF & crypto positions powered by Tsumi"
+          description="ETF & crypto positions powered by Yiriba"
         />
         {online && <ConnectInvestmentButton variant="outline" />}
       </div>
@@ -87,18 +87,18 @@ export function PortfolioPage() {
         // pazuru#149 (PROD-PZR-D03): `online` is false during the initial health
         // check too (data is undefined), so without this branch the page would
         // flash the "Offline" card before the check has actually resolved.
-        <LoadingState message="Checking Tsumi status…" />
+        <LoadingState message="Checking Yiriba status…" />
       ) : !online ? (
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center gap-2 mb-4">
-              <span className="text-sm font-medium text-[var(--color-text-primary)]">Tsumi status</span>
+              <span className="text-sm font-medium text-[var(--color-text-primary)]">Yiriba status</span>
               <Badge variant="warning">Offline</Badge>
             </div>
             <p className="text-sm text-[var(--color-text-muted)]">
               {DEPLOYMENT_MODE === 'selfhost' ? (
                 <>
-                  Tsumi is not reachable. Start it at{' '}
+                  Yiriba is not reachable. Start it at{' '}
                   <code className="rounded bg-[var(--color-bg-elevated)] px-1 text-xs">
                     {import.meta.env.VITE_TSUMI_API_URL ?? 'http://localhost:8050'}
                   </code>{' '}
@@ -114,13 +114,13 @@ export function PortfolioPage() {
         <LoadingState message="Loading portfolio…" />
       ) : positions.isError ? (
         <ErrorState
-          message="Could not load portfolio positions from Tsumi."
+          message="Could not load portfolio positions from Yiriba."
           onRetry={() => positions.refetch()}
         />
       ) : !positions.data || positions.data.length === 0 ? (
         <EmptyState
           title="No positions yet"
-          message="Add a position in Tsumi to see your portfolio here."
+          message="Add a position in Yiriba to see your portfolio here."
           action={<ConnectInvestmentButton />}
         />
       ) : (

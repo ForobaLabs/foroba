@@ -303,7 +303,7 @@ export function AppSettingsPage() {
                   cursor: 'pointer',
                 }}
               >
-                Manage in Pazuru
+                Manage in Naforo
               </button>
             </div>
           )),
@@ -336,7 +336,7 @@ export function AppSettingsPage() {
                   cursor: 'pointer',
                 }}
               >
-                Manage in Tsumi
+                Manage in Yiriba
               </button>
             </div>
           )),

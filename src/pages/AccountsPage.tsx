@@ -40,7 +40,7 @@ export function AccountsPage() {
       <div className="flex items-start justify-between mb-6">
         <SectionHeader
           title="Accounts"
-          description="Bank accounts & cashflow powered by Pazuru"
+          description="Bank accounts & cashflow powered by Naforo"
         />
         {online && (
           <div className="flex items-center gap-2">
@@ -54,16 +54,16 @@ export function AccountsPage() {
         // pazuru#149 (PROD-PZR-D03): `online` is false during the initial health
         // check too (data is undefined), so without this branch the page would
         // flash the "Offline" card before the check has actually resolved.
-        <LoadingState message="Checking Pazuru status…" />
+        <LoadingState message="Checking Naforo status…" />
       ) : !online ? (
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center gap-2 mb-4">
-              <span className="text-sm font-medium text-[var(--color-text-primary)]">Pazuru status</span>
+              <span className="text-sm font-medium text-[var(--color-text-primary)]">Naforo status</span>
               <Badge variant="warning">Offline</Badge>
             </div>
             <p className="text-sm text-[var(--color-text-muted)]">
-              Pazuru is not reachable. Start it at{' '}
+              Naforo is not reachable. Start it at{' '}
               <code className="rounded bg-[var(--color-bg-elevated)] px-1 text-xs">
                 {import.meta.env.VITE_PAZURU_API_URL ?? 'http://localhost:8000'}
               </code>{' '}
@@ -75,13 +75,13 @@ export function AccountsPage() {
         <LoadingState message="Loading accounts…" />
       ) : accounts.isError ? (
         <ErrorState
-          message="Could not load accounts from Pazuru."
+          message="Could not load accounts from Naforo."
           onRetry={() => accounts.refetch()}
         />
       ) : !accounts.data || accounts.data.length === 0 ? (
         <EmptyState
           title="No accounts connected"
-          message="Connect a bank in Pazuru to see your accounts here."
+          message="Connect a bank in Naforo to see your accounts here."
           action={<ConnectBankButton />}
         />
       ) : (

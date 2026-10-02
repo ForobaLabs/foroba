@@ -50,8 +50,8 @@ describe('ServiceStatusBar', () => {
     renderBar();
 
     await waitFor(() => {
-      expect(screen.getByText('Tsumi offline')).toBeInTheDocument();
+      expect(screen.getByText('Yiriba offline')).toBeInTheDocument();
     });
-    expect(screen.queryByText('Pazuru offline')).not.toBeInTheDocument();
+    expect(screen.queryByText('Naforo offline')).not.toBeInTheDocument();
   });
 });

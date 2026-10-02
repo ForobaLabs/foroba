@@ -21,8 +21,8 @@ export function AllocationPie({ cashEur, portfolioEur }: AllocationPieProps) {
   }
 
   const data = [
-    { name: 'Cash (Pazuru)', value: cashEur },
-    { name: 'Portfolio (Tsumi)', value: portfolioEur },
+    { name: 'Cash (Naforo)', value: cashEur },
+    { name: 'Portfolio (Yiriba)', value: portfolioEur },
   ];
 
   return (

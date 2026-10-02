@@ -29,7 +29,7 @@ Why: To display your household's financial overview and track progress against y
 Legal basis: Performance of a contract.
 
 Portfolio summary and market data
-What: Aggregated portfolio data displayed in Foroba's dashboard (sourced from Pazuru and Tsumi). Market data (public tickers, prices) fetched from public providers.
+What: Aggregated portfolio data displayed in Foroba's dashboard (sourced from Naforo and Yiriba). Market data (public tickers, prices) fetched from public providers.
 Why: To provide a unified financial overview.
 Legal basis: Performance of a contract.
 Note: Market data API calls carry only public ticker symbols — no personal data is transmitted to market data providers.
@@ -66,12 +66,12 @@ Your personal data is processed within the European Union. GlitchTip is self-hos
 
 COOKIES
 We use two types of cookies, both strictly necessary:
-• suite_session — authentication; keeps you logged in across all three apps (Foroba, Pazuru, Tsumi).
+• suite_session — authentication; keeps you logged in across all three apps (Foroba, Naforo, Yiriba).
 • stepup_pazuru / stepup_tsumi — step-up authentication tokens, issued by Foroba and consumed by satellite apps for sensitive operations.
 No advertising or analytics cookies are used.
 
 YOUR RIGHTS
-Under GDPR you have the right to: access your data (art.15); correct inaccurate data (art.16); delete your account and all associated data across the suite (art.17 — available directly in Settings → Security → Delete account); restrict processing (art.18); export your data (art.20 — CSV export available in Pazuru); object to processing based on legitimate interests (art.21).
+Under GDPR you have the right to: access your data (art.15); correct inaccurate data (art.16); delete your account and all associated data across the suite (art.17 — available directly in Settings → Security → Delete account); restrict processing (art.18); export your data (art.20 — CSV export available in Naforo); object to processing based on legitimate interests (art.21).
 
 To exercise any right, contact: [SUPPORT EMAIL — to be inserted before launch].
 
@@ -99,7 +99,7 @@ AGE RESTRICTION
 This service is for adults aged 18 and older. By creating an account, you confirm you are at least 18 years old.
 
 NOT FINANCIAL ADVICE
-Personal Finance HUB (Foroba, Pazuru, Tsumi) is a personal finance management suite — it is not a financial adviser or regulated financial service (other than in relation to account information as addressed in our regulatory disclosures).
+Personal Finance HUB (Foroba, Naforo, Yiriba) is a personal finance management suite — it is not a financial adviser or regulated financial service (other than in relation to account information as addressed in our regulatory disclosures).
 
 Market data, portfolio summaries, and any analytical outputs are for informational and organisational purposes only. Nothing in this service constitutes investment advice, financial advice, legal advice, or tax advice. Market data may be delayed and may not reflect real-time prices.
 
@@ -110,15 +110,15 @@ YOUR ACCOUNT
 • Notify us immediately if you suspect unauthorised access to your account.
 
 ACCOUNT DELETION
-You may delete your account and all associated data at any time via Settings → Security → Delete account. Deletion is permanent and covers your data across all three apps (Foroba, Pazuru, Tsumi). Bank connections (Enable Banking) are revoked immediately on deletion.
+You may delete your account and all associated data at any time via Settings → Security → Delete account. Deletion is permanent and covers your data across all three apps (Foroba, Naforo, Yiriba). Bank connections (Enable Banking) are revoked immediately on deletion.
 
 YOUR DATA
 • You retain ownership of your personal financial data.
 • We process your data as described in the Privacy Policy.
-• You may export your data at any time (CSV export in Pazuru).
+• You may export your data at any time (CSV export in Naforo).
 
 SUITE ARCHITECTURE
-Foroba acts as the authentication authority for the suite. Your login, MFA, and session tokens are issued by Foroba and shared with Pazuru and Tsumi. Account management (password change, MFA settings, account deletion) is performed in Foroba and applies to the entire suite.
+Foroba acts as the authentication authority for the suite. Your login, MFA, and session tokens are issued by Foroba and shared with Naforo and Yiriba. Account management (password change, MFA settings, account deletion) is performed in Foroba and applies to the entire suite.
 
 ACCEPTABLE USE
 You must not use this service to: violate any applicable law or regulation; attempt to gain unauthorised access to other users' accounts or data; reverse-engineer or copy the software for commercial use.

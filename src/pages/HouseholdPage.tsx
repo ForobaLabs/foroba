@@ -13,10 +13,10 @@ import {
 import { useHousehold } from '../auth/useHousehold';
 
 const SHARE_RESOURCE_TYPES: { key: string; label: string; description: string }[] = [
-  { key: 'accounts', label: 'Bank accounts', description: 'Pazuru accounts and balances' },
-  { key: 'goals', label: 'Goals', description: 'Pazuru savings and spending goals' },
-  { key: 'budgets', label: 'Budgets', description: 'Pazuru budget categories and limits' },
-  { key: 'portfolio', label: 'Portfolio', description: 'Tsumi ETF and crypto positions' },
+  { key: 'accounts', label: 'Bank accounts', description: 'Naforo accounts and balances' },
+  { key: 'goals', label: 'Goals', description: 'Naforo savings and spending goals' },
+  { key: 'budgets', label: 'Budgets', description: 'Naforo budget categories and limits' },
+  { key: 'portfolio', label: 'Portfolio', description: 'Yiriba ETF and crypto positions' },
 ];
 
 export function HouseholdPage() {

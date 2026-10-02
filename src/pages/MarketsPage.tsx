@@ -79,7 +79,7 @@ export function MarketsPage() {
     <PageContainer>
       <SectionHeader
         title="Markets"
-        description="Market news, top movers, and asset detail — powered by Tsumi"
+        description="Market news, top movers, and asset detail — powered by Yiriba"
         className="mb-6"
       />
 
@@ -101,7 +101,7 @@ export function MarketsPage() {
         <LoadingState message="Loading markets…" />
       ) : isError ? (
         <ErrorState
-          message="Market data is currently unavailable. Make sure Tsumi is running."
+          message="Market data is currently unavailable. Make sure Yiriba is running."
           onRetry={() => refetch()}
         />
       ) : !data ? (

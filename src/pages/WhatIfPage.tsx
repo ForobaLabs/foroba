@@ -275,7 +275,7 @@ function WhatIfBuilder() {
             <p className="text-xs text-[var(--color-text-secondary)]">{result.disclaimer}</p>
             {result.debtsEur !== undefined ? (
               <p className="text-xs text-[var(--color-text-secondary)]">
-                {t('whatif.debtsIncluded', 'Includes -{{amount}} in outstanding debts (Pazuru).', {
+                {t('whatif.debtsIncluded', 'Includes -{{amount}} in outstanding debts (Naforo).', {
                   amount: result.debtsEur.toLocaleString(undefined, { style: 'currency', currency: 'EUR' }),
                 })}
               </p>
@@ -316,7 +316,7 @@ function WhatIfBuilder() {
                 {gi.name}: {gi.newProjection?.projected_date ?? t('whatif.noProjection', 'no projection')}
               </p>
             ))}
-            <JeliInterpretButton contextLabel="Foroba What-If Simulator" buildContext={buildJeliContext} />
+            <JeliInterpretButton contextLabel="Kelen What-If Simulator" buildContext={buildJeliContext} />
           </CardContent>
         </Card>
       )}

@@ -36,7 +36,7 @@ export function MarketDetailPage() {
 
       <SectionHeader
         title={symbol ?? 'Asset'}
-        description={`${assetClass} · rating, sentiment & movers powered by Tsumi`}
+        description={`${assetClass} · rating, sentiment & movers powered by Yiriba`}
         className="mb-6"
       />
 
@@ -46,7 +46,7 @@ export function MarketDetailPage() {
 
           {!isLoading && isError && (
             <ErrorState
-              message="Market data is currently unavailable. Make sure Tsumi is running."
+              message="Market data is currently unavailable. Make sure Yiriba is running."
               onRetry={() => refetch()}
             />
           )}

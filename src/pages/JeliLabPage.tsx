@@ -135,7 +135,7 @@ export function JeliLabPage() {
     <PageContainer>
       <SectionHeader
         title="Jeli Lab"
-        description="Ask questions about your own data across Pazuru and Tsumi. Jeli writes and runs Python in an isolated sandbox."
+        description="Ask questions about your own data across Naforo and Yiriba. Jeli writes and runs Python in an isolated sandbox."
         className="mb-6"
       />
 

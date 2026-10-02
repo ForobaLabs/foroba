@@ -37,12 +37,12 @@ export function useStatusPage() {
       lastChecked: foroba.dataUpdatedAt ? new Date(foroba.dataUpdatedAt).toISOString() : null,
     },
     {
-      name: 'Pazuru',
+      name: 'Naforo',
       status: toHealthStatus(pazuru),
       lastChecked: pazuru.dataUpdatedAt ? new Date(pazuru.dataUpdatedAt).toISOString() : null,
     },
     {
-      name: 'Tsumi',
+      name: 'Yiriba',
       status: toHealthStatus(tsumi),
       lastChecked: tsumi.dataUpdatedAt ? new Date(tsumi.dataUpdatedAt).toISOString() : null,
     },

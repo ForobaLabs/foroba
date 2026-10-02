@@ -17,8 +17,8 @@ function greeting(name: string): string {
 }
 
 const SOURCE_LABELS: Record<string, string> = {
-  pazuru: 'Pazuru',
-  tsumi: 'Tsumi',
+  pazuru: 'Naforo',
+  tsumi: 'Yiriba',
 };
 
 export function DashboardPage() {
@@ -90,7 +90,7 @@ export function DashboardPage() {
           style={{ cursor: 'pointer' }}
         >
           <KpiCard
-            label="Cash (Pazuru)"
+            label="Cash (Naforo)"
             value={snapshot ? formatMoney(snapshot.cashEur) : '–'}
             loading={isLoading}
             subtitle="Bank accounts"
@@ -106,7 +106,7 @@ export function DashboardPage() {
           style={{ cursor: 'pointer' }}
         >
           <KpiCard
-            label="Portfolio (Tsumi)"
+            label="Portfolio (Yiriba)"
             value={snapshot ? formatMoney(snapshot.portfolioEur) : '–'}
             loading={isLoading}
             subtitle="ETF + crypto"
@@ -114,7 +114,7 @@ export function DashboardPage() {
         </div>
         {user?.show_debts && snapshot?.debtsEur !== undefined && (
           <KpiCard
-            label="Debts (Pazuru)"
+            label="Debts (Naforo)"
             value={`-${formatMoney(snapshot.debtsEur)}`}
             loading={isLoading}
             subtitle="Manual debts"

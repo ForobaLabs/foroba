@@ -2,9 +2,9 @@ import type { FaqItem } from '@foroba/ui';
 
 export const FOROBA_FAQ: FaqItem[] = [
   {
-    question: 'What is Foroba?',
+    question: 'What is Kelen?',
     answer:
-      'Foroba is the shared hub for your personal finance suite. It brings together your bank accounts (via Pazuru), your investment portfolio (via Tsumi), market data, and your AI assistant Jeli in a single place.',
+      'Kelen is your whole-wealth view in the Foroba suite. It brings together your bank accounts (via Naforo), your investment portfolio (via Yiriba), market data, and your AI assistant Jeli in a single place.',
     tags: ['overview', 'about'],
   },
   {
@@ -28,7 +28,7 @@ export const FOROBA_FAQ: FaqItem[] = [
   {
     question: 'Is my financial data shared with any external service?',
     answer:
-      'No. Foroba, Pazuru, and Tsumi are all local-first and self-hosted. Bank sync uses Enable Banking under PSD2; market data comes from public, license-clean sources. Nothing is sent to third-party AI providers.',
+      'No. Foroba, Naforo, and Yiriba are all local-first and self-hosted. Bank sync uses Enable Banking under PSD2; market data comes from public, license-clean sources. Nothing is sent to third-party AI providers.',
     tags: ['privacy', 'security', 'data'],
   },
   {

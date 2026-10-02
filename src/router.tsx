@@ -68,7 +68,7 @@ export const router = createBrowserRouter([
       { path: 'help',      element: <HelpPage faqItems={FOROBA_FAQ} gitlabIssueUrl="https://gitlab.com/bambac961/foroba/-/issues" /> },
       { path: 'legal',    element: <LegalPage privacyPolicy={PRIVACY_POLICY} termsOfService={TERMS_OF_SERVICE} fiscalDisclaimer={FISCAL_DISCLAIMER} /> },
       { path: 'security', element: <SecurityPage /> },
-      { path: 'about',    element: <AboutPage appName="Foroba" version={__APP_VERSION__} /> },
+      { path: 'about',    element: <AboutPage appName="Kelen" version={__APP_VERSION__} /> },
     ],
   },
 ]);

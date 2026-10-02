@@ -37,7 +37,7 @@ export function PortfolioDetailPage() {
         <LoadingState message="Loading position…" />
       ) : positions.isError ? (
         <ErrorState
-          message="Could not load this position from Tsumi."
+          message="Could not load this position from Yiriba."
           onRetry={() => positions.refetch()}
         />
       ) : !position ? (

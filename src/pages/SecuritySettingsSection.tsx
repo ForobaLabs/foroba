@@ -503,7 +503,7 @@ export function SecuritySettingsSection() {
           <DialogHeader>
             <DialogTitle>Delete your account</DialogTitle>
             <DialogDescription>
-              This permanently erases your data in Foroba, Pazuru, and Tsumi — accounts,
+              This permanently erases your data in Foroba, Naforo, and Yiriba — accounts,
               transactions, portfolio, budgets, goals, and everything else tied to your
               account. This cannot be undone.
             </DialogDescription>

@@ -322,7 +322,7 @@ function AdminBackupPanel(): React.ReactElement {
   async function handleImport() {
     if (!importFile) return;
     const confirmed = window.confirm(
-      'This will overwrite live data on all 3 apps (Foroba, Pazuru, Tsumi). Continue?'
+      'This will overwrite live data on all 3 apps (Foroba, Naforo, Yiriba). Continue?'
     );
     if (!confirmed) return;
 
@@ -352,7 +352,7 @@ function AdminBackupPanel(): React.ReactElement {
       <section>
         <h3 className="text-sm font-semibold text-[var(--color-text-primary)] mb-2">Export backup</h3>
         <p className="text-sm text-[var(--color-text-secondary)] mb-3">
-          Downloads one encrypted file containing Foroba, Pazuru, and Tsumi data.
+          Downloads one encrypted file containing Foroba, Naforo, and Yiriba data.
           The passphrase is never stored anywhere — write it down, you'll need it to restore.
         </p>
         <input
@@ -433,8 +433,8 @@ function AdminStatusPanel(): React.ReactElement {
       const unavailable: DetailedHealth = { status: 'unavailable', dependencies: {} };
       setApps([
         { name: 'Foroba', health: foroba.status === 'fulfilled' ? foroba.value : unavailable, lastChecked: new Date().toISOString() },
-        { name: 'Pazuru', health: pazuru.status === 'fulfilled' ? pazuru.value : unavailable, lastChecked: new Date().toISOString() },
-        { name: 'Tsumi', health: tsumi.status === 'fulfilled' ? tsumi.value : unavailable, lastChecked: new Date().toISOString() },
+        { name: 'Naforo', health: pazuru.status === 'fulfilled' ? pazuru.value : unavailable, lastChecked: new Date().toISOString() },
+        { name: 'Yiriba', health: tsumi.status === 'fulfilled' ? tsumi.value : unavailable, lastChecked: new Date().toISOString() },
       ]);
     }
 
