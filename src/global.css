@@ -60,4 +60,9 @@ body {
     font-size: 16px;
     min-height: 44px;
   }
+
+  main button:not([role='switch']):not([role='checkbox']):not([role='radio']),
+  main [role='combobox'] {
+    min-height: 44px;
+  }
 }

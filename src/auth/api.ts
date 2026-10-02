@@ -53,6 +53,21 @@ export interface RegisterInput {
   country?: string;
 }
 
+/** Backend validation text (pydantic) is not user copy; map the known cases to plain advice. */
+export function friendlyRegisterError(detail: unknown): string {
+  const text = typeof detail === "string" ? detail : "";
+  if (/email address/i.test(text)) {
+    return "That email address can't be used. Check it for typos, or try another one.";
+  }
+  if (/password/i.test(text) && /(short|least|characters)/i.test(text)) {
+    return "Choose a longer password (at least 8 characters).";
+  }
+  if (/already|exists|in use/i.test(text)) {
+    return "An account with this email already exists. Try signing in instead.";
+  }
+  return "We couldn't create your account. Check the details and try again.";
+}
+
 export async function register(input: RegisterInput): Promise<SessionUser> {
   const r = await fetch("/jeli/auth/register", {
     ...opts,
@@ -74,7 +89,7 @@ export async function register(input: RegisterInput): Promise<SessionUser> {
     const detail = Array.isArray(body?.detail)
       ? body.detail[0]?.msg
       : body?.detail;
-    throw new Error(detail ?? "Registration failed. Email may already be in use.");
+    throw new Error(friendlyRegisterError(detail));
   }
   return r.json();
 }
