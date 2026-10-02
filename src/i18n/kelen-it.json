@@ -518,5 +518,13 @@
     "saveName": "Salva nome",
     "localNote": "Le preferenze qui sotto sono salvate solo su questo dispositivo. Nome e foto sopra sono condivisi in tutta la suite.",
     "avatarAlt": "Foto del profilo"
+  },
+  "billing": {
+    "title": "Abbonamento",
+    "unavailable": "I piani a pagamento non sono ancora disponibili. Tutto ciò che usi oggi resta gratuito.",
+    "status": "Il tuo abbonamento è {{status}}.",
+    "cancelsAtEnd": "Terminerà alla fine del periodo corrente.",
+    "upgrade": "Passa a Premium",
+    "error": "Il pagamento non è disponibile al momento. Riprova più tardi."
   }
 }

@@ -518,5 +518,13 @@
     "saveName": "Save name",
     "localNote": "Preferences below are stored on this device only. Your name and photo above are shared across the whole suite.",
     "avatarAlt": "Profile photo"
+  },
+  "billing": {
+    "title": "Subscription",
+    "unavailable": "Paid plans are not available yet. Everything you use today stays free.",
+    "status": "Your subscription is {{status}}.",
+    "cancelsAtEnd": "It ends at the close of the current period.",
+    "upgrade": "Upgrade to Premium",
+    "error": "Checkout is not available right now. Please try again later."
   }
 }
