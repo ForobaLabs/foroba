@@ -253,5 +253,33 @@
     "home": "Aller au tableau de bord",
     "errorTitle": "Une erreur est survenue",
     "errorMessage": "Rechargez la page ou revenez au tableau de bord. Si cela se reproduit, signalez-le depuis Aide."
+  },
+  "onboarding": {
+    "label": "Pour commencer",
+    "progress": "Étape {{current}} sur {{total}}",
+    "skip": "Passer pour l'instant",
+    "language": "Langue",
+    "theme": "Thème",
+    "bank": "Connecter un compte bancaire",
+    "portfolio": "Ajouter actions, ETF ou crypto",
+    "later": "Vous pourrez aussi le faire plus tard depuis les pages Comptes et Portefeuille.",
+    "welcome": {
+      "title": "Bienvenue. Voici ce qui reste privé",
+      "body": "Vos données sont stockées sur des serveurs chiffrés dans l'UE. Vous choisissez les comptes à connecter.",
+      "action": "Continuer"
+    },
+    "account": {
+      "title": "Ajoutez votre premier compte",
+      "body": "Connectez une banque ou saisissez un solde à la main. Vous pourrez le modifier plus tard.",
+      "action": "Ajouter un compte"
+    },
+    "networth": {
+      "title": "Découvrez votre patrimoine net",
+      "body": "Kelen additionne tout et affiche un seul chiffre clair. Vous pouvez ensuite fixer un premier objectif.",
+      "action": "Aller au tableau de bord"
+    },
+    "themeSystem": "Système",
+    "themeLight": "Clair",
+    "themeDark": "Sombre"
   }
 }

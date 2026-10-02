@@ -253,5 +253,33 @@
     "home": "Vai alla dashboard",
     "errorTitle": "Qualcosa è andato storto",
     "errorMessage": "Ricarica la pagina o torna alla dashboard. Se succede ancora, segnalacelo da Aiuto."
+  },
+  "onboarding": {
+    "label": "Per iniziare",
+    "progress": "Passaggio {{current}} di {{total}}",
+    "skip": "Salta per ora",
+    "language": "Lingua",
+    "theme": "Tema",
+    "bank": "Collega un conto bancario",
+    "portfolio": "Aggiungi azioni, ETF o crypto",
+    "later": "Puoi farlo anche più tardi dalle pagine Conti e Portafoglio.",
+    "welcome": {
+      "title": "Benvenuto. Ecco cosa resta privato",
+      "body": "I tuoi dati sono conservati su server cifrati nell'UE. Sei tu a scegliere quali conti collegare.",
+      "action": "Continua"
+    },
+    "account": {
+      "title": "Aggiungi il tuo primo conto",
+      "body": "Collega una banca oppure inserisci un saldo a mano. Potrai cambiare idea più avanti.",
+      "action": "Aggiungi un conto"
+    },
+    "networth": {
+      "title": "Guarda il tuo patrimonio netto",
+      "body": "Kelen somma tutto e mostra un solo valore chiaro. Da lì puoi fissare un primo obiettivo.",
+      "action": "Vai alla dashboard"
+    },
+    "themeSystem": "Sistema",
+    "themeLight": "Chiaro",
+    "themeDark": "Scuro"
   }
 }

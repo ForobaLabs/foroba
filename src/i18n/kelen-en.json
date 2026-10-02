@@ -253,5 +253,33 @@
     "home": "Go to dashboard",
     "errorTitle": "Something went wrong",
     "errorMessage": "Reload the page or go back to the dashboard. If it keeps happening, tell us from Help."
+  },
+  "onboarding": {
+    "label": "Getting started",
+    "progress": "Step {{current}} of {{total}}",
+    "skip": "Skip for now",
+    "language": "Language",
+    "theme": "Theme",
+    "bank": "Connect a bank account",
+    "portfolio": "Add stocks, ETFs or crypto",
+    "later": "You can also do this later from the Accounts and Portfolio pages.",
+    "welcome": {
+      "title": "Welcome. Here is what stays private",
+      "body": "Your data is stored on encrypted servers in the EU. You choose which accounts to connect.",
+      "action": "Continue"
+    },
+    "account": {
+      "title": "Add your first account",
+      "body": "Connect a bank, or enter a balance by hand. You can change this later.",
+      "action": "Add an account"
+    },
+    "networth": {
+      "title": "See your net worth",
+      "body": "Kelen adds everything up and shows one clear number. You can set a first goal from there.",
+      "action": "Go to my dashboard"
+    },
+    "themeSystem": "System",
+    "themeLight": "Light",
+    "themeDark": "Dark"
   }
 }
