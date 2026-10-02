@@ -55,6 +55,20 @@ export function KelenShell({ children, isAdmin = false, notifications }: KelenSh
     [defs, t],
   );
 
+  const labels = useMemo(
+    () => ({
+      skipToContent: t('shell.skipToContent'),
+      mainNavigation: t('shell.mainNavigation'),
+      search: t('shell.search'),
+      hideAmounts: t('shell.hideAmounts'),
+      showAmounts: t('shell.showAmounts'),
+      more: t('shell.more'),
+      close: t('shell.close'),
+      switchApp: t('shell.apps'),
+    }),
+    [t],
+  );
+
   const onSelectApp = (id: string) => {
     if (id === 'yiriba') window.location.href = YIRIBA_APP_URL;
     else if (id === 'naforo') window.location.href = NAFORO_APP_URL;
@@ -62,10 +76,12 @@ export function KelenShell({ children, isAdmin = false, notifications }: KelenSh
 
   return (
     <SuiteShell
+      labels={labels}
       app="kelen"
       switcher={
         <AppSwitcher
           current="kelen"
+          label={t('shell.apps')}
           onSelect={onSelectApp}
           apps={[
             { id: 'kelen', name: 'Kelen', blurb: t('switcher.kelen') },

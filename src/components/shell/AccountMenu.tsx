@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { Link } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { Activity, HelpCircle, Lock, Monitor, Moon, Scale, Settings, Sun, User } from 'lucide-react';
@@ -21,7 +21,16 @@ export function AccountMenu({ profile }: { profile: SuiteProfile | null }) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const [openUp, setOpenUp] = useState(false);
   const panelId = useId();
+
+  // In the mobile More sheet the avatar sits at the bottom edge, so a downward panel would be clipped.
+  useLayoutEffect(() => {
+    if (!open) return;
+    const rect = panelRef.current?.getBoundingClientRect();
+    if (rect && rect.bottom > window.innerHeight) setOpenUp(true);
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -60,7 +69,7 @@ export function AccountMenu({ profile }: { profile: SuiteProfile | null }) {
         aria-haspopup="dialog"
         aria-expanded={open}
         aria-controls={open ? panelId : undefined}
-        onClick={() => { setOpen((v) => !v); }}
+        onClick={() => { setOpenUp(false); setOpen((v) => !v); }}
         className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-full border border-[var(--color-bg-border)] bg-[var(--color-accent-subtle)] text-sm font-semibold text-[var(--color-accent-text)]"
       >
         {profile?.avatarUrl ? (
@@ -72,9 +81,10 @@ export function AccountMenu({ profile }: { profile: SuiteProfile | null }) {
       {open && (
         <div
           id={panelId}
+          ref={panelRef}
           role="dialog"
           aria-label={t('accountMenu.label')}
-          className="absolute right-0 top-full z-50 mt-1 flex w-72 max-w-[calc(100vw-32px)] flex-col gap-1 rounded-xl border border-[var(--color-bg-border)] bg-[var(--color-bg-surface)] p-2"
+          className={`absolute right-0 z-50 flex max-h-[calc(100vh-96px)] w-72 max-w-[calc(100vw-32px)] flex-col gap-1 overflow-y-auto rounded-xl ${openUp ? 'bottom-full mb-1' : 'top-full mt-1'} border border-[var(--color-bg-border)] bg-[var(--color-bg-surface)] p-2`}
           style={{ boxShadow: 'var(--shadow-lg)' }}
         >
           <Link to="/profile" className={rowClass} onClick={close}>
