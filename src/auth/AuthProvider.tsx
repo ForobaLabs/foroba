@@ -2,15 +2,23 @@ import { createContext, useContext, type ReactNode } from "react";
 import { useSession } from "./useSession";
 import type { SessionUser } from "./api";
 
-const Ctx = createContext<{ user: SessionUser | null; loading: boolean }>({
+const Ctx = createContext<{
+  user: SessionUser | null;
+  loading: boolean;
+  /** /auth/me failed for a reason other than 401 (outage, rate limit, offline): do not treat as signed out. */
+  unavailable: boolean;
+  retry: () => void;
+}>({
   user: null,
   loading: true,
+  unavailable: false,
+  retry: () => {},
 });
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const { data, isLoading } = useSession();
+  const { data, isLoading, isError, refetch } = useSession();
   return (
-    <Ctx.Provider value={{ user: data ?? null, loading: isLoading }}>
+    <Ctx.Provider value={{ user: data ?? null, loading: isLoading, unavailable: isError && !data, retry: () => void refetch() }}>
       {children}
     </Ctx.Provider>
   );

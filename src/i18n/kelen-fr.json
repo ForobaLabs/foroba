@@ -288,7 +288,10 @@
       "unavailable": "Indisponible",
       "partial": "Données partielles : certaines sections sont indisponibles pour le moment",
       "total": "Total",
-      "retryHint": "Réessayez dans un instant."
+      "retryHint": "Réessayez dans un instant.",
+      "sessionUnavailableTitle": "Impossible de joindre Kelen pour le moment",
+      "sessionUnavailableBody": "Votre session est en sécurité. Vérifiez votre connexion et réessayez.",
+      "sessionRetry": "Réessayer"
     },
     "accounts": {
       "title": "Comptes",

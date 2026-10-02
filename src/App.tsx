@@ -4,6 +4,7 @@ import { Navigate, Outlet, useLocation } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
 import { KelenShell } from './components/KelenShell';
 import { useAuth } from './auth/AuthProvider';
+import { SessionUnavailable } from './auth/SessionUnavailable';
 import { useNotifications } from './hooks/useNotifications';
 import { fetchConsentStatus } from './auth/api';
 import i18n from './i18n';
@@ -11,7 +12,7 @@ import i18n from './i18n';
 export function App() {
   useTheme(); // Applies dark/light class on mount
   const location = useLocation();
-  const { user, loading } = useAuth();
+  const { user, loading, unavailable, retry } = useAuth();
   const { profile } = useUserProfile();
   const { notifications, dismiss } = useNotifications();
   // CL-2.1 (foroba#238): check consent status once the session is resolved. The query is
@@ -34,6 +35,10 @@ export function App() {
         <Spinner size="lg" />
       </div>
     );
+  }
+
+  if (unavailable) {
+    return <SessionUnavailable onRetry={retry} />;
   }
 
   if (!user) {

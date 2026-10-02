@@ -288,7 +288,10 @@
       "unavailable": "Unavailable",
       "partial": "Partial data: some sections are unavailable right now",
       "total": "Total",
-      "retryHint": "Try again in a moment."
+      "retryHint": "Try again in a moment.",
+      "sessionUnavailableTitle": "We can't reach Kelen right now",
+      "sessionUnavailableBody": "Your session is safe. Check your connection and try again.",
+      "sessionRetry": "Try again"
     },
     "accounts": {
       "title": "Accounts",

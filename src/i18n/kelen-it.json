@@ -288,7 +288,10 @@
       "unavailable": "Non disponibile",
       "partial": "Dati parziali: alcune sezioni non sono disponibili al momento",
       "total": "Totale",
-      "retryHint": "Riprova tra poco."
+      "retryHint": "Riprova tra poco.",
+      "sessionUnavailableTitle": "Al momento non riusciamo a raggiungere Kelen",
+      "sessionUnavailableBody": "La tua sessione è al sicuro. Controlla la connessione e riprova.",
+      "sessionRetry": "Riprova"
     },
     "accounts": {
       "title": "Conti",
