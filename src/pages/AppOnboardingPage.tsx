@@ -1,5 +1,5 @@
 import { Button } from '@foroba/ui';
-import { OnboardingPage, useLanguage } from '@foroba/ui';
+import { OnboardingPage, useLanguage, useTheme, useUserProfile } from '@foroba/ui';
 import { useNavigate } from 'react-router';
 import { completeOnboarding } from '../auth/api';
 
@@ -24,14 +24,18 @@ function ConnectSlot() {
 export function AppOnboardingPage() {
   const navigate = useNavigate();
   const { setLanguage } = useLanguage();
+  const { setTheme } = useTheme();
+  const { updateProfile } = useUserProfile();
 
   return (
     <OnboardingPage
       connectSlot={<ConnectSlot />}
       onComplete={(state) => {
         localStorage.setItem('foroba.onboarding.done', '1');
+        // App.tsx drives i18n from foroba.profile, so the profile must carry the choice too.
         setLanguage(state.language);
-        localStorage.setItem('foroba.theme', state.theme);
+        updateProfile({ language: state.language });
+        setTheme(state.theme);
         void completeOnboarding();
         navigate('/');
       }}
