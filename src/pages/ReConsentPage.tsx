@@ -5,11 +5,13 @@
  */
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
 import { fetchConsentStatus, postConsentAccept } from '../auth/api';
 import { PRIVACY_POLICY, TERMS_OF_SERVICE } from '../data/legal';
 
 export function ReConsentPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [checked, setChecked] = useState(false);
@@ -48,7 +50,7 @@ export function ReConsentPage() {
       });
       navigate('/', { replace: true });
     } catch {
-      setError('Failed to record your consent. Please try again.');
+      setError(t('reConsent.error'));
     } finally {
       setSubmitting(false);
     }
@@ -58,32 +60,31 @@ export function ReConsentPage() {
     <div className="flex min-h-screen items-center justify-center bg-[var(--color-bg-primary)] p-6">
       <div className="w-full max-w-xl rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-8 shadow-lg">
         <h1 className="mb-2 text-xl font-semibold text-[var(--color-text-primary)]">
-          Updated legal documents
+          {t('reConsent.title')}
         </h1>
         <p className="mb-6 text-sm text-[var(--color-text-secondary)]">
-          Our Terms of Service or Privacy Policy have been updated since your last visit.
-          Please review and accept them to continue using Foroba.
+          {t('reConsent.intro')}
         </p>
 
         <div className="mb-4 max-h-48 overflow-y-auto rounded border border-[var(--color-border)] bg-[var(--color-bg-primary)] p-4 text-xs text-[var(--color-text-secondary)]">
-          <h2 className="mb-2 font-semibold">{TERMS_OF_SERVICE.title} (excerpt)</h2>
+          <h2 className="mb-2 font-semibold">{t('reConsent.excerpt', { title: TERMS_OF_SERVICE.title })}</h2>
           <p className="whitespace-pre-wrap">{TERMS_OF_SERVICE.content.slice(0, 800)}…</p>
         </div>
 
         <div className="mb-6 max-h-48 overflow-y-auto rounded border border-[var(--color-border)] bg-[var(--color-bg-primary)] p-4 text-xs text-[var(--color-text-secondary)]">
-          <h2 className="mb-2 font-semibold">{PRIVACY_POLICY.title} (excerpt)</h2>
+          <h2 className="mb-2 font-semibold">{t('reConsent.excerpt', { title: PRIVACY_POLICY.title })}</h2>
           <p className="whitespace-pre-wrap">{PRIVACY_POLICY.content.slice(0, 800)}…</p>
         </div>
 
-        <label className="mb-6 flex cursor-pointer items-start gap-3">
+        <label className="mb-6 flex min-h-11 cursor-pointer items-start gap-3 py-1">
           <input
             type="checkbox"
-            className="mt-0.5 h-4 w-4 accent-[var(--color-accent)]"
+            className="mt-1 h-5 w-5 shrink-0 accent-[var(--color-accent)]"
             checked={checked}
             onChange={(e) => setChecked(e.target.checked)}
           />
           <span className="text-sm text-[var(--color-text-primary)]">
-            I have read and agree to the updated Terms of Service and Privacy Policy.
+            {t('reConsent.agree')}
           </span>
         </label>
 
@@ -94,9 +95,9 @@ export function ReConsentPage() {
         <button
           onClick={handleAccept}
           disabled={!checked || submitting}
-          className="w-full rounded-lg bg-[var(--color-accent)] px-4 py-2.5 text-sm font-medium text-white transition-opacity disabled:opacity-40"
+          className="min-h-11 w-full rounded-lg bg-[var(--color-accent)] px-4 py-2.5 text-sm font-medium text-white transition-opacity disabled:opacity-40"
         >
-          {submitting ? 'Saving…' : 'Accept and continue'}
+          {submitting ? t('reConsent.saving') : t('reConsent.accept')}
         </button>
       </div>
     </div>

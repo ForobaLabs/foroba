@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -13,21 +14,12 @@ import {
 } from "@foroba/ui";
 import { register } from "../auth/api";
 
-const COUNTRIES: { code: string; label: string }[] = [
-  { code: "IT", label: "Italy" },
-  { code: "FR", label: "France" },
-  { code: "DE", label: "Germany" },
-  { code: "ES", label: "Spain" },
-  { code: "NL", label: "Netherlands" },
-  { code: "BE", label: "Belgium" },
-  { code: "GB", label: "United Kingdom" },
-  { code: "US", label: "United States" },
-];
+const COUNTRY_CODES = ["IT", "FR", "DE", "ES", "NL", "BE", "GB", "US"];
 
-type Strength = { score: 0 | 1 | 2 | 3 | 4; label: string; color: string };
+type Strength = { score: 0 | 1 | 2 | 3 | 4; color: string };
 
 function evaluatePasswordStrength(password: string): Strength {
-  if (!password) return { score: 0, label: "", color: "" };
+  if (!password) return { score: 0, color: "" };
   let score = 0;
   if (password.length >= 8) score++;
   if (password.length >= 12) score++;
@@ -35,17 +27,16 @@ function evaluatePasswordStrength(password: string): Strength {
   if (/\d/.test(password)) score++;
   if (/[^A-Za-z0-9]/.test(password)) score++;
   const clamped = Math.min(score, 4) as 0 | 1 | 2 | 3 | 4;
-  const levels: Record<number, { label: string; color: string }> = {
-    0: { label: "Too weak", color: "var(--color-negative)" },
-    1: { label: "Weak", color: "var(--color-negative)" },
-    2: { label: "Fair", color: "var(--color-warning)" },
-    3: { label: "Good", color: "var(--color-positive)" },
-    4: { label: "Strong", color: "var(--color-positive)" },
-  };
-  return { score: clamped, ...levels[clamped] };
+  const colors = ["var(--color-negative)", "var(--color-negative)", "var(--color-warning)", "var(--color-positive)", "var(--color-positive)"];
+  return { score: clamped, color: colors[clamped] };
 }
 
 export function RegisterPage() {
+  const { t, i18n } = useTranslation();
+  const countries = useMemo(() => {
+    const names = new Intl.DisplayNames(i18n.language, { type: "region" });
+    return COUNTRY_CODES.map((code) => ({ code, label: names.of(code) ?? code }));
+  }, [i18n.language]);
   const qc = useQueryClient();
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
@@ -91,7 +82,7 @@ export function RegisterPage() {
       await qc.invalidateQueries({ queryKey: ["session"] });
       navigate("/enroll", { replace: true });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Registration failed.");
+      setError(err instanceof Error ? err.message : t("register.errFailed"));
     } finally {
       setLoading(false);
     }
@@ -101,15 +92,15 @@ export function RegisterPage() {
     <div className="flex min-h-screen items-center justify-center bg-[var(--color-bg-primary)] p-4">
       <Card className="w-full max-w-sm p-6">
         <h1 className="mb-1 text-xl font-semibold text-[var(--color-text-primary)]">
-          Create your account
+          {t("register.title")}
         </h1>
         <p className="mb-6 text-sm text-[var(--color-text-secondary)]">
-          Everything starts empty — you'll connect your own bank and investments next.
+          {t("register.intro")}
         </p>
         <form onSubmit={onSubmit} className="flex flex-col gap-4">
           <div className="flex flex-col gap-1">
             <label htmlFor="name" className="text-sm text-[var(--color-text-secondary)]">
-              Full name
+              {t("register.name")}
             </label>
             <Input
               id="name"
@@ -123,7 +114,7 @@ export function RegisterPage() {
 
           <div className="flex flex-col gap-1">
             <label htmlFor="email" className="text-sm text-[var(--color-text-secondary)]">
-              Email
+              {t("register.email")}
             </label>
             <Input
               id="email"
@@ -137,7 +128,7 @@ export function RegisterPage() {
           </div>
           <div className="flex flex-col gap-1">
             <label htmlFor="email-confirm" className="text-sm text-[var(--color-text-secondary)]">
-              Confirm email
+              {t("register.emailConfirm")}
             </label>
             <Input
               id="email-confirm"
@@ -147,13 +138,13 @@ export function RegisterPage() {
               required
               value={emailConfirm}
               onChange={(e) => setEmailConfirm(e.target.value)}
-              error={!emailsMatch ? "Emails do not match" : undefined}
+              error={!emailsMatch ? t("register.emailMismatch") : undefined}
             />
           </div>
 
           <div className="flex flex-col gap-1">
             <label htmlFor="password" className="text-sm text-[var(--color-text-secondary)]">
-              Password (min 8 chars)
+              {t("register.password")}
             </label>
             <Input
               id="password"
@@ -163,7 +154,7 @@ export function RegisterPage() {
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              helper="Mix upper/lower case, numbers, and symbols for a stronger password."
+              helper={t("register.passwordHelper")}
             />
             {password.length > 0 && (
               <div className="mt-1">
@@ -180,7 +171,7 @@ export function RegisterPage() {
                   ))}
                 </div>
                 <p className="mt-1 text-xs" style={{ color: strength.color }}>
-                  {strength.label}
+                  {t(`register.strength.${strength.score}`)}
                 </p>
               </div>
             )}
@@ -188,7 +179,7 @@ export function RegisterPage() {
 
           <div className="flex flex-col gap-1">
             <label htmlFor="password-confirm" className="text-sm text-[var(--color-text-secondary)]">
-              Confirm password
+              {t("register.passwordConfirm")}
             </label>
             <Input
               id="password-confirm"
@@ -197,24 +188,24 @@ export function RegisterPage() {
               required
               value={passwordConfirm}
               onChange={(e) => setPasswordConfirm(e.target.value)}
-              error={!passwordsMatch ? "Passwords do not match" : undefined}
+              error={!passwordsMatch ? t("register.passwordMismatch") : undefined}
             />
           </div>
 
           <div className="border-t border-[var(--color-bg-border)] pt-4">
             <p className="mb-3 text-xs text-[var(--color-text-muted)]">
-              Optional — you can skip these.
+              {t("register.optional")}
             </p>
             <div className="grid grid-cols-2 gap-3">
               <div className="flex flex-col gap-1">
                 <label htmlFor="birth-year" className="text-sm text-[var(--color-text-secondary)]">
-                  Year of birth
+                  {t("register.birthYear")}
                 </label>
                 <Input
                   id="birth-year"
                   type="number"
                   inputMode="numeric"
-                  placeholder="e.g. 1990"
+                  placeholder={t("register.birthYearPlaceholder")}
                   value={birthYear}
                   onChange={(e) => setBirthYear(e.target.value)}
                   min={1900}
@@ -222,13 +213,13 @@ export function RegisterPage() {
                 />
               </div>
               <div className="flex flex-col gap-1">
-                <label className="text-sm text-[var(--color-text-secondary)]">Country</label>
+                <label className="text-sm text-[var(--color-text-secondary)]">{t("register.country")}</label>
                 <Select value={country} onValueChange={setCountry}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Prefer not to say" />
+                    <SelectValue placeholder={t("register.countryPlaceholder")} />
                   </SelectTrigger>
                   <SelectContent>
-                    {COUNTRIES.map((c) => (
+                    {countries.map((c) => (
                       <SelectItem key={c.code} value={c.code}>
                         {c.label}
                       </SelectItem>
@@ -239,21 +230,21 @@ export function RegisterPage() {
             </div>
           </div>
 
-          <label className="flex items-start gap-2 text-sm text-[var(--color-text-secondary)]">
+          <label className="flex min-h-11 items-start gap-2 py-1 text-sm text-[var(--color-text-secondary)]">
             <input
               type="checkbox"
               checked={tosAccepted}
               onChange={(e) => setTosAccepted(e.target.checked)}
-              className="mt-0.5"
+              className="mt-0.5 h-5 w-5 shrink-0"
             />
             <span>
-              I have read and accept the{" "}
+              {t("register.tosPrefix")}{" "}
               <a href="/legal" className="text-[var(--color-accent)] hover:underline">
-                Terms of Service
+                {t("register.tos")}
               </a>{" "}
-              and{" "}
+              {t("register.and")}{" "}
               <a href="/legal" className="text-[var(--color-accent)] hover:underline">
-                Privacy Policy
+                {t("register.privacy")}
               </a>
               .
             </span>
@@ -265,12 +256,12 @@ export function RegisterPage() {
             </p>
           )}
           <Button type="submit" disabled={loading || !canSubmit} className="w-full">
-            {loading ? "Creating account…" : "Create account"}
+            {loading ? t("register.submitting") : t("register.submit")}
           </Button>
           <p className="text-center text-sm text-[var(--color-text-secondary)]">
-            Already have an account?{" "}
+            {t("register.haveAccount")}{" "}
             <a href="/login" className="text-[var(--color-accent)] hover:underline">
-              Sign in
+              {t("register.signIn")}
             </a>
           </p>
         </form>

@@ -1,8 +1,11 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { afterEach, expect, test, vi } from "vitest";
+import { afterEach, beforeAll, expect, test, vi } from "vitest";
+import i18n from "../i18n";
 import { EnrollmentWizard } from "./EnrollmentWizard";
+
+beforeAll(() => i18n.changeLanguage("en"));
 
 vi.mock("@simplewebauthn/browser", () => ({
   startRegistration: vi.fn(async () => ({
@@ -65,7 +68,7 @@ test("sets up TOTP: shows the QR code, verifies the code, then shows recovery co
   renderPage();
 
   fireEvent.click(screen.getByText("Authenticator app"));
-  await waitFor(() => expect(screen.getByAltText("TOTP QR code")).toBeInTheDocument());
+  await waitFor(() => expect(screen.getByAltText("Authenticator QR code")).toBeInTheDocument());
 
   fireEvent.change(screen.getByLabelText("6-digit code"), { target: { value: "123456" } });
   fireEvent.click(screen.getByRole("button", { name: "Verify and continue" }));
@@ -101,7 +104,7 @@ test("allows enrolling a second method (email OTP) before finishing setup", asyn
   renderPage();
 
   fireEvent.click(screen.getByText("Authenticator app"));
-  await waitFor(() => expect(screen.getByAltText("TOTP QR code")).toBeInTheDocument());
+  await waitFor(() => expect(screen.getByAltText("Authenticator QR code")).toBeInTheDocument());
   fireEvent.change(screen.getByLabelText("6-digit code"), { target: { value: "123456" } });
   fireEvent.click(screen.getByRole("button", { name: "Verify and continue" }));
 
@@ -218,7 +221,7 @@ test("shows an error and stays on the TOTP step when the code is invalid", async
   renderPage();
 
   fireEvent.click(screen.getByText("Authenticator app"));
-  await waitFor(() => expect(screen.getByAltText("TOTP QR code")).toBeInTheDocument());
+  await waitFor(() => expect(screen.getByAltText("Authenticator QR code")).toBeInTheDocument());
 
   fireEvent.change(screen.getByLabelText("6-digit code"), { target: { value: "000000" } });
   fireEvent.click(screen.getByRole("button", { name: "Verify and continue" }));

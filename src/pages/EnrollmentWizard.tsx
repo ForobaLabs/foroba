@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { startRegistration } from "@simplewebauthn/browser";
@@ -18,6 +19,8 @@ type MethodKey = "totp" | "email_otp" | "webauthn";
 type Stage = "choose" | "passkey" | "totp" | "email_otp" | "more" | "recovery";
 
 export function EnrollmentWizard() {
+  const { t } = useTranslation();
+  const [copied, setCopied] = useState(false);
   const navigate = useNavigate();
   const qc = useQueryClient();
   const [stage, setStage] = useState<Stage>("choose");
@@ -65,6 +68,25 @@ export function EnrollmentWizard() {
     setStage("more");
   }
 
+  async function copyCodes(codes: string[]) {
+    try {
+      await navigator.clipboard.writeText(codes.join("\n"));
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Clipboard can be unavailable (insecure context, denied permission) — the codes stay visible and downloadable.
+    }
+  }
+
+  function downloadCodes(codes: string[]) {
+    const url = URL.createObjectURL(new Blob([codes.join("\n") + "\n"], { type: "text/plain" }));
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "foroba-recovery-codes.txt";
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   async function goToRecovery() {
     const codes = await regenerateRecoveryCodes();
     setRecoveryCodes(codes);
@@ -81,7 +103,7 @@ export function EnrollmentWizard() {
       await passkeyRegisterVerify(JSON.stringify(attestation), "Primary passkey");
       onMethodEnrolled("webauthn");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Passkey setup failed.");
+      setError(err instanceof Error ? err.message : t("enroll.errPasskey"));
       setStage(backStage);
     } finally {
       setLoading(false);
@@ -96,7 +118,7 @@ export function EnrollmentWizard() {
       setTotpSecret(secret);
       setTotpQr(qr);
     } catch {
-      setError("Failed to start authenticator setup.");
+      setError(t("enroll.errTotpStart"));
     }
   }
 
@@ -108,7 +130,7 @@ export function EnrollmentWizard() {
       await verifyTotp(totpCode);
       onMethodEnrolled("totp");
     } catch {
-      setError("Invalid code.");
+      setError(t("enroll.errCode"));
     } finally {
       setLoading(false);
     }
@@ -122,7 +144,7 @@ export function EnrollmentWizard() {
       await sendEmailOtp();
       setEmailOtpSent(true);
     } catch {
-      setError("Failed to send email code.");
+      setError(t("enroll.errEmailSend"));
     }
   }
 
@@ -134,7 +156,7 @@ export function EnrollmentWizard() {
       await verifyEmailOtp(emailOtpCode);
       onMethodEnrolled("email_otp");
     } catch {
-      setError("Invalid or expired code.");
+      setError(t("enroll.errEmailCode"));
     } finally {
       setLoading(false);
     }
@@ -143,20 +165,20 @@ export function EnrollmentWizard() {
   const methodOptions: { key: MethodKey; label: string; description: string; onClick: () => void }[] = [
     {
       key: "webauthn",
-      label: "Passkey (recommended)",
-      description: "Use your device's fingerprint, face, or security key. No codes to remember.",
+      label: t("enroll.passkeyLabel"),
+      description: t("enroll.passkeyDesc"),
       onClick: onChoosePasskey,
     },
     {
       key: "totp",
-      label: "Authenticator app",
-      description: "Scan a QR code with Google Authenticator, 1Password, or similar.",
+      label: t("enroll.totpLabel"),
+      description: t("enroll.totpDesc"),
       onClick: onChooseTotp,
     },
     {
       key: "email_otp",
-      label: "Email code",
-      description: "Get a one-time code sent to your registered email each time you sign in.",
+      label: t("enroll.emailLabel"),
+      description: t("enroll.emailDesc"),
       onClick: onChooseEmailOtp,
     },
   ];
@@ -167,11 +189,10 @@ export function EnrollmentWizard() {
         {stage === "choose" && (
           <>
             <h1 className="mb-1 text-xl font-semibold text-[var(--color-text-primary)]">
-              Secure your account
+              {t("enroll.chooseTitle")}
             </h1>
             <p className="mb-6 text-sm text-[var(--color-text-secondary)]">
-              This handles real financial data, so a second factor is required. Pick how you'd
-              like to sign in.
+              {t("enroll.chooseIntro")}
             </p>
             <div className="flex flex-col gap-3">
               {methodOptions.map((m) => (
@@ -197,10 +218,10 @@ export function EnrollmentWizard() {
         {stage === "more" && (
           <>
             <h1 className="mb-1 text-xl font-semibold text-[var(--color-text-primary)]">
-              Add another way to sign in?
+              {t("enroll.moreTitle")}
             </h1>
             <p className="mb-6 text-sm text-[var(--color-text-secondary)]">
-              You can enable more than one method now, or add more later in Settings → Security.
+              {t("enroll.moreIntro")}
             </p>
             <div className="flex flex-col gap-3">
               {methodOptions
@@ -223,7 +244,7 @@ export function EnrollmentWizard() {
               </p>
             )}
             <Button className="mt-4 w-full" onClick={() => void goToRecovery()}>
-              Finish setup
+              {t("enroll.finish")}
             </Button>
           </>
         )}
@@ -231,12 +252,12 @@ export function EnrollmentWizard() {
         {stage === "totp" && (
           <form onSubmit={onVerifyTotp} className="flex flex-col gap-4">
             <h1 className="text-xl font-semibold text-[var(--color-text-primary)]">
-              Scan this QR code
+              {t("enroll.qrTitle")}
             </h1>
             <p className="text-sm text-[var(--color-text-secondary)]">
-              Scan it with your authenticator app, then enter the 6-digit code it shows.
+              {t("enroll.qrIntro")}
             </p>
-            {totpQr && <img src={totpQr} alt="TOTP QR code" className="mx-auto h-40 w-40" />}
+            {totpQr && <img src={totpQr} alt={t("enroll.qrAlt")} className="mx-auto h-40 w-40" />}
             {totpSecret && (
               <p className="break-all text-center text-xs text-[var(--color-text-muted)]">
                 {totpSecret}
@@ -244,7 +265,7 @@ export function EnrollmentWizard() {
             )}
             <div className="flex flex-col gap-1">
               <label htmlFor="totp-code" className="text-sm text-[var(--color-text-secondary)]">
-                6-digit code
+                {t("enroll.code6")}
               </label>
               <Input
                 id="totp-code"
@@ -261,14 +282,14 @@ export function EnrollmentWizard() {
               </p>
             )}
             <Button type="submit" disabled={loading || totpCode.length === 0} className="w-full">
-              {loading ? "Verifying…" : "Verify and continue"}
+              {loading ? t("enroll.verifying") : t("enroll.verifyContinue")}
             </Button>
             <button
               type="button"
               onClick={() => setStage(backStage)}
               className="text-center text-sm text-[var(--color-accent)] hover:underline"
             >
-              Back
+              {t("enroll.back")}
             </button>
           </form>
         )}
@@ -276,17 +297,17 @@ export function EnrollmentWizard() {
         {stage === "email_otp" && (
           <form onSubmit={onVerifyEmailOtp} className="flex flex-col gap-4">
             <h1 className="text-xl font-semibold text-[var(--color-text-primary)]">
-              Check your email
+              {t("enroll.emailTitle")}
             </h1>
             <p className="text-sm text-[var(--color-text-secondary)]">
-              {emailOtpSent ? "We sent a 6-digit code to your email." : "Sending code…"}
+              {emailOtpSent ? t("enroll.emailSent") : t("enroll.emailSending")}
             </p>
             <div className="flex flex-col gap-1">
               <label
                 htmlFor="email-otp-code"
                 className="text-sm text-[var(--color-text-secondary)]"
               >
-                6-digit code
+                {t("enroll.code6")}
               </label>
               <Input
                 id="email-otp-code"
@@ -307,14 +328,14 @@ export function EnrollmentWizard() {
               disabled={loading || emailOtpCode.length === 0}
               className="w-full"
             >
-              {loading ? "Verifying…" : "Verify and continue"}
+              {loading ? t("enroll.verifying") : t("enroll.verifyContinue")}
             </Button>
             <button
               type="button"
               onClick={() => setStage(backStage)}
               className="text-center text-sm text-[var(--color-accent)] hover:underline"
             >
-              Back
+              {t("enroll.back")}
             </button>
           </form>
         )}
@@ -322,7 +343,7 @@ export function EnrollmentWizard() {
         {stage === "passkey" && (
           <div className="flex flex-col items-center gap-4 py-8 text-center">
             <p className="text-sm text-[var(--color-text-secondary)]">
-              Follow your browser's prompt to set up your passkey…
+              {t("enroll.passkeyPrompt")}
             </p>
             {error && (
               <>
@@ -333,7 +354,7 @@ export function EnrollmentWizard() {
                   onClick={() => setStage(backStage)}
                   className="text-sm text-[var(--color-accent)] hover:underline"
                 >
-                  Back
+                  {t("enroll.back")}
                 </button>
               </>
             )}
@@ -343,19 +364,26 @@ export function EnrollmentWizard() {
         {stage === "recovery" && recoveryCodes && (
           <div className="flex flex-col gap-4">
             <h1 className="text-xl font-semibold text-[var(--color-text-primary)]">
-              Save your recovery codes
+              {t("enroll.recoveryTitle")}
             </h1>
             <p className="text-sm text-[var(--color-text-secondary)]">
-              Each code can be used once to sign in if you lose access to your other method.
-              They're shown only this once — save them somewhere safe.
+              {t("enroll.recoveryIntro")}
             </p>
             <div className="grid grid-cols-2 gap-2 rounded-md border border-[var(--color-bg-border)] bg-[var(--color-bg-elevated)] p-4 font-mono text-sm text-[var(--color-text-primary)]">
               {recoveryCodes.map((c) => (
                 <span key={c}>{c}</span>
               ))}
             </div>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <Button variant="secondary" className="w-full" onClick={() => void copyCodes(recoveryCodes)}>
+                {copied ? t("enroll.copied") : t("enroll.copyCodes")}
+              </Button>
+              <Button variant="secondary" className="w-full" onClick={() => downloadCodes(recoveryCodes)}>
+                {t("enroll.downloadCodes")}
+              </Button>
+            </div>
             <Button className="w-full" onClick={() => navigate("/onboarding", { replace: true })}>
-              I've saved these codes
+              {t("enroll.saved")}
             </Button>
           </div>
         )}

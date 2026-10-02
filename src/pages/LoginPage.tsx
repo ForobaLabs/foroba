@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Navigate, useNavigate } from "react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { startAuthentication } from "@simplewebauthn/browser";
@@ -16,12 +17,12 @@ import {
   type Mfa2FAChallenge,
 } from "../auth/api";
 
-const METHOD_LABELS: Record<"totp" | "email_otp", string> = {
-  totp: "Authenticator app code",
-  email_otp: "Email code",
-};
-
 export function LoginPage() {
+  const { t } = useTranslation();
+  const methodLabels: Record<"totp" | "email_otp", string> = {
+    totp: t("login.methodTotp"),
+    email_otp: t("login.methodEmail"),
+  };
   const qc = useQueryClient();
   const navigate = useNavigate();
   const { user, loading: sessionLoading } = useAuth();
@@ -56,7 +57,7 @@ export function LoginPage() {
     if (challenge && method === "email_otp" && !emailOtpSent) {
       sendLoginEmailOtp(challenge.email)
         .then(() => setEmailOtpSent(true))
-        .catch((err) => setError(err instanceof Error ? err.message : "Failed to send code."));
+        .catch((err) => setError(err instanceof Error ? err.message : t("login.errSendCode")));
     }
   }, [challenge, method, emailOtpSent]);
 
@@ -89,7 +90,7 @@ export function LoginPage() {
         await finishLogin();
       }
     } catch {
-      setError("Invalid email or password.");
+      setError(t("login.errInvalid"));
     } finally {
       setLoading(false);
     }
@@ -104,7 +105,7 @@ export function LoginPage() {
       await loginWithMethod(challenge.email, code, method);
       await finishLogin();
     } catch {
-      setError("Invalid code.");
+      setError(t("login.errCode"));
     } finally {
       setLoading(false);
     }
@@ -119,7 +120,7 @@ export function LoginPage() {
       await loginWithRecoveryCode(challenge.email, recoveryCode);
       await finishLogin();
     } catch {
-      setError("Invalid recovery code.");
+      setError(t("login.errRecovery"));
     } finally {
       setLoading(false);
     }
@@ -127,7 +128,7 @@ export function LoginPage() {
 
   async function onPasskeyLogin() {
     if (!email) {
-      setError("Enter your email first.");
+      setError(t("login.errEmailFirst"));
       return;
     }
     setError(null);
@@ -138,7 +139,7 @@ export function LoginPage() {
       await passkeyLoginVerify(email, JSON.stringify(assertion));
       await finishLogin();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Passkey sign-in failed.");
+      setError(err instanceof Error ? err.message : t("login.errPasskey"));
     } finally {
       setLoading(false);
     }
@@ -152,7 +153,7 @@ export function LoginPage() {
       await requestPasswordReset(forgotEmail);
       setForgotSent(true);
     } catch (err) {
-      setForgotError(err instanceof Error ? err.message : "Failed to send reset email.");
+      setForgotError(err instanceof Error ? err.message : t("login.errReset"));
     } finally {
       setForgotLoading(false);
     }
@@ -170,7 +171,7 @@ export function LoginPage() {
       setForgotNewPw("");
       setForgotNewPwConfirm("");
     } catch (err) {
-      setForgotError(err instanceof Error ? err.message : "Invalid or expired code.");
+      setForgotError(err instanceof Error ? err.message : t("login.errResetConfirm"));
     } finally {
       setForgotLoading(false);
     }
@@ -181,17 +182,17 @@ export function LoginPage() {
       <div className="flex min-h-screen items-center justify-center bg-[var(--color-bg-primary)] p-4">
         <Card className="w-full max-w-sm p-6">
           <h1 className="mb-1 text-xl font-semibold text-[var(--color-text-primary)]">
-            Verify it's you
+            {t("login.verifyTitle")}
           </h1>
           <p className="mb-6 text-sm text-[var(--color-text-secondary)]">
-            Signed in as {challenge.email}
+            {t("login.signedInAs", { email: challenge.email })}
           </p>
           {!useRecoveryCode ? (
             <form onSubmit={onVerifyCode} className="flex flex-col gap-4">
               {challengeMethods.length > 1 && (
                 <div className="flex flex-col gap-1">
                   <label htmlFor="method" className="text-sm text-[var(--color-text-secondary)]">
-                    Verification method
+                    {t("login.method")}
                   </label>
                   <select
                     id="method"
@@ -205,7 +206,7 @@ export function LoginPage() {
                   >
                     {challengeMethods.map((m) => (
                       <option key={m} value={m}>
-                        {METHOD_LABELS[m]}
+                        {methodLabels[m]}
                       </option>
                     ))}
                   </select>
@@ -213,12 +214,12 @@ export function LoginPage() {
               )}
               {method === "email_otp" && (
                 <p className="text-xs text-[var(--color-text-muted)]">
-                  {emailOtpSent ? `Code sent to ${challenge.email}.` : "Sending code…"}
+                  {emailOtpSent ? t("login.codeSent", { email: challenge.email }) : t("login.sendingCode")}
                 </p>
               )}
               <div className="flex flex-col gap-1">
                 <label htmlFor="code" className="text-sm text-[var(--color-text-secondary)]">
-                  {METHOD_LABELS[method]}
+                  {methodLabels[method]}
                 </label>
                 <Input
                   id="code"
@@ -236,7 +237,7 @@ export function LoginPage() {
                 </p>
               )}
               <Button type="submit" disabled={loading || code.length === 0} className="w-full">
-                {loading ? "Verifying…" : "Verify"}
+                {loading ? t("login.verifying") : t("login.verify")}
               </Button>
               {hasPasskeyStepUp && (
                 <Button
@@ -246,7 +247,7 @@ export function LoginPage() {
                   disabled={loading}
                   className="w-full"
                 >
-                  Sign in with passkey instead
+                  {t("login.passkeyInstead")}
                 </Button>
               )}
               <button
@@ -257,14 +258,14 @@ export function LoginPage() {
                 }}
                 className="text-center text-sm text-[var(--color-accent)] hover:underline"
               >
-                Use a recovery code instead
+                {t("login.useRecovery")}
               </button>
             </form>
           ) : (
             <form onSubmit={onVerifyRecoveryCode} className="flex flex-col gap-4">
               <div className="flex flex-col gap-1">
                 <label htmlFor="recovery-code" className="text-sm text-[var(--color-text-secondary)]">
-                  Recovery code
+                  {t("login.recoveryCode")}
                 </label>
                 <Input
                   id="recovery-code"
@@ -285,7 +286,7 @@ export function LoginPage() {
                 disabled={loading || recoveryCode.length === 0}
                 className="w-full"
               >
-                {loading ? "Verifying…" : "Verify"}
+                {loading ? t("login.verifying") : t("login.verify")}
               </Button>
               <button
                 type="button"
@@ -295,7 +296,7 @@ export function LoginPage() {
                 }}
                 className="text-center text-sm text-[var(--color-accent)] hover:underline"
               >
-                Back to verification code
+                {t("login.backToCode")}
               </button>
             </form>
           )}
@@ -308,12 +309,12 @@ export function LoginPage() {
     <div className="flex min-h-screen items-center justify-center bg-[var(--color-bg-primary)] p-4">
       <Card className="w-full max-w-sm p-6">
         <h1 className="mb-6 text-xl font-semibold text-[var(--color-text-primary)]">
-          Sign in to Foroba
+          {t("login.title")}
         </h1>
         <form onSubmit={onSubmitPassword} className="flex flex-col gap-4">
           <div className="flex flex-col gap-1">
             <label htmlFor="email" className="text-sm text-[var(--color-text-secondary)]">
-              Email
+              {t("login.email")}
             </label>
             <Input
               id="email"
@@ -327,7 +328,7 @@ export function LoginPage() {
           </div>
           <div className="flex flex-col gap-1">
             <label htmlFor="password" className="text-sm text-[var(--color-text-secondary)]">
-              Password
+              {t("login.password")}
             </label>
             <Input
               id="password"
@@ -344,7 +345,7 @@ export function LoginPage() {
             </p>
           )}
           <Button type="submit" disabled={loading} className="w-full">
-            {loading ? "Signing in…" : "Sign in"}
+            {loading ? t("login.signingIn") : t("login.signIn")}
           </Button>
           <Button
             type="button"
@@ -353,19 +354,19 @@ export function LoginPage() {
             disabled={loading}
             className="w-full"
           >
-            Sign in with passkey
+            {t("login.passkey")}
           </Button>
           <button
             type="button"
             onClick={() => { setForgotEmail(email); setForgotOpen(true); }}
             className="text-center text-sm text-[var(--color-accent)] hover:underline"
           >
-            Forgot password?
+            {t("login.forgot")}
           </button>
           <p className="text-center text-sm text-[var(--color-text-secondary)]">
-            No account?{" "}
+            {t("login.noAccount")}{" "}
             <a href="/register" className="text-[var(--color-accent)] hover:underline">
-              Register
+              {t("login.register")}
             </a>
           </p>
         </form>
@@ -374,18 +375,18 @@ export function LoginPage() {
       <Dialog open={forgotOpen} onOpenChange={(open) => { if (!open) { setForgotOpen(false); setForgotSent(false); setForgotError(null); } }}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Reset your password</DialogTitle>
+            <DialogTitle>{t("login.resetTitle")}</DialogTitle>
             <DialogDescription>
               {forgotSent
-                ? "Check your email for a 6-digit code and enter it below."
-                : "Enter your email address and we'll send you a reset code."}
+                ? t("login.resetSent")
+                : t("login.resetAsk")}
             </DialogDescription>
           </DialogHeader>
           {!forgotSent ? (
             <form onSubmit={onForgotRequest} className="flex flex-col gap-3">
               <Input
                 type="email"
-                placeholder="your@email.com"
+                placeholder={t("login.emailPlaceholder")}
                 value={forgotEmail}
                 onChange={(e) => setForgotEmail(e.target.value)}
                 required
@@ -395,14 +396,14 @@ export function LoginPage() {
                 <p role="alert" className="text-xs text-[var(--color-negative)]">{forgotError}</p>
               )}
               <Button type="submit" disabled={forgotLoading || forgotEmail.length === 0} className="w-full">
-                {forgotLoading ? "Sending…" : "Send reset code"}
+                {forgotLoading ? t("login.sending") : t("login.sendReset")}
               </Button>
             </form>
           ) : (
             <form onSubmit={onForgotConfirm} className="flex flex-col gap-3">
               <Input
                 type="text"
-                placeholder="6-digit code"
+                placeholder={t("login.codePlaceholder")}
                 inputMode="numeric"
                 value={forgotCode}
                 onChange={(e) => setForgotCode(e.target.value)}
@@ -411,7 +412,7 @@ export function LoginPage() {
               />
               <Input
                 type="password"
-                placeholder="New password"
+                placeholder={t("login.newPassword")}
                 value={forgotNewPw}
                 onChange={(e) => setForgotNewPw(e.target.value)}
                 required
@@ -420,7 +421,7 @@ export function LoginPage() {
               />
               <Input
                 type="password"
-                placeholder="Confirm new password"
+                placeholder={t("login.confirmNewPassword")}
                 value={forgotNewPwConfirm}
                 onChange={(e) => setForgotNewPwConfirm(e.target.value)}
                 required
@@ -434,7 +435,7 @@ export function LoginPage() {
                 disabled={forgotLoading || forgotCode.length === 0 || forgotNewPw.length < 8}
                 className="w-full"
               >
-                {forgotLoading ? "Resetting…" : "Reset password"}
+                {forgotLoading ? t("login.resetting") : t("login.resetPassword")}
               </Button>
             </form>
           )}

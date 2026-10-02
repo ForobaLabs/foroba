@@ -1,8 +1,11 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router";
-import { afterEach, expect, test, vi } from "vitest";
+import { afterEach, beforeAll, expect, test, vi } from "vitest";
+import i18n from "../i18n";
 import { LoginPage } from "./LoginPage";
+
+beforeAll(() => i18n.changeLanguage("en"));
 import { AuthProvider } from "../auth/AuthProvider";
 
 vi.mock("@simplewebauthn/browser", () => ({
