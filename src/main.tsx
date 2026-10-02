@@ -7,6 +7,8 @@ import i18n from './i18n';
 import { router } from './router';
 import { AuthProvider } from './auth/AuthProvider';
 import { CurrencyProvider } from './contexts/CurrencyContext';
+import '@fontsource-variable/geist';
+import '@fontsource-variable/geist-mono';
 import './global.css';
 
 const queryClient = new QueryClient({
