@@ -526,7 +526,18 @@
     "unavailable": "Paid plans are not available yet. Everything you use today stays free.",
     "status": "Your subscription is {{status}}.",
     "cancelsAtEnd": "It ends at the close of the current period.",
-    "upgrade": "Upgrade to Premium",
-    "error": "Checkout is not available right now. Please try again later."
+    "upgrade": "Continue to checkout",
+    "error": "Checkout is not available right now. Please try again later.",
+    "planLegend": "Plan",
+    "periodLegend": "Billing period",
+    "plan": {
+      "premium": "Premium",
+      "expert": "Expert"
+    },
+    "period": {
+      "monthly": "Monthly",
+      "yearly": "Yearly"
+    },
+    "expertHint": "Expert adds advanced analysis: what-if simulations, API access and webhooks. Prices, tax and any trial are shown at checkout."
   }
 }

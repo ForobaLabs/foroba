@@ -18,6 +18,8 @@ async function fetchStatus(): Promise<BillingStatus> {
 export function BillingSection() {
   const { t } = useTranslation();
   const [busy, setBusy] = useState(false);
+  const [tier, setTier] = useState<'premium' | 'expert'>('premium');
+  const [period, setPeriod] = useState<'monthly' | 'yearly'>('monthly');
   const [error, setError] = useState(false);
   const { data } = useQuery({ queryKey: ['billing-status'], queryFn: fetchStatus, retry: false });
   if (!data) return null;
@@ -30,7 +32,7 @@ export function BillingSection() {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ plan: 'premium_monthly' }),
+        body: JSON.stringify({ plan: `${tier}_${period}` }),
       });
       const body = res.ok ? await res.json() : null;
       if (typeof body?.url === 'string' && body.url.startsWith('https://')) {
@@ -58,6 +60,27 @@ export function BillingSection() {
         </p>
       ) : (
         <>
+          <div className="mb-3 flex flex-wrap gap-x-6 gap-y-2 text-sm">
+            <fieldset className="flex gap-4">
+              <legend className="sr-only">{t('billing.planLegend')}</legend>
+              {(['premium', 'expert'] as const).map((k) => (
+                <label key={k} className="flex min-h-11 items-center gap-2">
+                  <input type="radio" name="billing-tier" checked={tier === k} onChange={() => setTier(k)} />
+                  {t(`billing.plan.${k}`)}
+                </label>
+              ))}
+            </fieldset>
+            <fieldset className="flex gap-4">
+              <legend className="sr-only">{t('billing.periodLegend')}</legend>
+              {(['monthly', 'yearly'] as const).map((k) => (
+                <label key={k} className="flex min-h-11 items-center gap-2">
+                  <input type="radio" name="billing-period" checked={period === k} onChange={() => setPeriod(k)} />
+                  {t(`billing.period.${k}`)}
+                </label>
+              ))}
+            </fieldset>
+          </div>
+          <p className="mb-3 text-xs text-[var(--color-text-muted)]">{t('billing.expertHint')}</p>
           <button
             onClick={upgrade}
             disabled={busy}

@@ -526,7 +526,18 @@
     "unavailable": "Les offres payantes ne sont pas encore disponibles. Tout ce que vous utilisez aujourd'hui reste gratuit.",
     "status": "Votre abonnement est {{status}}.",
     "cancelsAtEnd": "Il prendra fin à l'issue de la période en cours.",
-    "upgrade": "Passer à Premium",
-    "error": "Le paiement n'est pas disponible pour le moment. Réessayez plus tard."
+    "upgrade": "Continuer vers le paiement",
+    "error": "Le paiement n'est pas disponible pour le moment. Réessayez plus tard.",
+    "planLegend": "Offre",
+    "periodLegend": "Période de facturation",
+    "plan": {
+      "premium": "Premium",
+      "expert": "Expert"
+    },
+    "period": {
+      "monthly": "Mensuel",
+      "yearly": "Annuel"
+    },
+    "expertHint": "Expert ajoute l'analyse avancée : simulations what-if, accès à l'API et webhooks. Les prix, les taxes et tout essai gratuit sont affichés au paiement."
   }
 }

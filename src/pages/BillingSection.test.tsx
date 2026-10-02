@@ -52,7 +52,31 @@ describe('BillingSection', () => {
   it('refuses a non-https checkout url and shows an error', async () => {
     stubFetch({ enabled: true, subscription: null }, () => new Response(JSON.stringify({ url: 'javascript:alert(1)' })));
     renderSection();
-    await userEvent.click(await screen.findByRole('button', { name: /upgrade/i }));
+    await userEvent.click(await screen.findByRole('button', { name: /continue to checkout/i }));
     expect(await screen.findByRole('alert')).toBeInTheDocument();
+  });
+
+  it('sends the plan and period picked by the person, defaulting to premium monthly', async () => {
+    const bodies: string[] = [];
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((url: string, init?: RequestInit) => {
+        if (url.endsWith('/billing/status')) return Promise.resolve(new Response(JSON.stringify({ enabled: true, subscription: null })));
+        bodies.push(String(init?.body));
+        return Promise.resolve(new Response('{}', { status: 501 }));
+      }),
+    );
+    renderSection();
+    const go = await screen.findByRole('button', { name: /continue to checkout/i });
+    expect(screen.getByRole('radio', { name: 'Premium' })).toBeChecked();
+    expect(screen.getByRole('radio', { name: 'Monthly' })).toBeChecked();
+    await userEvent.click(go);
+    await screen.findByRole('alert');
+    await userEvent.click(screen.getByRole('radio', { name: 'Expert' }));
+    await userEvent.click(screen.getByRole('radio', { name: 'Yearly' }));
+    await userEvent.click(go);
+    await waitFor(() => expect(bodies).toHaveLength(2));
+    expect(JSON.parse(bodies[0])).toEqual({ plan: 'premium_monthly' });
+    expect(JSON.parse(bodies[1])).toEqual({ plan: 'expert_yearly' });
   });
 });

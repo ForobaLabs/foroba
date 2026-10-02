@@ -526,7 +526,18 @@
     "unavailable": "I piani a pagamento non sono ancora disponibili. Tutto ciò che usi oggi resta gratuito.",
     "status": "Il tuo abbonamento è {{status}}.",
     "cancelsAtEnd": "Terminerà alla fine del periodo corrente.",
-    "upgrade": "Passa a Premium",
-    "error": "Il pagamento non è disponibile al momento. Riprova più tardi."
+    "upgrade": "Continua al pagamento",
+    "error": "Il pagamento non è disponibile al momento. Riprova più tardi.",
+    "planLegend": "Piano",
+    "periodLegend": "Periodo di fatturazione",
+    "plan": {
+      "premium": "Premium",
+      "expert": "Expert"
+    },
+    "period": {
+      "monthly": "Mensile",
+      "yearly": "Annuale"
+    },
+    "expertHint": "Expert aggiunge l'analisi avanzata: simulazioni what-if, accesso API e webhook. Prezzi, imposte ed eventuale prova gratuita sono mostrati al pagamento."
   }
 }
