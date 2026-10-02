@@ -51,3 +51,13 @@ body {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Mobile: 16px text stops iOS Safari zooming on focus; 44px is the minimum touch target. */
+@media (max-width: 767px) {
+  input:not([type='checkbox']):not([type='radio']):not([type='range']),
+  select,
+  textarea {
+    font-size: 16px;
+    min-height: 44px;
+  }
+}
