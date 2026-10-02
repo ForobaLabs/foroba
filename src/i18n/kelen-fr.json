@@ -244,5 +244,12 @@
       "leave": "Impossible de vous retirer du foyer. Veuillez réessayer.",
       "share": "Impossible d'enregistrer ce changement. Veuillez réessayer."
     }
+  },
+  "notFound": {
+    "title": "Page introuvable",
+    "message": "Le lien est peut-être ancien ou mal saisi. Vos données ne sont pas touchées.",
+    "home": "Aller au tableau de bord",
+    "errorTitle": "Une erreur est survenue",
+    "errorMessage": "Rechargez la page ou revenez au tableau de bord. Si cela se reproduit, signalez-le depuis Aide."
   }
 }

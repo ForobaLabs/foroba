@@ -244,5 +244,12 @@
       "leave": "Non siamo riusciti a farti uscire dalla famiglia. Riprova.",
       "share": "Non siamo riusciti a salvare la modifica. Riprova."
     }
+  },
+  "notFound": {
+    "title": "Non troviamo questa pagina",
+    "message": "Il link potrebbe essere vecchio o digitato male. I tuoi dati non sono toccati.",
+    "home": "Vai alla dashboard",
+    "errorTitle": "Qualcosa è andato storto",
+    "errorMessage": "Ricarica la pagina o torna alla dashboard. Se succede ancora, segnalacelo da Aiuto."
   }
 }

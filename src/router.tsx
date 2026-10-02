@@ -7,6 +7,7 @@ import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { EnrollmentWizard } from './pages/EnrollmentWizard';
 import { ReConsentPage } from './pages/ReConsentPage';
+import { NotFoundPage, RouteError } from './pages/NotFoundPage';
 import { FOROBA_FAQ } from './data/faq';
 import { PRIVACY_POLICY, TERMS_OF_SERVICE, FISCAL_DISCLAIMER } from './data/legal';
 
@@ -48,6 +49,7 @@ export const router = createBrowserRouter([
   {
     path: '/',
     element: <App />,
+    errorElement: <RouteError />,
     children: [
       { index: true,      element: <Suspense fallback={<Loading />}><DashboardPage /></Suspense> },
       { path: 'accounts', element: <Suspense fallback={<Loading />}><AccountsPage /></Suspense> },
@@ -69,6 +71,7 @@ export const router = createBrowserRouter([
       { path: 'legal',    element: <LegalPage privacyPolicy={PRIVACY_POLICY} termsOfService={TERMS_OF_SERVICE} fiscalDisclaimer={FISCAL_DISCLAIMER} /> },
       { path: 'security', element: <SecurityPage /> },
       { path: 'about',    element: <AboutPage appName="Kelen" version={__APP_VERSION__} /> },
+      { path: '*',        element: <NotFoundPage /> },
     ],
   },
 ]);
