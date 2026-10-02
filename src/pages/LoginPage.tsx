@@ -59,7 +59,7 @@ export function LoginPage() {
         .then(() => setEmailOtpSent(true))
         .catch((err) => setError(err instanceof Error ? err.message : t("login.errSendCode")));
     }
-  }, [challenge, method, emailOtpSent]);
+  }, [challenge, method, emailOtpSent, t]);
 
   // FOR-D08: a second tab sharing the suite_session cookie could still land on
   // and interact with the raw login form instead of the authenticated app shell.
