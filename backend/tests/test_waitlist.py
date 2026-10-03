@@ -3,9 +3,14 @@
 from __future__ import annotations
 
 import pytest
+from fastapi.testclient import TestClient
 
 import db
 import waitlist_service as ws
+from auth.conn import get_conn
+from config import settings
+from main import app
+from rate_limit import limiter
 
 
 def _memory_conn():
@@ -79,3 +84,70 @@ def test_confirm_is_single_use_and_rejoin_after_confirm_returns_none():
 
 def test_confirm_unknown_token():
     assert ws.confirm(_memory_conn(), "nope") is False
+
+
+@pytest.fixture
+def client(monkeypatch):
+    conn = _memory_conn()
+    sent: list[tuple[str, str, str]] = []
+    import waitlist_router
+
+    monkeypatch.setattr(waitlist_router, "send_email", lambda to, s, b: sent.append((to, s, b)))
+    monkeypatch.setattr(settings, "site_base_url", "")
+    app.dependency_overrides[get_conn] = lambda: conn
+    limiter.reset()
+    try:
+        yield TestClient(app), conn, sent
+    finally:
+        app.dependency_overrides.pop(get_conn, None)
+        limiter.reset()
+
+
+def _body(**kw):
+    return {"email": "a@example.org", "apps": ["naforo"], "lang": "en", "consent": True, **kw}
+
+
+def test_post_waitlist_sends_confirm_link(client):
+    c, _, sent = client
+    r = c.post("/api/public/v1/waitlist", json=_body())
+    assert r.status_code == 202 and r.json() == {"status": "pending"}
+    assert len(sent) == 1 and sent[0][0] == "a@example.org"
+    assert "/api/public/v1/waitlist/confirm?token=" in sent[0][2]
+
+
+def test_post_waitlist_already_confirmed_is_indistinguishable(client):
+    c, _, sent = client
+    c.post("/api/public/v1/waitlist", json=_body())
+    token = sent[0][2].split("token=")[1].split()[0]
+    assert c.get(f"/api/public/v1/waitlist/confirm?token={token}").json() == {"confirmed": True}
+    r = c.post("/api/public/v1/waitlist", json=_body())
+    assert r.status_code == 202 and r.json() == {"status": "pending"}
+    assert len(sent) == 1  # no second email
+
+
+def test_post_waitlist_validation_error(client):
+    c, _, sent = client
+    r = c.post("/api/public/v1/waitlist", json=_body(consent=False))
+    assert r.status_code == 422 and r.json() == {"detail": "consent_required"}
+    assert sent == []
+
+
+def test_confirm_redirects_to_site_when_configured(client, monkeypatch):
+    c, _, sent = client
+    monkeypatch.setattr(settings, "site_base_url", "https://site.example")
+    c.post("/api/public/v1/waitlist", json=_body(lang="it"))
+    token = sent[0][2].split("token=")[1].split()[0]
+    r = c.get(f"/api/public/v1/waitlist/confirm?token={token}", follow_redirects=False)
+    assert r.status_code == 303
+    assert r.headers["location"] == "https://site.example/it/contact.html?waitlist=confirmed"
+    r = c.get("/api/public/v1/waitlist/confirm?token=bad", follow_redirects=False)
+    assert r.headers["location"] == "https://site.example/en/contact.html?waitlist=invalid"
+
+
+def test_post_waitlist_rate_limited(client):
+    c, _, _ = client
+    codes = [
+        c.post("/api/public/v1/waitlist", json=_body(email=f"u{i}@example.org")).status_code
+        for i in range(6)
+    ]
+    assert codes[:5] == [202] * 5 and codes[5] == 429

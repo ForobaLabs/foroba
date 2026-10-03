@@ -20,7 +20,7 @@ class WaitlistError(ValueError):
     """Invalid waitlist input; the message is a stable machine-readable code."""
 
 
-def _hash(token: str) -> str:
+def hash_token(token: str) -> str:
     return hashlib.sha256(token.encode()).hexdigest()
 
 
@@ -50,7 +50,7 @@ def join(
         "VALUES (?, ?, ?, datetime('now'), ?) "
         "ON CONFLICT(email) DO UPDATE SET apps = excluded.apps, lang = excluded.lang, "
         "consent_at = excluded.consent_at, confirm_token_hash = excluded.confirm_token_hash",
-        (clean, app_csv, lang, _hash(token)),
+        (clean, app_csv, lang, hash_token(token)),
     )
     conn.commit()
     return token
@@ -61,7 +61,7 @@ def confirm(conn: sqlite3.Connection, token: str) -> bool:
     cur = conn.execute(
         "UPDATE waitlist SET confirmed_at = datetime('now'), confirm_token_hash = NULL "
         "WHERE confirm_token_hash = ? AND confirmed_at IS NULL",
-        (_hash(token or ""),),
+        (hash_token(token or ""),),
     )
     conn.commit()
     return cur.rowcount == 1

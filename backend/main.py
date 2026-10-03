@@ -65,6 +65,7 @@ from settings_store import init_settings
 from stepup import issue_stepup_cookies
 from stepup_router import router as stepup_router
 from twofa.router import router as twofa_router
+from waitlist_router import router as waitlist_router
 from webhook_dispatch_job import start_webhook_dispatch_scheduler
 from whatif_router import router as whatif_router
 
@@ -162,6 +163,7 @@ app.include_router(fx_router)
 app.include_router(api_keys_router)
 app.include_router(webhooks_router)
 app.include_router(public_api_router)
+app.include_router(waitlist_router)
 app.include_router(billing_router)
 
 

@@ -59,6 +59,8 @@ class Settings(BaseSettings):
     # public domain (VITE_PAZURU_APP_URL/VITE_TSUMI_APP_URL on the frontend side).
     pazuru_app_url: str = "http://localhost:5173"
     tsumi_app_url: str = "http://localhost:5178"
+    # Public marketing-site origin; the waitlist confirm endpoint redirects back here.
+    site_base_url: str = ""
     jeli_port: int = 8002
     sandbox_image: str = "foroba-sandbox:latest"
     # set only in docker-compose.yml (TI-B item 4, foroba#120)
