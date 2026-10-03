@@ -161,6 +161,19 @@ CREATE TABLE IF NOT EXISTS billing_events (
     received_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+-- Public-site waitlist (Plan D, S1). Double opt-in; token stored only as SHA-256.
+CREATE TABLE IF NOT EXISTS waitlist (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    email TEXT NOT NULL UNIQUE,
+    apps TEXT NOT NULL DEFAULT '',
+    lang TEXT NOT NULL DEFAULT 'en',
+    consent_at TEXT NOT NULL,
+    confirm_token_hash TEXT,
+    confirmed_at TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_waitlist_token ON waitlist(confirm_token_hash);
+
 -- Registered webhook targets (foroba#165, TI-D item 5, Plan A). signing_secret is
 -- stored plaintext — it is needed on every delivery to compute the outgoing HMAC,
 -- unlike a login credential it is never used to authenticate an inbound request.
