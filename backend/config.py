@@ -32,6 +32,9 @@ class Settings(BaseSettings):
     # it's the highest-risk feature to expose to untrusted internet users.
     # "selfhost" = local/self-hosted single-user install: Jeli Lab follows the
     # normal lab_service_enabled runtime toggle.
+    # Breach-runbook kill switch (Contain 2.3): true answers 503 on every sign-in /
+    # refresh / step-up endpoint. Set MAINTENANCE_MODE=true and restart the container.
+    maintenance_mode: bool = False
     deployment_mode: str = "selfhost"
 
     # --- Jeli Lab hosted re-enablement (foroba#189) ---

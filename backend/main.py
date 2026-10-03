@@ -105,6 +105,32 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 
 app.add_middleware(SecurityHeadersMiddleware)
 
+_SIGN_IN_SUFFIXES = (
+    "/auth/token",
+    "/auth/token/2fa",
+    "/auth/token/refresh",
+    "/auth/login",
+    "/auth/login/2fa",
+    "/auth/register",
+    "/auth/stepup/verify",
+)
+
+
+class MaintenanceModeMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: StarletteRequest, call_next):
+        if (
+            settings.maintenance_mode
+            and request.method == "POST"
+            and request.url.path.rstrip("/").endswith(_SIGN_IN_SUFFIXES)
+        ):
+            return JSONResponse(
+                {"detail": "Sign-in is temporarily disabled for maintenance."}, status_code=503
+            )
+        return await call_next(request)
+
+
+app.add_middleware(MaintenanceModeMiddleware)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
