@@ -185,8 +185,9 @@ async def _check_db() -> str:
         return "down"
 
 
+# Not rate-limited: a cheap SELECT 1, probed in parallel by Kelen's dashboard and the
+# uptime monitor from shared IPs (audit 2026-10-02 W1). /health/detailed stays bounded.
 @app.get("/health")
-@limiter.limit("1/second")
 async def health(request: Request) -> JSONResponse:
     db_status = await _check_db()
     ok = db_status == "ok"
@@ -199,7 +200,7 @@ async def health(request: Request) -> JSONResponse:
 
 
 @app.get("/health/detailed")
-@limiter.limit("1/second")
+@limiter.limit("10/second")
 async def health_detailed(
     request: Request,
     conn: sqlite3.Connection = Depends(get_conn),

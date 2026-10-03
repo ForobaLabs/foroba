@@ -72,10 +72,7 @@ def test_health_detailed_flags_settings_drift(monkeypatch):
     assert body["settings_drift"] == {"premium_gating_enabled": "false"}
 
 
-def test_health_rate_limited_after_burst():
+def test_health_is_not_rate_limited():
     client = TestClient(main.app)
-    first = client.get("/health")
-    second = client.get("/health")
-
-    assert first.status_code == 200
-    assert second.status_code == 429
+    codes = [client.get("/health").status_code for _ in range(5)]
+    assert codes == [200] * 5

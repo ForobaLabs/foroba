@@ -18,10 +18,12 @@ export interface DetailedHealth {
 
 // Health endpoints return a valid JSON body even at 503 (backend-reported
 // "degraded"), unlike other endpoints where a non-2xx means no usable body.
-// Only fall back on a genuine network-level failure (thrown fetch).
+// A 429 means the service answered: report it online (throttled), never offline
+// (audit 2026-10-02 W1). Only fall back on a genuine network-level failure.
 export async function fetchHealthBody<T>(url: string, fallback: T): Promise<T> {
   try {
     const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
+    if (res.status === 429) return { status: 'ok', throttled: true } as T;
     return (await res.json()) as T;
   } catch {
     return fallback;
