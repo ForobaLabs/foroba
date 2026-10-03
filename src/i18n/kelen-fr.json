@@ -540,5 +540,10 @@
       "yearly": "Annuel"
     },
     "expertHint": "Expert ajoute l'analyse avancée : simulations what-if, accès à l'API et webhooks. Les prix, les taxes et tout essai gratuit sont affichés au paiement."
+  },
+  "allocation": {
+    "empty": "Rien à afficher pour l'instant.",
+    "cash": "Liquidités (Naforo)",
+    "portfolio": "Portefeuille (Yiriba)"
   }
 }

@@ -48,6 +48,7 @@ export function PortfolioDetailPage() {
       ) : (
         <>
           <SectionHeader
+            as="h1"
             title={`${position.name} (${position.isin})`}
             description={`${position.assetClass} · ${position.source}`}
             className="mb-6"

@@ -83,6 +83,7 @@ export function MarketsPage() {
   return (
     <PageContainer>
       <SectionHeader
+        as="h1"
         title={t('data.markets.title')}
         description={t('data.markets.description')}
         className="mb-6"

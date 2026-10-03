@@ -540,5 +540,10 @@
       "yearly": "Yearly"
     },
     "expertHint": "Expert adds advanced analysis: what-if simulations, API access and webhooks. Prices, tax and any trial are shown at checkout."
+  },
+  "allocation": {
+    "empty": "Nothing to show yet.",
+    "cash": "Cash (Naforo)",
+    "portfolio": "Portfolio (Yiriba)"
   }
 }

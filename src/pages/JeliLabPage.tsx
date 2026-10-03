@@ -134,6 +134,7 @@ export function JeliLabPage() {
   return (
     <PageContainer>
       <SectionHeader
+        as="h1"
         title="Jeli Lab"
         description="Ask questions about your own data across Naforo and Yiriba. Jeli writes and runs Python in an isolated sandbox."
         className="mb-6"

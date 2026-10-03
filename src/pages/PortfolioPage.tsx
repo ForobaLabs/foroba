@@ -80,6 +80,7 @@ export function PortfolioPage() {
     <PageContainer>
       <div className="flex items-start justify-between mb-6">
         <SectionHeader
+          as="h1"
           title={t('data.portfolio.title')}
           description={t('data.portfolio.description')}
         />

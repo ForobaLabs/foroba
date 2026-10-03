@@ -37,6 +37,7 @@ export function MarketDetailPage() {
       </Button>
 
       <SectionHeader
+        as="h1"
         title={symbol ?? t('data.marketDetail.fallbackTitle')}
         description={t('data.marketDetail.description', { assetClass })}
         className="mb-6"

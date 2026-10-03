@@ -64,6 +64,7 @@ export function AccountDetailPage() {
       ) : (
         <>
           <SectionHeader
+            as="h1"
             title={`${BANK_LABELS[detail.data.bankName] ?? detail.data.bankName} — ${detail.data.displayName}`}
             description={t('data.accountDetail.description')}
             className="mb-6"

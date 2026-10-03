@@ -36,6 +36,7 @@ export default function AdminPage(): React.ReactElement {
   return (
     <PageContainer>
       <SectionHeader
+        as="h1"
         title="Admin Panel"
         description="Manage feature flags and user accounts"
         className="mb-6"

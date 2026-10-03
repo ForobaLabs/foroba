@@ -7,6 +7,7 @@ export function StatusPage() {
   return (
     <PageContainer>
       <SectionHeader
+        as="h1"
         title="System status"
         description="Live status of all Foroba suite services"
         className="mb-6"

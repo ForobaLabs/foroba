@@ -51,6 +51,7 @@ export function ProfilePage() {
   return (
     <PageContainer>
       <SectionHeader
+        as="h1"
         title={t('profilePage.title')}
         description={t('profilePage.description')}
         className="mb-6"

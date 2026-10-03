@@ -1,4 +1,5 @@
 import { useRechartsTheme } from '@foroba/ui/charts';
+import { useTranslation } from 'react-i18next';
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts';
 import { useCurrency } from '../contexts/CurrencyContext';
 
@@ -8,6 +9,7 @@ interface AllocationPieProps {
 }
 
 export function AllocationPie({ cashEur, portfolioEur }: AllocationPieProps) {
+  const { t } = useTranslation();
   const theme = useRechartsTheme();
   const { formatMoney } = useCurrency();
   const total = cashEur + portfolioEur;
@@ -15,21 +17,24 @@ export function AllocationPie({ cashEur, portfolioEur }: AllocationPieProps) {
   if (total === 0) {
     return (
       <div className="flex h-32 items-center justify-center text-sm text-[var(--color-text-muted)]">
-        No data to display.
+        {t('allocation.empty')}
       </div>
     );
   }
 
   const data = [
-    { name: 'Cash (Naforo)', value: cashEur },
-    { name: 'Portfolio (Yiriba)', value: portfolioEur },
-  ];
+    { name: t('allocation.cash'), value: cashEur },
+    { name: t('allocation.portfolio'), value: portfolioEur },
+  ].filter((d) => d.value > 0);
+  const single = data.length === 1;
 
   return (
     <div className="flex items-center gap-4">
       <ResponsiveContainer width={120} height={120}>
         <PieChart>
-          <Pie data={data} dataKey="value" innerRadius={30} outerRadius={50} paddingAngle={3}>
+          <Pie data={data} dataKey="value" innerRadius={30} outerRadius={50} paddingAngle={single ? 0 : 3}
+            isAnimationActive={!single}
+          >
             {data.map((_, i) => (
               <Cell key={i} fill={theme.colors[i] as string} />
             ))}
@@ -48,7 +53,7 @@ export function AllocationPie({ cashEur, portfolioEur }: AllocationPieProps) {
               style={{ background: theme.colors[i] as string }}
             />
             <span className="text-[var(--color-text-secondary)]">{item.name}</span>
-            <span className="font-mono font-medium text-[var(--color-text-primary)]">
+            <span className="font-medium tabular-nums text-[var(--color-text-primary)]">
               {total > 0 ? `${((item.value / total) * 100).toFixed(1)}%` : '–'}
             </span>
           </div>
