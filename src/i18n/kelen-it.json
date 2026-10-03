@@ -361,6 +361,7 @@
       "news": "Notizie di mercato",
       "gainers": "Maggiori rialzi",
       "losers": "Maggiori ribassi",
+      "noMovers": "Nessun movimento in questa direzione oggi.",
       "symbol": "Simbolo",
       "change": "Variazione"
     },

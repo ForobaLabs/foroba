@@ -33,8 +33,10 @@ function MoversTable({
   return (
     <div>
       <p className="mb-2 text-sm font-medium text-[var(--color-text-primary)]">{title}</p>
-      {!movers || movers.length === 0 ? (
+      {!movers ? (
         <p className="text-sm text-[var(--color-text-muted)]">{t('data.common.unavailable')}</p>
+      ) : movers.length === 0 ? (
+        <p className="text-sm text-[var(--color-text-muted)]">{t('data.markets.noMovers')}</p>
       ) : (
         <Table>
           <TableHeader>
@@ -71,7 +73,7 @@ function MoversTable({
 }
 
 export function MarketsPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [assetClass, setAssetClass] = useState<AssetClass>('crypto');
   const { data, isLoading, isError, refetch } = useMarketOverview(assetClass);
   const navigate = useNavigate();
@@ -132,8 +134,11 @@ export function MarketsPage() {
                       >
                         {item.title}
                       </a>
-                      <span className="ml-2 text-xs text-[var(--color-text-muted)]">
+                      <span className="ml-2 text-xs text-[var(--color-text-muted)] tabular-nums">
                         {item.source}
+                        {item.published && !Number.isNaN(Date.parse(item.published)) && (
+                          <> · {new Intl.DateTimeFormat(i18n.language, { day: 'numeric', month: 'short' }).format(new Date(item.published))}</>
+                        )}
                       </span>
                     </li>
                   ))}

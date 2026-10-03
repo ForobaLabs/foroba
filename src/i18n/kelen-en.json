@@ -361,6 +361,7 @@
       "news": "Market news",
       "gainers": "Top gainers",
       "losers": "Top losers",
+      "noMovers": "No movers in this direction today.",
       "symbol": "Symbol",
       "change": "Change"
     },

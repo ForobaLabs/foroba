@@ -79,3 +79,34 @@ test('renders ErrorState with a working Retry button when the query fails', asyn
     expect(fetchMock.mock.calls.length).toBeGreaterThan(callsBeforeRetry),
   );
 });
+
+test('shows the news date and an explicit empty state when there are no gainers', async () => {
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async () => ({
+      ok: true,
+      json: async () => ({
+        asset_class: 'crypto',
+        gainers: [],
+        losers: [{ symbol: 'ETHUSDT', change_pct: -8.0 }],
+        news: {
+          symbol: 'BTCUSDT',
+          items: [
+            {
+              title: 'Bitcoin dips',
+              link: 'https://example.com',
+              published: 'Mon, 23 Jun 2026 14:30:00 GMT',
+              source: 'yahoo',
+            },
+          ],
+        },
+        degraded: false,
+        disclaimer: 'Informational only — not financial advice.',
+      }),
+    })),
+  );
+  renderPage();
+  await waitFor(() => expect(screen.getByText('Bitcoin dips')).toBeInTheDocument());
+  expect(screen.getByText(/yahoo · (23 Jun|Jun 23)/)).toBeInTheDocument();
+  expect(screen.getByText('No movers in this direction today.')).toBeInTheDocument();
+});
