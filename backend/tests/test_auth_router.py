@@ -448,3 +448,60 @@ def test_delete_account_upstream_connection_error_502(monkeypatch):
     assert conn.execute(
         "SELECT count(*) FROM users WHERE email = ?", ("staytoo@y.com",)
     ).fetchone()[0] == 1
+
+
+def _add_subscription(conn, user_id: int, sub_id: str, status: str) -> None:
+    conn.execute(
+        "INSERT INTO subscriptions (user_id, provider, provider_subscription_id, status, "
+        "last_event_at, updated_at) VALUES (?, 'paddle', ?, ?, '2026-10-01T00:00:00Z', "
+        "'2026-10-01T00:00:00Z')",
+        (user_id, sub_id, status),
+    )
+    conn.commit()
+
+
+class _RecordingProvider:
+    def __init__(self, fail: bool = False):
+        self.cancelled: list[str] = []
+        self.fail = fail
+
+    def cancel_subscription(self, subscription_id: str) -> None:
+        from billing.provider import BillingProviderError
+
+        if self.fail:
+            raise BillingProviderError("boom")
+        self.cancelled.append(subscription_id)
+
+
+def test_delete_account_cancels_live_subscriptions_first(monkeypatch):
+    client, conn = _client_with_conn()
+    user = _register(client, email="payer@y.com")
+    uid = conn.execute("SELECT id FROM users WHERE email = ?", ("payer@y.com",)).fetchone()[0]
+    _add_subscription(conn, uid, "sub_live", "active")
+    _add_subscription(conn, uid, "sub_old", "canceled")
+    prov = _RecordingProvider()
+    monkeypatch.setattr("auth.router.get_provider", lambda name: prov)
+    monkeypatch.setattr(
+        "auth.router.httpx.AsyncClient", lambda *a, **kw: _FakeAsyncClient(status_code=204)
+    )
+    r = client.request("DELETE", "/auth/account", json={"password": "password123"})
+    assert r.status_code == 204, r.text
+    assert prov.cancelled == ["sub_live"]
+    assert user is not None
+
+
+def test_delete_account_cancel_failure_502_and_nothing_erased(monkeypatch):
+    client, conn = _client_with_conn()
+    _register(client, email="payer2@y.com")
+    uid = conn.execute("SELECT id FROM users WHERE email = ?", ("payer2@y.com",)).fetchone()[0]
+    _add_subscription(conn, uid, "sub_live", "trialing")
+    monkeypatch.setattr("auth.router.get_provider", lambda name: _RecordingProvider(fail=True))
+
+    def _must_not_call(*a, **kw):
+        raise AssertionError("erasure must not start when cancellation failed")
+
+    monkeypatch.setattr("auth.router.httpx.AsyncClient", _must_not_call)
+    r = client.request("DELETE", "/auth/account", json={"password": "password123"})
+    assert r.status_code == 502
+    assert "subscription" in r.json()["detail"].lower()
+    assert conn.execute("SELECT count(*) FROM users WHERE id = ?", (uid,)).fetchone()[0] == 1

@@ -367,3 +367,44 @@ def test_account_export_includes_billing(client):
     sub = body["foroba"]["subscriptions"]
     assert sub[0]["status"] == "active"
     assert "provider_customer_id" in sub[0]
+
+
+# --- Paddle subscription cancellation (Plan C Task 1) ---
+import httpx  # noqa: E402
+
+from billing import provider as billing_provider  # noqa: E402
+from billing.provider import BillingProviderError, FakeProvider, PaddleProvider  # noqa: E402
+
+
+def test_fake_provider_cancel_is_noop():
+    FakeProvider().cancel_subscription("sub_123")
+
+
+def test_paddle_cancel_posts_immediately(monkeypatch):
+    seen = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen["url"] = str(request.url)
+        seen["auth"] = request.headers["authorization"]
+        seen["body"] = request.content
+        return httpx.Response(200, json={"data": {"status": "canceled"}})
+
+    monkeypatch.setattr(billing_provider.settings, "paddle_api_key", "test-key")
+    monkeypatch.setattr(billing_provider.settings, "paddle_api_base", "https://paddle.test")
+    PaddleProvider(transport=httpx.MockTransport(handler)).cancel_subscription("sub_123")
+    assert seen["url"] == "https://paddle.test/subscriptions/sub_123/cancel"
+    assert seen["auth"] == "Bearer test-key"
+    assert b'"effective_from":"immediately"' in seen["body"].replace(b" ", b"")
+
+
+def test_paddle_cancel_error_raises(monkeypatch):
+    monkeypatch.setattr(billing_provider.settings, "paddle_api_key", "test-key")
+    transport = httpx.MockTransport(lambda r: httpx.Response(500, json={"error": {}}))
+    with pytest.raises(BillingProviderError):
+        PaddleProvider(transport=transport).cancel_subscription("sub_123")
+
+
+def test_paddle_cancel_without_key_raises(monkeypatch):
+    monkeypatch.setattr(billing_provider.settings, "paddle_api_key", "")
+    with pytest.raises(BillingProviderError):
+        PaddleProvider().cancel_subscription("sub_123")

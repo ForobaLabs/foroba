@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import secrets
 import sqlite3
@@ -55,6 +56,7 @@ from auth.models import (
 )
 from auth.security import create_token, hash_password, needs_rehash, verify_password
 from auth.session_invalidation import invalidate_sessions_downstream
+from billing.provider import BillingProviderError, get_provider
 from config import settings
 from email_otp import EmailNotConfiguredError, generate_and_send, generate_and_send_signup_verify
 from email_otp import verify_and_consume as verify_email_otp
@@ -485,6 +487,22 @@ def logout(
             pass  # logout succeeds even if we can't identify the user
 
 
+_LIVE_SUB_STATUSES = ("active", "trialing", "past_due")
+
+
+def _cancel_live_subscriptions(conn: sqlite3.Connection, user_id: int) -> None:
+    """Cancel every still-billing subscription before erasure (Apple 5.1.1(v) / GDPR Art. 17:
+    a deleted user must never be charged again). Raises BillingProviderError on any failure."""
+    rows = conn.execute(
+        "SELECT provider_subscription_id FROM subscriptions WHERE user_id = ? "
+        "AND provider = 'paddle' AND status IN (?, ?, ?)",
+        (user_id, *_LIVE_SUB_STATUSES),
+    ).fetchall()
+    provider = get_provider(settings.billing_provider)
+    for (sub_id,) in rows:
+        provider.cancel_subscription(sub_id)
+
+
 @router.delete("/account", status_code=204)
 @limiter.limit("5/minute")
 async def delete_account(
@@ -506,9 +524,20 @@ async def delete_account(
     actually visited Pazuru/Tsumi and expire after a short TTL, so a user who never
     (or long ago) visited those apps would otherwise always fail this all-or-nothing
     erasure with a 428 forwarded as 502. The password re-verification just above is
-    already a stronger proof of identity than a step-up cookie."""
+    already a stronger proof of identity than a step-up cookie.
+
+    Live Paddle subscriptions are cancelled first; a cancellation failure aborts before
+    any app's data is touched."""
     if not verify_password(req.password, user["password_hash"]):
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid password")
+
+    try:
+        await asyncio.to_thread(_cancel_live_subscriptions, conn, user["id"])
+    except BillingProviderError as exc:
+        raise HTTPException(
+            status.HTTP_502_BAD_GATEWAY,
+            "Could not cancel your subscription — nothing was deleted. Please try again.",
+        ) from exc
 
     stepup = issue_stepup_cookies(user["id"])
     cookies = suite_cookies(

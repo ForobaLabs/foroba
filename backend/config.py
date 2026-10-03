@@ -21,6 +21,10 @@ class Settings(BaseSettings):
     billing_grace_days: int = 7
     # JSON map plan -> Paddle price id (server-side only; the client never sends a price).
     paddle_price_ids: str = ""
+    # Server-side Paddle Billing API key (subscription cancellation on account erasure).
+    # Sandbox base by default; set https://api.paddle.com only at live go-live.
+    paddle_api_key: str = ""
+    paddle_api_base: str = "https://sandbox-api.paddle.com"
 
     # --- Deployment mode (GL-4.3, foroba#174) ---
     # "hosted" = multi-tenant beta on the VPS: Jeli Lab (arbitrary code-gen sandbox)
