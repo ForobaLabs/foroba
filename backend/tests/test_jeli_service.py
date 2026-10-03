@@ -82,3 +82,32 @@ async def test_generate_narrative_raises_on_empty_content(monkeypatch):
     monkeypatch.setattr(httpx.AsyncClient, "post", fake_post)
     with pytest.raises(ValueError):
         await jeli_service.generate_narrative("system", "user msg")
+
+
+def _client_returning(status: int, body=None):
+    def handler(req):
+        return httpx.Response(status, json=body if body is not None else {})
+
+    return httpx.AsyncClient(transport=httpx.MockTransport(handler))
+
+
+async def _ctx(status: int, label: str, body=None):
+    async with _client_returning(status, body) as c:
+        return await jeli_service._fetch_context(c, "http://x/jeli/context", label, None)
+
+
+@pytest.mark.asyncio
+async def test_fetch_context_reports_stepup_not_offline():
+    out = await _ctx(428, "Naforo")
+    assert "identity verification" in out
+    assert "offline" not in out
+
+
+@pytest.mark.asyncio
+async def test_fetch_context_reports_empty_data():
+    assert "no data yet" in await _ctx(200, "Yiriba", {})
+
+
+@pytest.mark.asyncio
+async def test_fetch_context_offline():
+    assert "offline" in await _ctx(503, "Naforo")

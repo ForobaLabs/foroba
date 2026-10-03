@@ -61,16 +61,40 @@ def _normalize_figure(raw: str) -> str:
         return cleaned
 
 
-DISCLAIMER = (
-    "This is for informational purposes only and does not constitute financial, "
-    "investment, or tax advice. Always consult a qualified financial adviser or tax "
-    "professional before making financial decisions."
+DISCLAIMERS = {
+    "en": (
+        "This is for informational purposes only and does not constitute financial, "
+        "investment, or tax advice. Always consult a qualified financial adviser or tax "
+        "professional before making financial decisions."
+    ),
+    "it": (
+        "Queste informazioni hanno scopo puramente informativo e non costituiscono consulenza "
+        "finanziaria, d'investimento o fiscale. Consulta sempre un consulente finanziario o "
+        "fiscale qualificato prima di prendere decisioni."
+    ),
+    "fr": (
+        "Ces informations sont fournies à titre indicatif uniquement et ne constituent pas un "
+        "conseil financier, d'investissement ou fiscal. Consultez toujours un conseiller "
+        "financier ou fiscal qualifié avant toute décision."
+    ),
+}
+DISCLAIMER = DISCLAIMERS["en"]
+
+_DISCLAIMER_MARKERS = (
+    "informational purposes only",
+    "scopo puramente informativo",
+    "titre indicatif uniquement",
 )
 
-_DISCLAIMER_MARKER = "informational purposes only"
+# Lines of the system prompt the small model sometimes echoes back verbatim.
+_ECHO_RE = re.compile(
+    r"^(RULES \(non-negotiable\):|TONE:|EXPERTISE LEVEL:|DISCLAIMER).*$"
+    r"|^- (Only answer|Always cite|Never store|Respect privacy|Never recommend|Reply in).*$",
+    re.MULTILINE,
+)
 
 FABRICATION_REFUSAL = (
-    "I don't have a grounded figure for that from your Pazuru/Tsumi data right now — "
+    "I don't have a grounded figure for that from your Naforo/Yiriba data right now — "
     "rather than guess, could you check the relevant page directly or rephrase your "
     "question?"
 )
@@ -89,12 +113,13 @@ def _context_figures(text: str) -> set[str]:
     return {_normalize_figure(r) for r in _BARE_NUM_RE.findall(text)}
 
 
-def sanitize_reply(reply: str, *, context_text: str) -> str:
+def sanitize_reply(reply: str, *, context_text: str, lang: str = "en") -> str:
     """Return `reply` unchanged, refused, or with the disclaimer appended.
 
+    Echoed system-prompt lines are stripped first; the disclaimer follows `lang`.
     Two independent checks:
     - every monetary figure in the reply must appear verbatim somewhere in
-      `context_text` (the raw Pazuru + Tsumi /jeli/context JSON that was fed to the
+      `context_text` (the raw Naforo + Yiriba /jeli/context JSON that was fed to the
       model this turn) — a figure the context doesn't back is fabricated
       (found empirically benchmarking qwen2.5:3b-instruct, 21 fabricated figures
       across the Jeli benchmark suite, the highest of any candidate model);
@@ -102,11 +127,13 @@ def sanitize_reply(reply: str, *, context_text: str) -> str:
       answer") gets the mandatory disclaimer appended if the model didn't include it
       (qwen2.5:3b-instruct omitted it in every benchmarked response, 0/4 scenarios).
     """
+    reply = re.sub(r"\n{3,}", "\n\n", _ECHO_RE.sub("", reply)).strip()
     reply_figures = _reply_figures(reply)
     if reply_figures and not reply_figures.issubset(_context_figures(context_text)):
         return FABRICATION_REFUSAL
 
-    if reply_figures and _DISCLAIMER_MARKER not in reply.lower():
-        reply = f"{reply.rstrip()}\n\n{DISCLAIMER}"
+    lowered = reply.lower()
+    if reply_figures and not any(m in lowered for m in _DISCLAIMER_MARKERS):
+        reply = f"{reply.rstrip()}\n\n{DISCLAIMERS.get(lang, DISCLAIMER)}"
 
     return reply

@@ -1,5 +1,5 @@
 """Tests for Jeli's output-side fabrication/disclaimer guard."""
-from jeli_output_guard import DISCLAIMER, FABRICATION_REFUSAL, sanitize_reply
+from jeli_output_guard import DISCLAIMER, DISCLAIMERS, FABRICATION_REFUSAL, sanitize_reply
 
 
 def test_passes_through_text_with_no_monetary_figure():
@@ -78,3 +78,26 @@ def test_still_blocks_currency_adjacent_figure_absent_from_context():
     context = '{"total_balance_eur": 2011.6}'
     reply = sanitize_reply("Your net worth is €9999.9.", context_text=context)
     assert reply == FABRICATION_REFUSAL
+
+
+def test_disclaimer_follows_language():
+    context = '{"display": "879.65 EUR"}'
+    reply = sanitize_reply("Il saldo è 879.65 EUR.", context_text=context, lang="it")
+    assert DISCLAIMERS["it"] in reply
+    assert DISCLAIMERS["en"] not in reply
+
+
+def test_any_language_disclaimer_counts_as_present():
+    context = '{"display": "879.65 EUR"}'
+    reply = sanitize_reply(
+        f"Solde 879.65 EUR.\n\n{DISCLAIMERS['fr']}", context_text=context, lang="fr"
+    )
+    assert reply.count(DISCLAIMERS["fr"]) == 1
+
+
+def test_strips_echoed_prompt_headers():
+    out = sanitize_reply(
+        "RULES (non-negotiable):\n- Only answer finance.\nYou have 3 accounts.", context_text="{}"
+    )
+    assert "RULES" not in out
+    assert "You have 3 accounts." in out

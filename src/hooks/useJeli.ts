@@ -54,6 +54,9 @@ export function useJeli(userName?: string) {
           message: text.trim(),
           user_name: userName || 'User',
           personality,
+          lang: ['en', 'it', 'fr'].includes(i18n.language?.slice(0, 2))
+            ? i18n.language.slice(0, 2)
+            : 'en',
         }),
         signal: abortRef.current.signal,
       });

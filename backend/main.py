@@ -11,7 +11,7 @@ import logging
 import os
 import sqlite3
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Literal
 
 from fastapi import Cookie, Depends, FastAPI, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -199,6 +199,7 @@ class ChatRequest(BaseModel):
     message: str = Field(..., min_length=1, max_length=4000)
     user_name: str = "User"
     personality: Personality = Personality()
+    lang: Literal["en", "it", "fr"] = "en"
 
 
 async def _check_db() -> str:
@@ -385,6 +386,7 @@ async def jeli_chat(
         user_name=req.user_name,
         tone=req.personality.tone,
         expertise=req.personality.expertise,
+        lang=req.lang,
     )
 
     async def generate():
@@ -395,6 +397,6 @@ async def jeli_chat(
         # phrase can straddle a chunk boundary, so partial text can't be checked.
         full_reply = "".join([chunk async for chunk in stream_chat(system_prompt, req.message)])
         context_text = f"{pazuru_ctx}\n{tsumi_ctx}"
-        yield sanitize_reply(full_reply, context_text=context_text)
+        yield sanitize_reply(full_reply, context_text=context_text, lang=req.lang)
 
     return StreamingResponse(generate(), media_type="text/plain; charset=utf-8")

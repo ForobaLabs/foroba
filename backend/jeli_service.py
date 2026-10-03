@@ -69,8 +69,15 @@ async def _fetch_context(
 ) -> str:
     try:
         resp = await client.get(url, timeout=3.0, cookies=cookies)
+        if resp.status_code == 428:
+            return (
+                f"{label} data is locked until the user completes identity "
+                f"verification in {label}."
+            )
         resp.raise_for_status()
         data = resp.json()
+        if not data:
+            return f"{label} has no data yet (nothing connected or imported)."
         return json.dumps(data, indent=2)
     except Exception as exc:
         logger.warning("%s context unavailable: %s", label, exc)
@@ -91,8 +98,8 @@ async def gather_context(
     portfolio/accounts instead of 401ing/428ing."""
     cookies = suite_cookies(cookie, stepup_pazuru=stepup_pazuru, stepup_tsumi=stepup_tsumi)
     async with httpx.AsyncClient() as client:
-        pazuru_task = _fetch_context(client, f"{pazuru_url}/jeli/context", "Pazuru", cookies)
-        tsumi_task = _fetch_context(client, f"{tsumi_url}/jeli/context", "Tsumi", cookies)
+        pazuru_task = _fetch_context(client, f"{pazuru_url}/jeli/context", "Naforo", cookies)
+        tsumi_task = _fetch_context(client, f"{tsumi_url}/jeli/context", "Yiriba", cookies)
         pazuru_ctx, tsumi_ctx = await asyncio.gather(pazuru_task, tsumi_task)
     return pazuru_ctx, tsumi_ctx
 
@@ -108,6 +115,7 @@ def build_system_prompt(
     user_name: str,
     tone: int,
     expertise: int,
+    lang: str = "en",
 ) -> str:
     return PROMPT_TEMPLATE.format(
         user_name=user_name or "the user",
@@ -117,6 +125,7 @@ def build_system_prompt(
         expertise_level_description=_expertise_description(expertise),
         pazuru_context=pazuru_context,
         tsumi_context=tsumi_context,
+        language={"en": "English", "it": "Italian", "fr": "French"}.get(lang, "English"),
     )
 
 
