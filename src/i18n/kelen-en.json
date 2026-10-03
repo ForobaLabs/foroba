@@ -545,5 +545,11 @@
     "empty": "Nothing to show yet.",
     "cash": "Cash (Naforo)",
     "portfolio": "Portfolio (Yiriba)"
+  },
+  "jeliChips": {
+    "label": "Try asking",
+    "spend": "Where did most of my money go this month?",
+    "net": "How is my net worth split between cash and investments?",
+    "save": "How much could I save each month at my current pace?"
   }
 }

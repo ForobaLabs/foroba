@@ -545,5 +545,11 @@
     "empty": "Rien à afficher pour l'instant.",
     "cash": "Liquidités (Naforo)",
     "portfolio": "Portefeuille (Yiriba)"
+  },
+  "jeliChips": {
+    "label": "Essayez de demander",
+    "spend": "Où est passé l'essentiel de mon argent ce mois-ci ?",
+    "net": "Comment mon patrimoine se répartit-il entre liquidités et placements ?",
+    "save": "Combien pourrais-je épargner chaque mois à ce rythme ?"
   }
 }

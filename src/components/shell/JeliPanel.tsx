@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Send } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { JeliMessage } from '../../hooks/useJeli';
+import { JeliPromptChips } from '../JeliPromptChips';
 
 interface JeliPanelProps {
   messages: JeliMessage[];
@@ -36,6 +37,7 @@ export function JeliPanel({ messages, streaming, onSend, onStop, onReset }: Jeli
             <p className="text-sm leading-relaxed">{t('jeli.emptyBody')}</p>
           </div>
         )}
+        {messages.length === 0 && !streaming && <JeliPromptChips onPick={onSend} />}
         {messages.map((msg, i) => (
           <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
             <div
