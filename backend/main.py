@@ -110,7 +110,7 @@ app.add_middleware(
     allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allow_headers=["Content-Type", "Authorization"],
+    allow_headers=["Content-Type", "Authorization", "X-Client"],
     # CL-2.9: X-Stepup-Token must be accessible by JS in cross-origin responses
     expose_headers=["X-Stepup-Token"],
 )
