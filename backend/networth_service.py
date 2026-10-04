@@ -59,6 +59,42 @@ async def _get_json(
         return None
 
 
+_MAX_EVENTS = 12
+
+
+def _import_events(entries: Any) -> list[dict[str, str]]:
+    """Map Pazuru's import log to chart annotations (ID-06).
+
+    Keeps non-undone account imports that actually added rows, newest 12 only.
+    Labels are the file name — never amounts or counts.
+    """
+    if not isinstance(entries, list):
+        return []
+    events: list[dict[str, str]] = []
+    for e in entries:
+        if not isinstance(e, dict) or e.get("undone") or not e.get("imported_count"):
+            continue
+        if e.get("destination") not in (None, "account"):
+            continue
+        created = str(e.get("created_at") or "")[:10]
+        if len(created) != 10:
+            continue
+        label = str(e.get("filename") or "")[:60]
+        events.append({"date": created, "label": label, "kind": "import"})
+    events.sort(key=lambda ev: ev["date"], reverse=True)
+    return sorted(events[:_MAX_EVENTS], key=lambda ev: ev["date"])
+
+
+async def _fetch_import_events(
+    client: httpx.AsyncClient, base: str, cookies: dict[str, str] | None
+) -> list[dict[str, str]]:
+    """Best-effort: a 428/outage/anything else yields [] and never marks the payload degraded."""
+    try:
+        return _import_events(await _get_json(client, f"{base}/api/import/log", {}, cookies))
+    except Exception:
+        return []
+
+
 def _merge_history(
     bank_history: list[dict[str, Any]],
     investments_history: list[dict[str, Any]],
@@ -138,7 +174,9 @@ async def fetch_networth(
             )
         if include_debts:
             fetches.append(_get_json(client, f"{pazuru_base}/api/debts/net-worth", {}, cookies))
+        fetches.append(_fetch_import_events(client, pazuru_base, cookies))
         results = await asyncio.gather(*fetches)
+    events = results.pop()
 
     bank, investments_summary, investments_history = results[0], results[1], results[2]
     idx = 3
@@ -164,6 +202,7 @@ async def fetch_networth(
         "history": _merge_history(
             bank_history or [], investments_history or [], manual_assets_history or []
         ),
+        "events": events,
         "degraded": degraded,
         "disclaimer": DISCLAIMER,
     }

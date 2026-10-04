@@ -157,7 +157,7 @@ export function DashboardPage() {
               <h2 className="mb-3 text-sm font-medium text-[var(--color-text-secondary)]">
                 {t('dashboard.netWorthOverTime')}
               </h2>
-              <NetWorthChart data={data?.history ?? []} />
+              <NetWorthChart data={data?.history ?? []} events={data?.events ?? []} />
             </CardContent>
           </Card>
 

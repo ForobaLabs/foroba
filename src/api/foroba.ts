@@ -1,3 +1,4 @@
+import type { NetWorthEvent } from '../lib/netWorthEvents';
 import type { AppNotification, NetWorthSnapshot } from '@foroba/ui';
 import { fetchJson } from './fetchJson';
 import { fetchDetailedHealthBody, fetchHealthBody } from './health';
@@ -52,6 +53,8 @@ export interface NetWorthResult {
   snapshot: NetWorthSnapshot;
   /** Daily bank+investments+manual-assets history — real series, not a single point (foroba#157/#164). */
   history: NetWorthHistoryPoint[];
+  /** Import events to annotate on the chart (ID-06); empty when unavailable. */
+  events: NetWorthEvent[];
   /** Sources that failed to load for this fetch. Empty = fully healthy. */
   degradedSources: NetWorthSource[];
 }
@@ -67,6 +70,7 @@ interface NetWorthApiResponse {
   degraded: boolean;
   disclaimer: string;
   debts_eur?: number;
+  events?: NetWorthEvent[];
 }
 
 /**
@@ -112,6 +116,7 @@ export async function fetchNetWorth(
       delta1dPct,
     },
     history: res.history.map((p) => ({ date: p.date, totalEur: p.total_eur })),
+    events: res.events ?? [],
     degradedSources,
   };
 }

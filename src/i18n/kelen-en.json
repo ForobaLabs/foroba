@@ -144,7 +144,9 @@
     "error": {
       "title": "We couldn't load your net worth",
       "message": "Your data is safe. Check your connection and try again."
-    }
+    },
+    "eventImportLegend": "Data import",
+    "eventImportLabel": "Import: {{label}}"
   },
   "goals": {
     "title": "Financial goals",

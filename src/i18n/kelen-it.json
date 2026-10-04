@@ -144,7 +144,9 @@
     "error": {
       "title": "Non siamo riusciti a caricare il tuo patrimonio netto",
       "message": "I tuoi dati sono al sicuro. Controlla la connessione e riprova."
-    }
+    },
+    "eventImportLegend": "Importazione dati",
+    "eventImportLabel": "Importazione: {{label}}"
   },
   "goals": {
     "title": "Obiettivi finanziari",

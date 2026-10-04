@@ -144,7 +144,9 @@
     "error": {
       "title": "Impossible de charger votre patrimoine net",
       "message": "Vos données sont en sécurité. Vérifiez votre connexion et réessayez."
-    }
+    },
+    "eventImportLegend": "Import de données",
+    "eventImportLabel": "Import : {{label}}"
   },
   "goals": {
     "title": "Objectifs financiers",

@@ -171,3 +171,66 @@ async def test_fetch_networth_omits_debts_key_when_include_debts_false(monkeypat
     assert "debts_eur" not in result
     assert result["total_eur"] == 10_000.0
     assert not any("debts" in u for u in call_urls)
+
+
+def test_import_events_filters_and_labels():
+    entries = [
+        {"filename": "jan.csv", "destination": "account", "imported_count": 5, "undone": False,
+         "created_at": "2026-01-05T10:00:00"},
+        {"filename": "undone.csv", "destination": "account", "imported_count": 5, "undone": True,
+         "created_at": "2026-02-01T10:00:00"},
+        {"filename": "empty.csv", "destination": "account", "imported_count": 0, "undone": False,
+         "created_at": "2026-02-02T10:00:00"},
+        {"filename": "assets.csv", "destination": "manual_assets", "imported_count": 3,
+         "undone": False, "created_at": "2026-02-03T10:00:00"},
+        {"filename": "bad", "destination": "account", "imported_count": 1, "undone": False,
+         "created_at": "oops"},
+    ]
+    assert ns._import_events(entries) == [
+        {"date": "2026-01-05", "label": "jan.csv", "kind": "import"}
+    ]
+    assert ns._import_events(None) == []
+
+
+def test_import_events_capped_to_newest_12():
+    entries = [
+        {"filename": f"f{i}.csv", "destination": "account", "imported_count": 1, "undone": False,
+         "created_at": f"2026-01-{i:02d}T00:00:00"}
+        for i in range(1, 21)
+    ]
+    out = ns._import_events(entries)
+    assert len(out) == 12
+    assert out[0]["date"] == "2026-01-09" and out[-1]["date"] == "2026-01-20"
+
+
+@pytest.mark.asyncio
+async def test_fetch_networth_includes_events_and_survives_log_failure(monkeypatch):
+    log_state = {"fail": False}
+
+    async def _fake_get_json(client, url, params, cookie):
+        if "accounts/net-worth" in url:
+            return {
+                "summary": {"total_cents": 10000, "currency": "EUR", "account_count": 1},
+                "history": [],
+            }
+        if "portfolio/summary" in url:
+            return {"total_eur": 0.0, "manual_assets_eur": 0.0, "pnl_eur": 0.0,
+                    "pnl_pct": 0.0, "position_count": 0}
+        if "portfolio/history" in url:
+            return []
+        if "import/log" in url:
+            if log_state["fail"]:
+                return None  # _get_json's failure contract (e.g. 428)
+            return [{"filename": "a.csv", "destination": "account", "imported_count": 2,
+                     "undone": False, "created_at": "2026-03-01T00:00:00"}]
+        raise AssertionError(url)
+
+    monkeypatch.setattr(ns, "_get_json", _fake_get_json)
+    ok = await ns.fetch_networth(days=30, include_manual_assets=False)
+    assert ok["events"] == [{"date": "2026-03-01", "label": "a.csv", "kind": "import"}]
+    assert ok["degraded"] is False
+
+    log_state["fail"] = True
+    bad = await ns.fetch_networth(days=30, include_manual_assets=False)
+    assert bad["events"] == []
+    assert bad["degraded"] is False
