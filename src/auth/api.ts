@@ -20,6 +20,7 @@ export interface SessionUser {
   birth_year: number | null;
   country: string | null;
   onboarding_completed_at: string | null;
+  email_verified?: boolean;
 }
 
 const opts: RequestInit = { credentials: "include" };

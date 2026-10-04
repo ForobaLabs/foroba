@@ -556,5 +556,16 @@
     "spend": "Where did most of my money go this month?",
     "net": "How is my net worth split between cash and investments?",
     "save": "How much could I save each month at my current pace?"
+  },
+  "onboardingChecklist": {
+    "title": "Get started",
+    "progress": "{{done}} of {{total}} done",
+    "dismiss": "Dismiss getting-started checklist",
+    "items": {
+      "email": "Verify your email",
+      "mfa": "Turn on two-step verification",
+      "import": "Add an account or import transactions",
+      "goal": "Set your first goal"
+    }
   }
 }

@@ -556,5 +556,16 @@
     "spend": "Où est passé l'essentiel de mon argent ce mois-ci ?",
     "net": "Comment mon patrimoine se répartit-il entre liquidités et placements ?",
     "save": "Combien pourrais-je épargner chaque mois à ce rythme ?"
+  },
+  "onboardingChecklist": {
+    "title": "Pour commencer",
+    "progress": "{{done}} sur {{total}} terminés",
+    "dismiss": "Fermer la liste de démarrage",
+    "items": {
+      "email": "Vérifiez votre e-mail",
+      "mfa": "Activez la vérification en deux étapes",
+      "import": "Ajoutez un compte ou importez des transactions",
+      "goal": "Définissez votre premier objectif"
+    }
   }
 }

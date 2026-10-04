@@ -5,6 +5,7 @@ import { Link } from 'react-router';
 import { AllocationPie } from '../components/AllocationPie';
 import { FinanceTipsCard } from '../components/FinanceTipsCard';
 import { NetWorthChart } from '../components/NetWorthChart';
+import { OnboardingChecklist } from '../components/OnboardingChecklist';
 import { ServiceStatusBar } from '../components/ServiceStatusBar';
 import { StreaksWidget } from '../components/StreaksWidget';
 import { useAuth } from '../auth/AuthProvider';
@@ -70,6 +71,8 @@ export function DashboardPage() {
       />
 
       <ServiceStatusBar />
+
+      <OnboardingChecklist />
 
       {degradedSources.length > 0 && (
         <div className="mt-4">
