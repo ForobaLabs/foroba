@@ -51,6 +51,10 @@ class Settings(BaseSettings):
 
     pazuru_api_url: str = "http://localhost:8000"
     tsumi_api_url: str = "http://localhost:8050"
+    # Shared secret sent as X-Internal-Token on server-to-server pushes to Pazuru/Tsumi
+    # (/internal/session-invalidate, /jeli/settings-cache/invalidate); must equal their
+    # INTERNAL_API_TOKEN. Empty = pushes are skipped with a warning (they would be rejected).
+    internal_api_token: str = ""
 
     # --- Cross-app session handoff (Plan U, pazuru#150) ---
     # PUBLIC browser-facing origins, distinct from pazuru_api_url/tsumi_api_url above

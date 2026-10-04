@@ -33,11 +33,16 @@ def _invalidate_downstream_settings_caches() -> None:
     Confirmed live 2026-09-17: this staleness caused a false 402 on Tsumi's
     require_feature() shortly after a premium_gating_enabled toggle+restore.
     Never raises -- same resilience posture as the polling endpoint this
-    mirrors (public_get_settings below)."""
+    mirrors (public_get_settings below). Sends the shared X-Internal-Token
+    (foroba#299) and is skipped with a warning when INTERNAL_API_TOKEN is unset."""
+    token = settings.internal_api_token
+    if not token:
+        logger.warning("INTERNAL_API_TOKEN unset; skipping settings-cache invalidate push")
+        return
     for base in (settings.pazuru_api_url, settings.tsumi_api_url):
         url = f"{base.rstrip('/')}/jeli/settings-cache/invalidate"
         try:
-            httpx.post(url, timeout=2)
+            httpx.post(url, headers={"X-Internal-Token": token}, timeout=2)
         except httpx.HTTPError as exc:
             logger.warning("settings-cache invalidate failed for %s: %s", url, exc)
 

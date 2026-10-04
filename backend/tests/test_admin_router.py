@@ -71,9 +71,11 @@ def test_patch_admin_setting_invalidates_downstream_caches(setup, monkeypatch):
     as the root cause of a false 402 on Tsumi shortly after a Foroba admin
     premium_gating_enabled toggle+restore)."""
     import admin_router
+    from config import settings
 
+    monkeypatch.setattr(settings, "internal_api_token", "t", raising=False)
     calls = []
-    monkeypatch.setattr(admin_router.httpx, "post", lambda url, timeout: calls.append(url))
+    monkeypatch.setattr(admin_router.httpx, "post", lambda url, **kw: calls.append(url))
 
     tc, _conn, admin, _ = setup
     tc.app.dependency_overrides[get_current_user] = lambda: admin
@@ -89,8 +91,11 @@ def test_patch_admin_setting_never_raises_when_downstream_unreachable(setup, mon
     """The invalidation call must never surface as a 500 -- same resilience
     posture as the polling endpoint it mirrors."""
     import admin_router
+    from config import settings
 
-    def _raise(url, timeout):
+    monkeypatch.setattr(settings, "internal_api_token", "t", raising=False)
+
+    def _raise(url, **kw):
         raise admin_router.httpx.ConnectError("connection refused")
 
     monkeypatch.setattr(admin_router.httpx, "post", _raise)
