@@ -299,6 +299,7 @@
       "title": "Comptes",
       "description": "Vos comptes bancaires et vos flux de trésorerie, depuis Naforo",
       "connect": "Connecter une banque",
+      "exportFailed": "Échec de l'export. Réessayez dans un instant.",
       "checking": "Vérification de Naforo…",
       "status": "État de Naforo",
       "unreachable": "Naforo est injoignable pour le moment. Réessayez dans un instant.",

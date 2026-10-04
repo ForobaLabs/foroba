@@ -299,6 +299,7 @@
       "title": "Conti",
       "description": "I tuoi conti bancari e i flussi di cassa, da Naforo",
       "connect": "Collega una banca",
+      "exportFailed": "Esportazione non riuscita. Riprova tra un momento.",
       "checking": "Controllo di Naforo…",
       "status": "Stato di Naforo",
       "unreachable": "Al momento non riusciamo a raggiungere Naforo. Riprova tra poco.",

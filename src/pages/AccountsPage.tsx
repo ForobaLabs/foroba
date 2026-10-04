@@ -12,7 +12,9 @@ import {
   SectionHeader,
 } from '@foroba/ui';
 import { useTranslation } from 'react-i18next';
+import { useState } from 'react';
 import { useNavigate } from 'react-router';
+import { downloadPazuruTransactions } from '../api/pazuru';
 import { useAccountsList, usePazuruHealth } from '../hooks/useServiceHealth';
 
 const BANK_LABELS: Record<string, string> = {
@@ -38,6 +40,20 @@ export function AccountsPage() {
   const online = health.data?.status === 'ok';
   const accounts = useAccountsList();
   const navigate = useNavigate();
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState(false);
+
+  const runExport = async (fmt: 'xlsx' | 'csv') => {
+    setExporting(true);
+    setExportError(false);
+    try {
+      await downloadPazuruTransactions(fmt);
+    } catch {
+      setExportError(true);
+    } finally {
+      setExporting(false);
+    }
+  };
 
   return (
     <PageContainer>
@@ -50,10 +66,16 @@ export function AccountsPage() {
         {online && (accounts.data?.length ?? 0) > 0 && (
           <div className="flex flex-wrap items-center gap-2">
             <ConnectBankButton variant="outline" />
-            <ExportButton onExport={(fmt) => { window.location.href = `/pazuru-api/export/transactions?format=${fmt}`; }} />
+            <ExportButton loading={exporting} onExport={runExport} />
           </div>
         )}
       </div>
+
+      {exportError && (
+        <p role="alert" className="mb-4 text-sm text-[var(--color-negative)]">
+          {t('data.accounts.exportFailed')}
+        </p>
+      )}
 
       {health.isLoading ? (
         // pazuru#149 (PROD-PZR-D03): `online` is false during the initial health

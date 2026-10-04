@@ -299,6 +299,7 @@
       "title": "Accounts",
       "description": "Your bank accounts and cash flow, from Naforo",
       "connect": "Connect a bank",
+      "exportFailed": "Export failed. Try again in a moment.",
       "checking": "Checking Naforo…",
       "status": "Naforo status",
       "unreachable": "We can't reach Naforo right now. Try again in a moment.",

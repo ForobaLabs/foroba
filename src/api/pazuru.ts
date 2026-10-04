@@ -168,3 +168,21 @@ export async function fetchPazuruGoals(): Promise<PazuruGoal[]> {
     deadline: g.deadline,
   }));
 }
+
+/** Downloads the transactions export through fetch so a failure can be surfaced
+ * (a plain navigation to a failing URL replaces the page with raw JSON). */
+export async function downloadPazuruTransactions(format: 'xlsx' | 'csv'): Promise<void> {
+  const res = await fetch(`${BASE}/api/export/transactions?format=${format}`, {
+    credentials: 'include',
+  });
+  if (!res.ok) throw new Error(`export failed: ${res.status}`);
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `transactions.${format}`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
