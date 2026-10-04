@@ -58,7 +58,7 @@ function MoversTable({
                   </button>
                 </TableCell>
                 <TableCell
-                  className={`text-right ${m.change_pct >= 0 ? 'text-[var(--color-positive)]' : 'text-[var(--color-negative)]'}`}
+                  className={`text-right ${m.change_pct >= 0 ? 'text-[var(--color-positive-text)]' : 'text-[var(--color-negative)]'}`}
                 >
                   {m.change_pct >= 0 ? '+' : ''}
                   {m.change_pct.toFixed(2)}%

@@ -142,7 +142,7 @@ export function HouseholdPage() {
                   </p>
                 )}
                 {joinSent && !joinError && (
-                  <p className="text-xs text-[var(--color-positive)]" role="status">
+                  <p className="text-xs text-[var(--color-positive-text)]" role="status">
                     {t('household.joinSent')}
                   </p>
                 )}
