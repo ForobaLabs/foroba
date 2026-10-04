@@ -2,23 +2,26 @@
 
 A plain GET so a bare `<a href>` from the Foroba shell works with no JS: the
 browser navigates here with the user's existing suite_session/stepup_<app>
-cookies attached, we mint a short-lived handoff token embedding those values,
-and 302 the browser straight to the target app's own /auth/handoff consumer
-(reached via the already-mounted /api/v1/<app>/ versioned proxy, so it works
-from any of the three domains) — which sets its own domain-scoped cookies and
-redirects on to the originally-intended page.
+cookies attached, we mint an opaque one-time code, and 302 the browser to the
+target app's own /auth/handoff consumer (reached via the already-mounted
+/api/v1/<app>/ versioned proxy, so it works from any of the three domains). The
+consumer redeems the code back-channel via `POST /internal/handoff/redeem`
+(shared X-Internal-Token), sets its own domain-scoped cookies and redirects on to
+the originally-intended page. No session material ever appears in a URL.
 """
 
 from __future__ import annotations
 
+import hmac
 import re
 
-from fastapi import APIRouter, Cookie, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, Cookie, Depends, Header, HTTPException, Query, Request
 from fastapi.responses import RedirectResponse
+from pydantic import BaseModel
 
 from auth.dependencies import get_current_user
 from config import settings
-from handoff import VALID_APPS, issue_handoff_token
+from handoff import VALID_APPS, HandoffTokenError, issue_handoff_code, redeem_handoff_code
 from rate_limit import limiter
 
 router = APIRouter(prefix="/auth/handoff", tags=["handoff"])
@@ -49,12 +52,38 @@ def handoff_mint(
         redirect = "/"
 
     stepup_token = request.cookies.get(f"stepup_{app}")
-    token = issue_handoff_token(
+    code = issue_handoff_code(
         user_id=user["id"],
         app=app,
         redirect=redirect,
         sess=suite_session,
         stepup=stepup_token,
     )
-    target = f"{_APP_URLS[app]()}/api/v1/{app}/auth/handoff?token={token}"
+    target = f"{_APP_URLS[app]()}/api/v1/{app}/auth/handoff?code={code}"
     return RedirectResponse(url=target, status_code=302)
+
+
+def _require_internal_token(x_internal_token: str = Header(default="")) -> None:
+    """Fail closed: reject unless X-Internal-Token matches INTERNAL_API_TOKEN."""
+    expected = settings.internal_api_token
+    if not expected or not hmac.compare_digest(x_internal_token.encode(), expected.encode()):
+        raise HTTPException(status_code=403, detail="forbidden")
+
+
+class RedeemRequest(BaseModel):
+    code: str
+    app: str
+
+
+internal_router = APIRouter(
+    prefix="/internal/handoff", tags=["handoff"], dependencies=[Depends(_require_internal_token)]
+)
+
+
+@internal_router.post("/redeem")
+def handoff_redeem(req: RedeemRequest) -> dict:
+    """Back-channel redemption by Pazuru/Tsumi; the code is consumed on first use."""
+    try:
+        return redeem_handoff_code(req.code, expected_app=req.app)
+    except HandoffTokenError as exc:
+        raise HTTPException(401, "Invalid, expired or already used handoff code") from exc

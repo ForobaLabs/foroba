@@ -1,67 +1,79 @@
-"""Same-origin session handoff tokens (Plan U, pazuru#150 — DuckDNS PSL cross-domain
-cookie scoping).
+"""Same-origin session handoff codes (Plan U, pazuru#150 — DuckDNS PSL cross-domain
+cookie scoping; reworked in Plan AK for foroba#300 / AI-6-F1, F3).
 
 `suite_session`/`stepup_<app>` are set by Foroba's backend and never reach
 Pazuru/Tsumi's origins, since every `*.duckdns.org` subdomain is its own
-registrable domain per the Public Suffix List. A handoff token is a short-lived,
-single-use RS256 JWT (same keypair as suite_session/stepup) that carries the
-already-valid session/stepup token VALUES as claims; the target app's own
-/auth/handoff endpoint verifies it via the existing JWKS client it already
-trusts, then simply Set-Cookies those embedded values onto its own origin.
-No new session concept is introduced on the target side.
+registrable domain per the Public Suffix List. The browser is therefore redirected to
+the target app with an **opaque one-time code** (no session material in the URL, so
+nothing replayable lands in history, access logs or `Referer`). The target app redeems
+the code server-to-server against Foroba (`POST /internal/handoff/redeem`, shared
+X-Internal-Token), receives the session/step-up cookie values, and Set-Cookies them
+onto its own origin.
+
+The store lives in this process (single uvicorn worker, same assumption as the session
+revocation floor): codes are 30 s, single-use, bounded, and lost on restart.
 """
 
 from __future__ import annotations
 
-import uuid
-from datetime import UTC, datetime, timedelta
+import secrets
+import threading
+import time
 
-import jwt
-
-from auth import keys
-from config import settings
-
-_ALGO = "RS256"
 _HANDOFF_TTL_SECONDS = 30
+_MAX_CODES = 10_000
 VALID_APPS = {"pazuru", "tsumi"}
+
+_codes: dict[str, dict] = {}
+_lock = threading.Lock()
 
 
 class HandoffTokenError(Exception):
-    """Raised for any invalid/expired/mismatched handoff token."""
+    """Raised for any invalid/expired/mismatched/already-used handoff code."""
 
 
-def issue_handoff_token(
+def _purge_expired(now: float) -> None:
+    for key in [k for k, v in _codes.items() if v["exp"] <= now]:
+        del _codes[key]
+
+
+def issue_handoff_code(
     *, user_id: int, app: str, redirect: str, sess: str, stepup: str | None
 ) -> str:
     if app not in VALID_APPS:
         raise ValueError(f"unknown handoff target app {app!r}")
-    private_key, _, kid = keys.get_keypair(settings)
-    now = datetime.now(UTC)
-    claims = {
-        "sub": str(user_id),
-        "typ": "handoff",
-        "app": app,
-        "redirect": redirect,
-        "sess": sess,
-        "jti": uuid.uuid4().hex,
-        "iat": now,
-        "exp": now + timedelta(seconds=_HANDOFF_TTL_SECONDS),
-    }
-    if stepup:
-        claims["stepup"] = stepup
-    return jwt.encode(claims, private_key, algorithm=_ALGO, headers={"kid": kid})
+    code = secrets.token_urlsafe(32)
+    now = time.time()
+    with _lock:
+        _purge_expired(now)
+        while len(_codes) >= _MAX_CODES:  # drop the oldest rather than grow unbounded
+            del _codes[min(_codes, key=lambda k: _codes[k]["exp"])]
+        _codes[code] = {
+            "user_id": user_id,
+            "app": app,
+            "redirect": redirect,
+            "sess": sess,
+            "stepup": stepup,
+            "exp": now + _HANDOFF_TTL_SECONDS,
+        }
+    return code
 
 
-def verify_handoff_token(token: str, *, expected_app: str) -> dict:
-    _, public_key, _ = keys.get_keypair(settings)
-    try:
-        claims = jwt.decode(token, public_key, algorithms=[_ALGO])
-    except jwt.PyJWTError as exc:
-        raise HandoffTokenError(str(exc)) from exc
-    if claims.get("typ") != "handoff":
-        raise HandoffTokenError("Not a handoff token")
-    if claims.get("app") != expected_app:
+def redeem_handoff_code(code: str, *, expected_app: str) -> dict:
+    """Atomically consume `code`; any failure leaves no reusable entry behind."""
+    with _lock:
+        entry = _codes.pop(code, None)
+    if entry is None:
+        raise HandoffTokenError("Unknown or already used handoff code")
+    if entry["exp"] <= time.time():
+        raise HandoffTokenError("Handoff code expired")
+    if entry["app"] != expected_app:
         raise HandoffTokenError(
-            f"Token is scoped to app={claims.get('app')!r}, expected {expected_app!r}"
+            f"Code is scoped to app={entry['app']!r}, expected {expected_app!r}"
         )
-    return claims
+    return {
+        "sess": entry["sess"],
+        "stepup": entry["stepup"],
+        "redirect": entry["redirect"],
+        "user_id": entry["user_id"],
+    }

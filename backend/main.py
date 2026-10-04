@@ -48,6 +48,7 @@ from db import seed_mock_users as _seed
 from fx_router import router as fx_router
 from fx_scheduler import start_fx_scheduler
 from goals_router import router as goals_router
+from handoff_router import internal_router as handoff_internal_router
 from handoff_router import router as handoff_router
 from jeli_output_guard import sanitize_reply
 from jeli_service import build_system_prompt, gather_context, stream_chat
@@ -155,6 +156,7 @@ app.include_router(twofa_router)
 app.include_router(passkeys_router)
 app.include_router(stepup_router)
 app.include_router(handoff_router)
+app.include_router(handoff_internal_router)
 app.include_router(whatif_router)
 app.include_router(goals_router)
 app.include_router(monthly_report_router)
