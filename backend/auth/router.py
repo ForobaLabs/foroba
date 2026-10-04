@@ -185,9 +185,11 @@ def consents_accept(
 ) -> None:
     """Record new consent for one or more legal documents at their current version."""
     ip = request.client.host if request.client else None
-    for doc in body.documents:
+    documents = list(dict.fromkeys(body.documents))  # idempotent: dedupe within the request
+    for doc in documents:
         if doc not in _REQUIRED_DOCS:
             raise HTTPException(status_code=400, detail=f"unknown document: {doc}")
+    for doc in documents:
         repo.record_consent(
             conn,
             user_id=user["id"],

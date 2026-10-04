@@ -412,7 +412,7 @@ def record_consent(
     ip_address: str | None,
 ) -> None:
     conn.execute(
-        "INSERT INTO consents (user_id, document_type, document_version, ip_address) "
+        "INSERT OR IGNORE INTO consents (user_id, document_type, document_version, ip_address) "
         "VALUES (?, ?, ?, ?)",
         (user_id, document_type, document_version, ip_address),
     )
@@ -423,7 +423,7 @@ def latest_consent_versions(conn: sqlite3.Connection, user_id: int) -> dict[str,
     """Return {document_type: most-recently-accepted version} for a user."""
     rows = conn.execute(
         "SELECT document_type, document_version FROM consents "
-        "WHERE user_id = ? ORDER BY accepted_at ASC",
+        "WHERE user_id = ? ORDER BY id ASC",
         (user_id,),
     ).fetchall()
     latest: dict[str, str] = {}

@@ -293,8 +293,24 @@ def _split_full_name(name: str) -> tuple[str, str]:
     return first, last
 
 
+# AI-4-F4: one consent row per (user, document, version). Not in SCHEMA because databases
+# that already hold duplicate rows would fail the CREATE UNIQUE INDEX there; the redundant
+# copies are dropped first (the earliest row keeps the true first-acceptance timestamp).
+CONSENT_DEDUPE_SQL = (
+    "DELETE FROM consents WHERE id NOT IN ("
+    "SELECT MIN(id) FROM consents GROUP BY user_id, document_type, document_version)"
+)
+CONSENT_UNIQUE_INDEX_SQL = (
+    "CREATE UNIQUE INDEX IF NOT EXISTS idx_consents_user_doc_version "
+    "ON consents(user_id, document_type, document_version)"
+)
+
+
 def init_schema(conn: sqlite3.Connection) -> None:
     conn.executescript(SCHEMA)
+    conn.commit()
+    conn.execute(CONSENT_DEDUPE_SQL)
+    conn.execute(CONSENT_UNIQUE_INDEX_SQL)
     conn.commit()
     # Idempotent migration: add is_admin column if it doesn't exist
     try:
