@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Navigate, useNavigate } from "react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { startAuthentication } from "@simplewebauthn/browser";
-import { Button, Card, Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Input } from "@foroba/ui";
+import { Button, Card, Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Input, PasswordInput } from "@foroba/ui";
 import { useAuth } from "../auth/AuthProvider";
 import {
   confirmPasswordReset,
@@ -330,9 +330,8 @@ export function LoginPage() {
             <label htmlFor="password" className="text-sm text-[var(--color-text-secondary)]">
               {t("login.password")}
             </label>
-            <Input
+            <PasswordInput showLabel={t("login.showPassword")} hideLabel={t("login.hidePassword")}
               id="password"
-              type="password"
               autoComplete="current-password"
               required
               value={password}
@@ -410,8 +409,7 @@ export function LoginPage() {
                 required
                 autoComplete="one-time-code"
               />
-              <Input
-                type="password"
+              <PasswordInput showLabel={t("login.showPassword")} hideLabel={t("login.hidePassword")}
                 placeholder={t("login.newPassword")}
                 value={forgotNewPw}
                 onChange={(e) => setForgotNewPw(e.target.value)}
@@ -419,8 +417,7 @@ export function LoginPage() {
                 minLength={8}
                 autoComplete="new-password"
               />
-              <Input
-                type="password"
+              <PasswordInput showLabel={t("login.showPassword")} hideLabel={t("login.hidePassword")}
                 placeholder={t("login.confirmNewPassword")}
                 value={forgotNewPwConfirm}
                 onChange={(e) => setForgotNewPwConfirm(e.target.value)}

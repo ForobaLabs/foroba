@@ -1,7 +1,8 @@
 import { useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { startRegistration } from "@simplewebauthn/browser";
-import { Button, Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Input } from "@foroba/ui";
+import { Button, Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Input, PasswordInput } from "@foroba/ui";
 import {
   changePassword,
   deleteAccount,
@@ -41,6 +42,7 @@ const METHOD_ROWS: { key: MethodKey; label: string }[] = [
 ];
 
 export function SecuritySettingsSection() {
+  const { t } = useTranslation();
   const qc = useQueryClient();
   const { data: mfa } = useQuery({ queryKey: ["mfa-methods"], queryFn: fetchMfaMethods });
   const { data: consents } = useQuery({ queryKey: ["consents"], queryFn: fetchConsents });
@@ -249,8 +251,7 @@ export function SecuritySettingsSection() {
           <form onSubmit={handleChangePassword} className="flex flex-col gap-3">
             <label className="flex flex-col gap-1 text-xs text-[var(--color-text-secondary)]">
               Current password
-              <Input
-                type="password"
+              <PasswordInput showLabel={t("login.showPassword")} hideLabel={t("login.hidePassword")}
                 value={currentPw}
                 onChange={(e) => setCurrentPw(e.target.value)}
                 autoComplete="current-password"
@@ -259,8 +260,7 @@ export function SecuritySettingsSection() {
             </label>
             <label className="flex flex-col gap-1 text-xs text-[var(--color-text-secondary)]">
               New password
-              <Input
-                type="password"
+              <PasswordInput showLabel={t("login.showPassword")} hideLabel={t("login.hidePassword")}
                 value={newPw}
                 onChange={(e) => setNewPw(e.target.value)}
                 autoComplete="new-password"
@@ -270,8 +270,7 @@ export function SecuritySettingsSection() {
             </label>
             <label className="flex flex-col gap-1 text-xs text-[var(--color-text-secondary)]">
               Confirm new password
-              <Input
-                type="password"
+              <PasswordInput showLabel={t("login.showPassword")} hideLabel={t("login.hidePassword")}
                 value={newPwConfirm}
                 onChange={(e) => setNewPwConfirm(e.target.value)}
                 autoComplete="new-password"
@@ -511,8 +510,7 @@ export function SecuritySettingsSection() {
           <div className="flex flex-col gap-3">
             <label className="flex flex-col gap-1 text-xs text-[var(--color-text-secondary)]">
               Confirm your password
-              <Input
-                type="password"
+              <PasswordInput showLabel={t("login.showPassword")} hideLabel={t("login.hidePassword")}
                 value={deletePassword}
                 onChange={(e) => setDeletePassword(e.target.value)}
                 autoComplete="current-password"

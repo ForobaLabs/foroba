@@ -184,3 +184,13 @@ test("signs in with a passkey directly, without ever submitting a password", asy
 
   await waitFor(() => expect(screen.getByText("Home")).toBeInTheDocument());
 });
+
+test("password field is masked by default and can be revealed with the eye toggle", async () => {
+  renderPage();
+  const input = (await screen.findByLabelText("Password")) as HTMLInputElement;
+  expect(input.type).toBe("password");
+  fireEvent.click(screen.getByRole("button", { name: "Show password" }));
+  expect(input.type).toBe("text");
+  fireEvent.click(screen.getByRole("button", { name: "Hide password" }));
+  expect(input.type).toBe("password");
+});

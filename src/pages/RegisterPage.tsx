@@ -6,6 +6,7 @@ import {
   Button,
   Card,
   Input,
+  PasswordInput,
   Select,
   SelectContent,
   SelectItem,
@@ -158,9 +159,8 @@ export function RegisterPage() {
             <label htmlFor="password" className="text-sm text-[var(--color-text-secondary)]">
               {t("register.password")}
             </label>
-            <Input
+            <PasswordInput showLabel={t("login.showPassword")} hideLabel={t("login.hidePassword")}
               id="password"
-              type="password"
               autoComplete="new-password"
               minLength={8}
               required
@@ -193,9 +193,8 @@ export function RegisterPage() {
             <label htmlFor="password-confirm" className="text-sm text-[var(--color-text-secondary)]">
               {t("register.passwordConfirm")}
             </label>
-            <Input
+            <PasswordInput showLabel={t("login.showPassword")} hideLabel={t("login.hidePassword")}
               id="password-confirm"
-              type="password"
               autoComplete="new-password"
               required
               value={passwordConfirm}

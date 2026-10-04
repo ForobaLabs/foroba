@@ -4,6 +4,7 @@ import {
   AdminUsersTable,
   KpiCard,
   PageContainer,
+  PasswordInput,
   SectionHeader,
   StatusCard,
   useAdminSettings,
@@ -356,12 +357,10 @@ function AdminBackupPanel(): React.ReactElement {
           Downloads one encrypted file containing Foroba, Naforo, and Yiriba data.
           The passphrase is never stored anywhere — write it down, you'll need it to restore.
         </p>
-        <input
-          type="password"
+        <PasswordInput
           value={exportPassphrase}
           onChange={(e) => setExportPassphrase(e.target.value)}
           placeholder="Backup passphrase"
-          className="w-full mb-2 px-3 py-2 rounded border border-[var(--color-border)] bg-transparent text-[var(--color-text-primary)]"
         />
         <button
           onClick={handleExport}
@@ -384,12 +383,10 @@ function AdminBackupPanel(): React.ReactElement {
           onChange={(e) => setImportFile(e.target.files?.[0] ?? null)}
           className="w-full mb-2 text-sm text-[var(--color-text-primary)]"
         />
-        <input
-          type="password"
+        <PasswordInput
           value={importPassphrase}
           onChange={(e) => setImportPassphrase(e.target.value)}
           placeholder="Backup passphrase"
-          className="w-full mb-2 px-3 py-2 rounded border border-[var(--color-border)] bg-transparent text-[var(--color-text-primary)]"
         />
         <button
           onClick={handleImport}

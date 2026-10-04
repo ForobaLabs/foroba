@@ -390,6 +390,8 @@
     "title": "Accedi a Foroba",
     "email": "Email",
     "password": "Password",
+    "showPassword": "Mostra password",
+    "hidePassword": "Nascondi password",
     "signIn": "Accedi",
     "signingIn": "Accesso in corso…",
     "passkey": "Accedi con passkey",
