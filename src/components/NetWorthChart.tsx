@@ -1,6 +1,7 @@
 import { useRechartsTheme } from '@foroba/ui/charts';
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { useCurrency } from '../contexts/CurrencyContext';
+import { netWorthDomain, signedTick } from '../lib/netWorthAxis';
 
 interface DataPoint {
   date: string;
@@ -41,10 +42,12 @@ export function NetWorthChart({ data }: NetWorthChartProps) {
           tickFormatter={(v: string) => new Date(v).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
         />
         <YAxis
+          width="auto"
+          domain={netWorthDomain(data)}
           tick={theme.axis.tick}
           axisLine={theme.axis.axisLine}
           tickLine={theme.axis.tickLine}
-          tickFormatter={(v: number) => formatMoney(v)}
+          tickFormatter={(v: number) => signedTick(v, formatMoney)}
         />
         <Tooltip
           contentStyle={theme.tooltip.contentStyle}

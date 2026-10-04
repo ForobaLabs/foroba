@@ -231,7 +231,7 @@ export function SecuritySettingsSection() {
         <button
           type="button"
           onClick={() => setChangePwOpen(true)}
-          className="text-xs font-semibold text-[var(--color-accent)]"
+          className="inline-flex min-h-6 min-w-6 items-center justify-center text-xs font-semibold text-[var(--color-accent-text)]"
         >
           Change
         </button>
@@ -386,7 +386,7 @@ export function SecuritySettingsSection() {
               aria-label={`Remove ${label}`}
               disabled={savingKey === key || enabledCount <= 1}
               onClick={() => handleRemove(key)}
-              className="text-xs font-semibold text-[var(--color-negative)] disabled:cursor-not-allowed disabled:text-[var(--color-text-secondary)]"
+              className="inline-flex min-h-6 min-w-6 items-center justify-center text-xs font-semibold text-[var(--color-negative)] disabled:cursor-not-allowed disabled:text-[var(--color-text-secondary)]"
             >
               Remove
             </button>
@@ -402,7 +402,7 @@ export function SecuritySettingsSection() {
           type="button"
           disabled={savingKey === "recovery"}
           onClick={handleRegenerate}
-          className="text-xs font-semibold text-[var(--color-accent)] disabled:cursor-not-allowed"
+          className="inline-flex min-h-6 min-w-6 items-center justify-center text-xs font-semibold text-[var(--color-accent-text)] disabled:cursor-not-allowed"
         >
           Regenerate
         </button>
@@ -469,7 +469,7 @@ export function SecuritySettingsSection() {
                 type="button"
                 disabled={revokingSession === s.id}
                 onClick={() => handleRevokeSession(s.id)}
-                className="shrink-0 text-xs font-semibold text-[var(--color-negative)] disabled:cursor-not-allowed disabled:text-[var(--color-text-secondary)]"
+                className="inline-flex min-h-6 min-w-6 items-center justify-center shrink-0 text-xs font-semibold text-[var(--color-negative)] disabled:cursor-not-allowed disabled:text-[var(--color-text-secondary)]"
               >
                 {revokingSession === s.id ? "Revoking…" : "Revoke"}
               </button>
