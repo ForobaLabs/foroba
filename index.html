@@ -1,6 +1,8 @@
 <!doctype html>
 <html lang="en" data-app="kelen">
   <head>
+    <!-- nginx replaces __CSP_NONCE__ per response (style-src nonce); see foroba-ui applyCspNonce -->
+    <meta name="csp-nonce" content="__CSP_NONCE__" />
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="icon" type="image/x-icon" href="/favicon.ico" sizes="any" />

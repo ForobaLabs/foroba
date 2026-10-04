@@ -1,3 +1,4 @@
+import { applyCspNonce } from '@foroba/ui';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
@@ -11,6 +12,9 @@ import { PrivacyProvider } from './contexts/PrivacyContext';
 import '@fontsource-variable/geist';
 import '@fontsource-variable/geist-mono';
 import './global.css';
+
+// Per-response CSP nonce from nginx, for runtime <style> injectors (Radix scroll lock); no-op in dev.
+applyCspNonce();
 
 const queryClient = new QueryClient({
   defaultOptions: {
