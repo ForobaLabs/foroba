@@ -18,7 +18,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
-from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request as StarletteRequest
@@ -58,7 +57,7 @@ from observability import init_error_tracking
 from onboarding.router import router as onboarding_router
 from passkeys.router import router as passkeys_router
 from public_api_router import router as public_api_router
-from rate_limit import limiter, session_rate_limit_key
+from rate_limit import limiter, rate_limit_exceeded_handler, session_rate_limit_key
 from report_scheduler import start_report_scheduler
 from retention_job import start_retention_scheduler
 from settings_store import init_settings
@@ -90,7 +89,7 @@ app = FastAPI(
 )
 
 app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
 
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):

@@ -7,11 +7,23 @@ routers).
 
 from __future__ import annotations
 
-from fastapi import Request
-from slowapi import Limiter
+from fastapi import Request, Response
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
 
 limiter = Limiter(key_func=get_remote_address)
+
+
+def rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded) -> Response:
+    """429 handler that also sends `Retry-After` (seconds until the window resets).
+
+    slowapi only injects it when `headers_enabled=True`, which in turn requires every
+    endpoint to accept a `response` param; computing it here keeps endpoints untouched.
+    """
+    response = _rate_limit_exceeded_handler(request, exc)
+    response.headers["Retry-After"] = str(int(exc.limit.limit.get_expiry()))
+    return response
 
 
 def session_rate_limit_key(request: Request) -> str:
