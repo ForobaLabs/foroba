@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import secrets
 from datetime import UTC, datetime, timedelta
 
 import bcrypt as _bcrypt_lib
@@ -35,6 +36,19 @@ def verify_password(plain: str, hashed: str) -> bool:
         return True
     except (VerifyMismatchError, VerificationError, InvalidHashError):
         return False
+
+
+# Verified against when the account does not exist, so unknown and known emails cost the same
+# one argon2 verification (AI-6-F14, user enumeration by response time).
+_DUMMY_HASH = _ph.hash(secrets.token_hex(16))
+
+
+def check_password(plain: str, user: dict | None) -> bool:
+    """Verify `plain` for `user`; always performs exactly one hash verification."""
+    if user is None:
+        verify_password(plain, _DUMMY_HASH)
+        return False
+    return verify_password(plain, user["password_hash"])
 
 
 def needs_rehash(hashed: str) -> bool:

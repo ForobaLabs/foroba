@@ -54,7 +54,7 @@ from auth.models import (
     ShowDebtsRequest,
     UserPublic,
 )
-from auth.security import create_token, hash_password, needs_rehash, verify_password
+from auth.security import check_password, create_token, hash_password, needs_rehash, verify_password
 from auth.session_invalidation import invalidate_sessions_downstream
 from billing.provider import BillingProviderError, get_provider
 from config import settings
@@ -290,7 +290,7 @@ def login(
         raise HTTPException(status.HTTP_423_LOCKED, "Account temporarily locked. Try again later.")
     if user is not None and user.get("account_disabled"):
         raise HTTPException(status.HTTP_403_FORBIDDEN, "This account has been disabled.")
-    if user is None or not verify_password(req.password, user["password_hash"]):
+    if not check_password(req.password, user):
         if user is not None:
             repo.register_failed_login(conn, user["id"])
         _ip = request.client.host if request.client else None

@@ -21,7 +21,7 @@ from auth import repository as repo
 from auth.conn import get_conn
 from auth.dependencies import get_current_user
 from auth.models import UserPublic
-from auth.security import create_token, hash_password, needs_rehash, verify_password
+from auth.security import check_password, create_token, hash_password, needs_rehash
 from config import settings
 from email_otp import verify_and_consume as verify_email_otp
 from rate_limit import limiter
@@ -91,7 +91,7 @@ def token(
 
     user = repo.get_user_by_email(conn, req.email)
     _guard_account(user)
-    if user is None or not verify_password(req.password, user["password_hash"]):
+    if not check_password(req.password, user):
         if user is not None:
             repo.register_failed_login(conn, user["id"])
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid credentials")
