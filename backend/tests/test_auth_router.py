@@ -1,4 +1,5 @@
 import sqlite3
+from typing import ClassVar
 
 import httpx
 import pytest
@@ -360,7 +361,10 @@ class _FakeAsyncClient:
     async def __aexit__(self, *exc_info):
         return False
 
+    seen_cookies: ClassVar[list] = []
+
     async def delete(self, url, cookies=None):
+        type(self).seen_cookies.append(cookies)
         if self._raise_error:
             raise httpx.ConnectError("simulated upstream failure")
         return _FakeResponse(self._status_code)
@@ -505,3 +509,28 @@ def test_delete_account_cancel_failure_502_and_nothing_erased(monkeypatch):
     assert r.status_code == 502
     assert "subscription" in r.json()["detail"].lower()
     assert conn.execute("SELECT count(*) FROM users WHERE id = ?", (uid,)).fetchone()[0] == 1
+
+
+def test_delete_account_bearer_only_client_forwards_session_to_apps(monkeypatch):
+    """Mobile clients authenticate with a Bearer JWT and hold no suite_session cookie;
+    Pazuru/Tsumi's require_auth still needs a session, so Foroba must forward the one
+    it resolved (else both answer 401 and deletion fails with a 502)."""
+    client, _conn = _client_with_conn()
+    _register(client, email="bearer@y.com")
+    token = client.cookies.get("suite_session")
+    assert token
+    client.cookies.clear()
+    _FakeAsyncClient.seen_cookies = []
+    monkeypatch.setattr(
+        "auth.router.httpx.AsyncClient", lambda *a, **kw: _FakeAsyncClient(status_code=204)
+    )
+    r = client.request(
+        "DELETE",
+        "/auth/account",
+        json={"password": "password123"},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert r.status_code == 204, r.text
+    assert len(_FakeAsyncClient.seen_cookies) == 2
+    for sent in _FakeAsyncClient.seen_cookies:
+        assert sent["suite_session"] == token

@@ -30,7 +30,7 @@ from auth import keys, refresh_tokens
 from auth import repository as repo
 from auth.avatar_storage import save_avatar
 from auth.conn import get_conn  # re-exported for tests that import it from here
-from auth.dependencies import get_current_user
+from auth.dependencies import _token_from_header, get_current_user
 from auth.models import (
     ChangePasswordRequest,
     ConsentRecord,
@@ -514,6 +514,7 @@ async def delete_account(
     user: dict = Depends(get_current_user),
     conn: sqlite3.Connection = Depends(get_conn),
     suite_session: str | None = Cookie(default=None),
+    authorization: str | None = Header(default=None),
 ) -> None:
     """foroba#183 — GDPR Art. 17 erasure, triggered by the user themselves. All-or-
     nothing across the 3 apps: aborts before touching Foroba's own tables if either
@@ -542,8 +543,11 @@ async def delete_account(
         ) from exc
 
     stepup = issue_stepup_cookies(user["id"])
+    # Bearer-authenticated clients (the mobile app) hold no suite_session cookie, but the
+    # downstream apps authenticate the erase call from that cookie, so forward the token.
+    session_token = suite_session or _token_from_header(authorization)
     cookies = suite_cookies(
-        suite_session, stepup_pazuru=stepup["pazuru"], stepup_tsumi=stepup["tsumi"]
+        session_token, stepup_pazuru=stepup["pazuru"], stepup_tsumi=stepup["tsumi"]
     )
     pazuru_base = settings.pazuru_api_url.rstrip("/")
     tsumi_base = settings.tsumi_api_url.rstrip("/")
