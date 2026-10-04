@@ -61,6 +61,7 @@ from public_api_router import router as public_api_router
 from rate_limit import limiter, rate_limit_exceeded_handler, session_rate_limit_key
 from report_scheduler import start_report_scheduler
 from retention_job import start_retention_scheduler
+from session_floors_router import router as session_floors_router
 from settings_store import init_settings
 from stepup import issue_stepup_cookies
 from stepup_router import router as stepup_router
@@ -157,6 +158,7 @@ app.include_router(passkeys_router)
 app.include_router(stepup_router)
 app.include_router(handoff_router)
 app.include_router(handoff_internal_router)
+app.include_router(session_floors_router)
 app.include_router(whatif_router)
 app.include_router(goals_router)
 app.include_router(monthly_report_router)
