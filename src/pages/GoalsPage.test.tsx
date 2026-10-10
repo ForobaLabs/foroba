@@ -48,6 +48,13 @@ describe('GoalsPage', () => {
     await i18n.changeLanguage('en');
   });
 
+  it('shows the not-advice boundary note in the active language (ID-25)', async () => {
+    mount();
+    expect((await screen.findByTestId('not-advice')).textContent).toMatch(/not financial advice/i);
+    await i18n.changeLanguage('it');
+    expect((await screen.findByTestId('not-advice')).textContent).toMatch(/non costituiscono consulenza/i);
+  });
+
   it('shows h1, subtitle and an empty state with a create action; no fake savings badge', async () => {
     mount();
     expect(screen.getByRole('heading', { level: 1, name: 'Financial goals' })).toBeInTheDocument();

@@ -10,6 +10,7 @@ import {
   suggestTargetDate,
   useGoals,
   useUserProfile,
+  NotAdvice,
 } from '@foroba/ui';
 import { parseDecimal } from '../lib/parseDecimal';
 import { usePrivacy } from '../contexts/PrivacyContext';
@@ -198,6 +199,7 @@ export function GoalsPage() {
         action={newButton}
         className="mb-6 flex-wrap"
       />
+      <NotAdvice locale={lang} kind="projection" className="mb-4" />
 
       <p data-testid="goals-separate-note" className="mb-4 text-sm text-[var(--color-text-secondary)]">
         {t('goals.separateNote')}{' '}
