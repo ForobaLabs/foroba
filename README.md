@@ -31,7 +31,6 @@ pnpm dev          # http://localhost:5173
 |---|---|---|
 | `VITE_PAZURU_API_URL` | `http://localhost:8001` | Pazuru FastAPI base URL |
 | `VITE_TSUMI_API_URL` | `http://localhost:8000` | Tsumi FastAPI base URL |
-| `FOROBA_UI_TOKEN` | — | GitLab Package Registry token for `@foroba/ui` |
 
 ## Scripts
 
@@ -58,6 +57,6 @@ pnpm lint       # ESLint
 
 ## Related repos
 
-- [`bambac961/foroba-ui`](https://gitlab.com/bambac961/foroba-ui) — shared design system
-- [`bambac961/pazuru`](https://gitlab.com/bambac961/pazuru) — bank accounts (SP3+)
-- [`bambac961/tsumi`](https://gitlab.com/bambac961/tsumi) — ETF + crypto portfolio (SP3+)
+- [`ForobaLabs/foroba-ui`](https://github.com/ForobaLabs/foroba-ui) — shared design system
+- [`ForobaLabs/pazuru`](https://github.com/ForobaLabs/pazuru) — bank accounts (SP3+)
+- [`ForobaLabs/tsumi`](https://github.com/ForobaLabs/tsumi) — ETF + crypto portfolio (SP3+)

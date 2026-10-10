@@ -1,0 +1,35 @@
+name: Security scan
+
+on:
+  workflow_call:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Replaces the GitLab SAST / Secret-Detection / SAST-IaC templates. Findings are surfaced
+# in the job logs; they do not block merges (same as the GitLab templates).
+jobs:
+  semgrep:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - run: pipx install semgrep && semgrep scan --config auto --error --quiet .
+  gitleaks:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Run gitleaks
+        run: |
+          curl -sSfL https://github.com/gitleaks/gitleaks/releases/download/v8.21.2/gitleaks_8.21.2_linux_x64.tar.gz | tar -xz gitleaks
+          ./gitleaks detect --source . --redact --verbose
+  kics:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker run --rm -v "$PWD:/src" checkmarx/kics:latest scan -p /src --ci

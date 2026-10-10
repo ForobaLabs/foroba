@@ -1,0 +1,129 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+    tags: ['v*']
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: foroba
+      # `@foroba/ui` is a monorepo-local `file:../foroba-ui` dependency, so the sibling
+      # checkout must be cloned + built here (private repo -> read-only deploy key).
+      - name: Clone foroba-ui sibling
+        env:
+          KEY: ${{ secrets.DEPLOY_KEY_FOROBA_UI }}
+        run: |
+          install -m 600 /dev/null "$RUNNER_TEMP/k" && printf '%s\n' "$KEY" > "$RUNNER_TEMP/k"
+          GIT_SSH_COMMAND="ssh -i $RUNNER_TEMP/k -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new" \
+            git clone --depth 1 git@github.com:ForobaLabs/foroba-ui.git foroba-ui
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.6.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Build foroba-ui
+        working-directory: foroba-ui
+        run: pnpm install --frozen-lockfile --ignore-scripts && pnpm build
+      - name: Install
+        working-directory: foroba
+        run: pnpm install --frozen-lockfile --ignore-scripts
+      - name: Typecheck
+        working-directory: foroba
+        run: pnpm exec tsc --noEmit
+      - name: Test
+        working-directory: foroba
+        run: pnpm test --run
+      - name: Build
+        if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
+        working-directory: foroba
+        run: pnpm build
+      - name: Upload dist
+        if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: foroba/dist/
+          retention-days: 7
+      - name: pnpm audit (informational)
+        if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
+        working-directory: foroba
+        continue-on-error: true
+        run: pnpm audit --json > pnpm-audit-report.json || true
+      - uses: actions/upload-artifact@v4
+        if: always() && (github.event_name == 'pull_request' || github.ref == 'refs/heads/main')
+        with:
+          name: pnpm-audit-report
+          path: foroba/pnpm-audit-report.json
+          retention-days: 30
+          if-no-files-found: ignore
+
+  # CVE reports are informational (transitive-dep CVEs must not block merges until fixable).
+  backend-security:
+    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: |
+          pip install pip-audit bandit -q
+          pip-audit --requirement backend/requirements.txt --format json --output pip-audit-report.json || true
+          bandit -r backend/ --exclude backend/.venv,backend/tests -f json -o bandit-report.json || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: backend-security-reports
+          path: |
+            pip-audit-report.json
+            bandit-report.json
+          retention-days: 30
+
+  sast:
+    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
+    uses: ./.github/workflows/security-scan.yml
+
+  docker-build:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: frontend
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: foroba
+      - name: Clone foroba-ui sibling (Dockerfile expects it in the build context)
+        env:
+          KEY: ${{ secrets.DEPLOY_KEY_FOROBA_UI }}
+        run: |
+          install -m 600 /dev/null "$RUNNER_TEMP/k" && printf '%s\n' "$KEY" > "$RUNNER_TEMP/k"
+          GIT_SSH_COMMAND="ssh -i $RUNNER_TEMP/k -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new" \
+            git clone --depth 1 git@github.com:ForobaLabs/foroba-ui.git foroba-ui
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build and push
+        run: |
+          IMAGE=ghcr.io/forobalabs/foroba
+          docker build -f foroba/Dockerfile -t "$IMAGE:${GITHUB_SHA::8}" -t "$IMAGE:latest" .
+          docker push "$IMAGE:${GITHUB_SHA::8}"
+          docker push "$IMAGE:latest"

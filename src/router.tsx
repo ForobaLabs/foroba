@@ -69,7 +69,7 @@ export const router = createBrowserRouter([
       { path: 'reports/monthly', element: <Suspense fallback={<Loading />}><MonthlyReportPage /></Suspense> },
       { path: 'developer', element: <Suspense fallback={<Loading />}><DeveloperPage /></Suspense> },
       { path: 'admin',     element: <Suspense fallback={<Loading />}><AdminPage /></Suspense> },
-      { path: 'help',      element: <HelpPage faqItems={FOROBA_FAQ} gitlabIssueUrl="https://gitlab.com/bambac961/foroba/-/issues" /> },
+      { path: 'help',      element: <HelpPage faqItems={FOROBA_FAQ} issueTrackerUrl="https://github.com/ForobaLabs/foroba/issues" /> },
       { path: 'legal',    element: <LegalPage privacyPolicy={PRIVACY_POLICY} termsOfService={TERMS_OF_SERVICE} fiscalDisclaimer={FISCAL_DISCLAIMER} /> },
       { path: 'security', element: <SecurityPage /> },
       { path: 'about',    element: <AboutPage appName="Kelen" version={__APP_VERSION__} /> },
