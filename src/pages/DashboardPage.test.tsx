@@ -11,7 +11,8 @@ const netWorth = vi.fn();
 vi.mock('../hooks/useNetWorth', () => ({ useNetWorth: () => netWorth() }));
 vi.mock('../auth/AuthProvider', () => ({ useAuth: () => ({ user: { display_currency: 'EUR', show_debts: false } }) }));
 vi.mock('../api/foroba', () => ({ fetchFxRates: vi.fn().mockResolvedValue({ rates: {} }) }));
-vi.mock('../components/NetWorthChart', () => ({ NetWorthChart: () => null }));
+vi.mock('../components/NetWorthChart', () => ({ NetWorthChart: () => <div data-testid="nw-chart" /> }));
+vi.mock('../components/OnboardingChecklist', () => ({ OnboardingChecklist: () => <div data-testid="onboarding" /> }));
 vi.mock('../components/AllocationPie', () => ({ AllocationPie: () => null }));
 vi.mock('../components/FinanceTipsCard', () => ({ FinanceTipsCard: () => null }));
 vi.mock('../components/ServiceStatusBar', () => ({ ServiceStatusBar: () => null }));
@@ -95,5 +96,26 @@ describe('DashboardPage', () => {
     expect(screen.getByRole('link', { name: /Cash \(Naforo\)/ })).toHaveAttribute('href', '/accounts');
     expect(screen.getByRole('link', { name: /Portfolio \(Yiriba\)/ })).toHaveAttribute('href', '/portfolio');
     expect(screen.queryAllByRole('button', { name: /Cash/ })).toHaveLength(0);
+  });
+
+  it('puts the total and the main chart before sub-KPIs, allocation and onboarding', () => {
+    netWorth.mockReturnValue(ok(100, 60, 40));
+    mount();
+    const order = (a: Element, b: Element) => a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING;
+    const total = screen.getByTestId('net-worth');
+    const chart = screen.getByTestId('nw-chart');
+    expect(order(total, chart)).toBeTruthy();
+    expect(order(chart, screen.getByRole('link', { name: /Cash \(Naforo\)/ }))).toBeTruthy();
+    expect(order(chart, screen.getByText('Allocation'))).toBeTruthy();
+    expect(order(chart, screen.getByTestId('onboarding'))).toBeTruthy();
+  });
+
+  it('empty state collapses data widgets into the single get-started card', () => {
+    netWorth.mockReturnValue(ok(0));
+    mount();
+    expect(screen.getByTestId('onboarding')).toBeInTheDocument();
+    expect(screen.queryByTestId('nw-chart')).toBeNull();
+    expect(screen.queryByText('Allocation')).toBeNull();
+    expect(screen.queryByRole('link', { name: /Cash \(Naforo\)/ })).toBeNull();
   });
 });

@@ -72,8 +72,6 @@ export function DashboardPage() {
 
       <ServiceStatusBar />
 
-      <OnboardingChecklist />
-
       {degradedSources.length > 0 && (
         <div className="mt-4">
           <Badge variant="warning">
@@ -123,6 +121,19 @@ export function DashboardPage() {
         )}
       </div>
 
+      {!isEmpty && !isError && (
+        <>
+          <Card className="mt-6">
+            <CardContent className="p-4">
+              <h2 className="mb-3 text-sm font-medium text-[var(--color-text-secondary)]">
+                {t('dashboard.netWorthOverTime')}
+              </h2>
+              <NetWorthChart data={data?.history ?? []} events={data?.events ?? []} />
+            </CardContent>
+          </Card>
+        </>
+      )}
+
       {/* Sub KPIs */}
       {!isEmpty && !isError && (
         <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -155,15 +166,6 @@ export function DashboardPage() {
 
       {!isEmpty && !isError && (
         <>
-          <Card className="mt-6">
-            <CardContent className="p-4">
-              <h2 className="mb-3 text-sm font-medium text-[var(--color-text-secondary)]">
-                {t('dashboard.netWorthOverTime')}
-              </h2>
-              <NetWorthChart data={data?.history ?? []} events={data?.events ?? []} />
-            </CardContent>
-          </Card>
-
           <Card className="mt-4">
             <CardContent className="p-4">
               <h2 className="mb-3 text-sm font-medium text-[var(--color-text-secondary)]">{t('dashboard.allocation')}</h2>
@@ -176,6 +178,9 @@ export function DashboardPage() {
           </Card>
         </>
       )}
+
+      {/* Onboarding: the single "Get started" card; empty widgets below stay collapsed */}
+      <OnboardingChecklist />
 
       {/* Goal streaks */}
       <StreaksWidget />
