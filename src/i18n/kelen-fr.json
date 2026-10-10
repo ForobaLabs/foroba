@@ -193,7 +193,22 @@
     },
     "saveError": "Nous n'avons pas pu enregistrer votre modification. Vérifiez votre connexion et réessayez.",
     "separateNote": "Ces objectifs sont distincts de ceux de Naforo. Les deux listes ne sont pas fusionnées.",
-    "separateLink": "Ouvrir les objectifs de Naforo"
+    "separateLink": "Ouvrir les objectifs de Naforo",
+    "whatIf": {
+      "heading": "Et si… ?",
+      "title": "Simulation pour {{title}}",
+      "monthly": "Versement mensuel",
+      "date": "Date",
+      "rate": "Rendement annuel supposé",
+      "never": "À ce rythme, l'objectif n'est pas atteint en 30 ans.",
+      "reach": "À ce rythme, vous atteignez l'objectif vers {{date}} ({{months}} mois).",
+      "onTrack": "D'ici {{date}}, vous auriez {{balance}}, au-dessus de l'objectif de {{target}}.",
+      "short": "D'ici {{date}}, vous auriez {{balance}} sur {{target}}.",
+      "chartAria": "Solde projeté dans le temps par rapport à l'objectif",
+      "share": "Partager un lien en lecture seule",
+      "shared": "Lien copié · valable 7 jours :",
+      "shareError": "Impossible de créer le lien. Réessayez."
+    }
   },
   "household": {
     "title": "Foyer",
@@ -567,5 +582,17 @@
       "import": "Ajoutez un compte ou importez des transactions",
       "goal": "Définissez votre premier objectif"
     }
+  },
+  "share": {
+    "eyebrow": "Projection d'un objectif partagé",
+    "invalidTitle": "Ce lien n'est pas valide",
+    "invalidMessage": "Il a peut-être expiré ou comporte une erreur. Demandez un nouveau lien à l'expéditeur.",
+    "target": "Objectif",
+    "saved": "Épargné à ce jour",
+    "monthly": "Versement mensuel",
+    "rate": "Rendement annuel supposé",
+    "never": "À ce rythme, l'objectif n'est pas atteint en 30 ans.",
+    "reach": "À ce rythme, l'objectif est atteint vers {{date}} ({{months}} mois).",
+    "expires": "Lien valable jusqu'au {{date}}. Lecture seule ; il ne contient que les chiffres ci-dessus."
   }
 }

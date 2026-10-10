@@ -193,7 +193,22 @@
     },
     "saveError": "We couldn't save your change. Check your connection and try again.",
     "separateNote": "These goals are separate from the goals in Naforo. The two lists are not merged.",
-    "separateLink": "Open the Naforo goals"
+    "separateLink": "Open the Naforo goals",
+    "whatIf": {
+      "heading": "What if…?",
+      "title": "What-if for {{title}}",
+      "monthly": "Monthly contribution",
+      "date": "Date",
+      "rate": "Assumed yearly return",
+      "never": "At this pace the target isn't reached within 30 years.",
+      "reach": "At this pace you reach the target around {{date}} ({{months}} months).",
+      "onTrack": "By {{date}} you'd have {{balance}}, above the {{target}} target.",
+      "short": "By {{date}} you'd have {{balance}} of {{target}}.",
+      "chartAria": "Projected balance over time against the target",
+      "share": "Share read-only link",
+      "shared": "Link copied · valid 7 days:",
+      "shareError": "Couldn't create the link. Try again."
+    }
   },
   "household": {
     "title": "Household",
@@ -567,5 +582,17 @@
       "import": "Add an account or import transactions",
       "goal": "Set your first goal"
     }
+  },
+  "share": {
+    "eyebrow": "Shared goal projection",
+    "invalidTitle": "This link isn't valid",
+    "invalidMessage": "It may have expired or been mistyped. Ask the sender for a new one.",
+    "target": "Target",
+    "saved": "Saved so far",
+    "monthly": "Monthly contribution",
+    "rate": "Assumed yearly return",
+    "never": "At this pace the target isn't reached within 30 years.",
+    "reach": "At this pace the target is reached around {{date}} ({{months}} months).",
+    "expires": "Link valid until {{date}}. Read-only; it contains only the figures above."
   }
 }

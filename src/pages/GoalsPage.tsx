@@ -12,6 +12,7 @@ import {
   useUserProfile,
   NotAdvice,
 } from '@foroba/ui';
+import { GoalWhatIf } from '../components/GoalWhatIf';
 import { parseDecimal } from '../lib/parseDecimal';
 import { usePrivacy } from '../contexts/PrivacyContext';
 import { GOAL_TITLE_MAX, validateGoal, type GoalField } from './goals/validateGoal';
@@ -155,6 +156,13 @@ export function GoalsPage() {
       <div className="[overflow-wrap:anywhere]">
         <GoalCard goal={goal} onUpdate={completed ? undefined : (g) => void guarded(() => updateGoal(g.id, g))} />
       </div>
+      {!completed && (
+        <GoalWhatIf
+          goal={{ title: goal.title, targetAmount: goal.targetAmount, currentAmount: goal.currentAmount, monthlyContribution: goal.monthlyContribution }}
+          currency={currency}
+          hidden={isPrivate}
+        />
+      )}
       {confirmId === goal.id ? (
         <div role="alertdialog" aria-label={t('goals.removeAria', { title: goal.title })} className="mt-2 flex flex-wrap items-center gap-2 rounded-lg border border-[var(--color-negative)]/40 px-3 py-2">
           <p className="min-w-0 flex-1 text-sm text-[var(--color-text-primary)] [overflow-wrap:anywhere]">

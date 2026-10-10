@@ -28,6 +28,7 @@ const JeliLabPage       = lazy(() => import('./pages/JeliLabPage').then(m => ({ 
 const StatusPage        = lazy(() => import('./pages/StatusPage').then(m => ({ default: m.StatusPage })));
 const WhatIfPage        = lazy(() => import('./pages/WhatIfPage').then(m => ({ default: m.WhatIfPage })));
 const MonthlyReportPage = lazy(() => import('./pages/MonthlyReportPage').then(m => ({ default: m.MonthlyReportPage })));
+const SharedGoalPage     = lazy(() => import('./pages/SharedGoalPage').then(m => ({ default: m.SharedGoalPage })));
 const DeveloperPage      = lazy(() => import('./pages/DeveloperPage').then(m => ({ default: m.DeveloperPage })));
 
 const Loading = () => (
@@ -41,6 +42,7 @@ export const router = createBrowserRouter([
   { path: '/register', element: <RegisterPage /> },
   { path: '/enroll',     element: <EnrollmentWizard /> },
   { path: '/re-consent', element: <ReConsentPage /> },
+  { path: '/share/goal/:token', element: <Suspense fallback={<Loading />}><SharedGoalPage /></Suspense> },
   { path: '/status',   element: <Suspense fallback={<Loading />}><StatusPage /></Suspense> },
   {
     path: '/onboarding',

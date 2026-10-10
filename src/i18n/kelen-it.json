@@ -193,7 +193,22 @@
     },
     "saveError": "Non siamo riusciti a salvare la modifica. Controlla la connessione e riprova.",
     "separateNote": "Questi obiettivi sono separati da quelli in Naforo. Le due liste non vengono unite.",
-    "separateLink": "Apri gli obiettivi di Naforo"
+    "separateLink": "Apri gli obiettivi di Naforo",
+    "whatIf": {
+      "heading": "E se…?",
+      "title": "Simulazione per {{title}}",
+      "monthly": "Versamento mensile",
+      "date": "Data",
+      "rate": "Rendimento annuo ipotizzato",
+      "never": "Con questo ritmo l'obiettivo non viene raggiunto entro 30 anni.",
+      "reach": "Con questo ritmo raggiungi l'obiettivo intorno a {{date}} ({{months}} mesi).",
+      "onTrack": "Entro {{date}} avresti {{balance}}, sopra l'obiettivo di {{target}}.",
+      "short": "Entro {{date}} avresti {{balance}} su {{target}}.",
+      "chartAria": "Saldo previsto nel tempo rispetto all'obiettivo",
+      "share": "Condividi link di sola lettura",
+      "shared": "Link copiato · valido 7 giorni:",
+      "shareError": "Impossibile creare il link. Riprova."
+    }
   },
   "household": {
     "title": "Famiglia",
@@ -567,5 +582,17 @@
       "import": "Aggiungi un conto o importa le transazioni",
       "goal": "Imposta il tuo primo obiettivo"
     }
+  },
+  "share": {
+    "eyebrow": "Proiezione di un obiettivo condiviso",
+    "invalidTitle": "Questo link non è valido",
+    "invalidMessage": "Potrebbe essere scaduto o errato. Chiedi un nuovo link a chi lo ha inviato.",
+    "target": "Obiettivo",
+    "saved": "Risparmiato finora",
+    "monthly": "Versamento mensile",
+    "rate": "Rendimento annuo ipotizzato",
+    "never": "Con questo ritmo l'obiettivo non viene raggiunto entro 30 anni.",
+    "reach": "Con questo ritmo l'obiettivo viene raggiunto intorno a {{date}} ({{months}} mesi).",
+    "expires": "Link valido fino al {{date}}. Sola lettura; contiene solo le cifre sopra."
   }
 }
