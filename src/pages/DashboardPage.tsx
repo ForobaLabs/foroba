@@ -154,12 +154,14 @@ export function DashboardPage() {
             />
           </KpiLink>
           {user?.show_debts && snapshot?.debtsEur !== undefined && (
-            <KpiCard
-              label={`${t('dashboard.debts')} (Naforo)`}
-              value={formatMoney(-snapshot.debtsEur)}
-              loading={isLoading}
-              subtitle={t('dashboard.debtsHint')}
-            />
+            <div className="sm:col-span-2">
+              <KpiCard
+                label={`${t('dashboard.debts')} (Naforo)`}
+                value={formatMoney(-snapshot.debtsEur)}
+                loading={isLoading}
+                subtitle={t('dashboard.debtsHint')}
+              />
+            </div>
           )}
         </div>
       )}
