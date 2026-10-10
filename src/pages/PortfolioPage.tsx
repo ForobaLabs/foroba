@@ -1,21 +1,4 @@
-import {
-  Badge,
-  Button,
-  Card,
-  CardContent,
-  EmptyState,
-  ErrorState,
-  KpiCard,
-  LoadingState,
-  PageContainer,
-  SectionHeader,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@foroba/ui';
+import { Badge, Button, Card, CardContent, EmptyState, ErrorState, KpiCard, LoadingState, PageContainer, SectionHeader, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, formatCurrency as uiFormatCurrency } from '@foroba/ui';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router';
 import type { PortfolioAllocationGroup } from '../api/tsumi';
@@ -36,7 +19,7 @@ function ConnectInvestmentButton({ variant }: { variant?: 'outline' }) {
 }
 
 function formatCurrency(amount: number, currency = 'EUR', lang = 'en') {
-  return new Intl.NumberFormat(lang, { style: 'currency', currency }).format(amount);
+  return uiFormatCurrency(amount, currency, lang);
 }
 
 function AllocationTable({ title, groups }: { title: string; groups: PortfolioAllocationGroup[] }) {

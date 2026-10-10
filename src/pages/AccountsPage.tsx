@@ -1,16 +1,4 @@
-import {
-  Badge,
-  Button,
-  Card,
-  CardContent,
-  EmptyState,
-  ErrorState,
-  ExportButton,
-  KpiCard,
-  LoadingState,
-  PageContainer,
-  SectionHeader,
-} from '@foroba/ui';
+import { Badge, Button, Card, CardContent, EmptyState, ErrorState, ExportButton, KpiCard, LoadingState, PageContainer, SectionHeader, formatCurrency, formatNumber } from '@foroba/ui';
 import { useTranslation } from 'react-i18next';
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
@@ -111,11 +99,15 @@ export function AccountsPage() {
             label={t('data.common.total')}
             value={
               new Set(accounts.data.map((a) => a.currency)).size === 1
-                ? new Intl.NumberFormat(lang, {
-                    style: 'currency',
-                    currency: accounts.data[0].currency,
-                  }).format(accounts.data.reduce((sum, a) => sum + a.balance, 0))
-                : accounts.data.reduce((sum, a) => sum + a.balance, 0).toFixed(2)
+                ? formatCurrency(
+                    accounts.data.reduce((sum, a) => sum + a.balance, 0),
+                    accounts.data[0].currency,
+                    lang,
+                  )
+                : formatNumber(accounts.data.reduce((sum, a) => sum + a.balance, 0), lang, {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })
             }
             subtitle={
               new Set(accounts.data.map((a) => a.currency)).size === 1
@@ -132,10 +124,7 @@ export function AccountsPage() {
             >
               <KpiCard
                 label={`${BANK_LABELS[acc.bankName] ?? acc.bankName} — ${acc.displayName}`}
-                value={new Intl.NumberFormat(lang, {
-                  style: 'currency',
-                  currency: acc.currency,
-                }).format(acc.balance)}
+                value={formatCurrency(acc.balance, acc.currency, lang)}
               />
             </button>
           ))}

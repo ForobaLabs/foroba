@@ -107,9 +107,9 @@ function WhatIfBuilder() {
   function buildJeliContext(): string {
     const lines = [
       `Horizon: ${years} years`,
-      `Projected total net worth at end of horizon: €${lastPoint?.totalEur.toFixed(2) ?? 'n/a'}`,
+      `Projected total net worth at end of horizon: ${lastPoint ? formatCurrency(lastPoint.totalEur, "EUR", "en") : "n/a"}`,
     ];
-    if (delta !== null) lines.push(`Delta vs. baseline (no changes): ${delta >= 0 ? '+' : ''}€${delta.toFixed(2)}`);
+    if (delta !== null) lines.push(`Delta vs. baseline (no changes): ${delta >= 0 ? "+" : ""}${formatCurrency(delta, "EUR", "en")}`);
     for (const gi of result?.goalImpacts ?? []) {
       lines.push(`Goal "${gi.name}": ${gi.newProjection?.projected_date ?? 'no projection'}`);
     }

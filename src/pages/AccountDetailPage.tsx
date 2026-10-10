@@ -1,18 +1,4 @@
-import {
-  Button,
-  EmptyState,
-  ErrorState,
-  KpiCard,
-  LoadingState,
-  PageContainer,
-  SectionHeader,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@foroba/ui';
+import { Button, EmptyState, ErrorState, KpiCard, LoadingState, PageContainer, SectionHeader, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, formatCurrency as uiFormatCurrency } from '@foroba/ui';
 import { ArrowLeft } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router';
@@ -26,7 +12,7 @@ const BANK_LABELS: Record<string, string> = {
 };
 
 function formatCurrency(amount: number, currency: string, lang: string) {
-  return new Intl.NumberFormat(lang, { style: 'currency', currency }).format(amount);
+  return uiFormatCurrency(amount, currency, lang);
 }
 
 export function AccountDetailPage() {

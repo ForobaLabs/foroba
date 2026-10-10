@@ -1,18 +1,11 @@
-import {
-  Button,
-  ErrorState,
-  KpiCard,
-  LoadingState,
-  PageContainer,
-  SectionHeader,
-} from '@foroba/ui';
+import { Button, ErrorState, KpiCard, LoadingState, PageContainer, SectionHeader, formatCurrency as uiFormatCurrency } from '@foroba/ui';
 import { ArrowLeft } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router';
 import { usePortfolioPositions } from '../hooks/useServiceHealth';
 
 function formatCurrency(amount: number, currency: string, lang: string) {
-  return new Intl.NumberFormat(lang, { style: 'currency', currency }).format(amount);
+  return uiFormatCurrency(amount, currency, lang);
 }
 
 export function PortfolioDetailPage() {
