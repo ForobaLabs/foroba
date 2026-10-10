@@ -95,3 +95,54 @@ def test_transaction_anomaly_ignores_transfers_income_refunds():
     outlier["is_transfer"] = True
     alerts = ns._check_transaction_anomalies([*txns, outlier])
     assert alerts == []
+
+
+def test_pazuru_alerts_are_shaped_into_feed_items():
+    items = [
+        {"key": "merchant_spike:7", "type": "merchant_spike", "severity": "warning",
+         "merchant": "Gym", "amount_cents": 4500, "typical_cents": 1000, "currency": "EUR"},
+        {"key": "buffer_breach:1:2026-06-30", "type": "buffer_breach", "severity": "warning",
+         "account_name": "Main", "balance_cents": 100000, "buffer_cents": 170000,
+         "currency": "EUR"},
+        {"key": "fee_spike:2026-06", "type": "fee_spike", "severity": "warning",
+         "fees_cents": 2500, "typical_cents": 500, "currency": "EUR"},
+        {"key": "x:1", "type": "unknown"},
+    ]
+    out = ns._pazuru_alerts(items)
+    assert [a["type"] for a in out] == ["merchant_spike", "buffer_breach", "fee_spike"]
+    assert "45.00 EUR" in out[0]["message"] and "10.00 EUR" in out[0]["message"]
+    assert all(set(a) == {"key", "type", "severity", "title", "message"} for a in out)
+
+
+def test_generate_notifications_merges_pazuru_alerts_and_dedupes(monkeypatch):
+    import asyncio
+
+    payloads = {
+        "/api/accounts": [],
+        "/api/goals": [],
+        "/api/recurring": [],
+        "/api/transactions": {"items": [_txn(i, -2500) for i in range(5)] + [_txn(99, -30000)]},
+        "/api/alerts": {"items": [
+            {"key": "merchant_spike:99", "type": "merchant_spike", "severity": "warning",
+             "merchant": "M", "amount_cents": 30000, "typical_cents": 2500, "currency": "EUR"},
+            {"key": "fee_spike:2026-06", "type": "fee_spike", "severity": "warning",
+             "fees_cents": 2500, "typical_cents": 500, "currency": "EUR"},
+        ]},
+    }
+
+    async def fake_get(client, url, params, cookies):
+        return payloads[url[url.index("/api/"):]]
+
+    import settings_store
+
+    monkeypatch.setattr(ns, "_get_json", fake_get)
+    conn = _conn()
+    settings_store.init_settings(conn)
+    keys = {a["key"] for a in asyncio.run(ns.generate_notifications(conn, 1))["items"]}
+    assert "txn_anomaly:99" in keys
+    assert "merchant_spike:99" not in keys  # already covered by the category outlier
+    assert "fee_spike:2026-06" in keys
+
+    db_module.dismiss_notification(conn, 1, "fee_spike:2026-06")
+    after = {a["key"] for a in asyncio.run(ns.generate_notifications(conn, 1))["items"]}
+    assert "fee_spike:2026-06" not in after

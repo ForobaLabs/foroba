@@ -18,6 +18,11 @@ analytics philosophy):
     its category within the fetched window — a simple, deterministic
     outlier check, not a statistical model.
 
+Pazuru also computes three history-based alerts server-side (`GET /api/alerts`, ID-05):
+merchant_spike, buffer_breach, fee_spike. They are shaped into the same dict here, so
+dismissal works unchanged. A merchant_spike for a transaction already flagged as a
+txn_anomaly is dropped (one alert per charge).
+
 Every alert carries a stable `key` (see individual `_check_*` functions)
 so a user's dismissal (notification_dismissals table, checked by the
 caller) permanently suppresses that specific alert instance.
@@ -158,6 +163,42 @@ def _check_transaction_anomalies(transactions: list[dict[str, Any]]) -> list[dic
     return alerts
 
 
+def _money(cents: int, currency: str) -> str:
+    return f"{cents / 100:.2f} {currency}"
+
+
+def _pazuru_alerts(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Shape Pazuru's computed alerts (ID-05) into the feed format."""
+    out = []
+    for a in items:
+        kind, cur = a.get("type"), str(a.get("currency", "EUR"))
+        if kind == "merchant_spike":
+            title = "Unusual charge"
+            message = (
+                f"{a['merchant']} — {_money(a['amount_cents'], cur)} is well above its "
+                f"typical {_money(a['typical_cents'], cur)}."
+            )
+        elif kind == "buffer_breach":
+            title = "Balance below your recent low"
+            message = (
+                f"{a['account_name']} is at {_money(a['balance_cents'], cur)}, under its "
+                f"30-day low of {_money(a['buffer_cents'], cur)}."
+            )
+        elif kind == "fee_spike":
+            title = "Fees are higher than usual"
+            message = (
+                f"Fees reached {_money(a['fees_cents'], cur)} in the last 30 days, versus "
+                f"{_money(a['typical_cents'], cur)} on average."
+            )
+        else:
+            continue
+        out.append(
+            {"key": a["key"], "type": kind, "severity": a.get("severity", "warning"),
+             "title": title, "message": message}
+        )
+    return out
+
+
 async def generate_notifications(
     conn: sqlite3.Connection,
     user_id: int,
@@ -171,14 +212,15 @@ async def generate_notifications(
     cookies = suite_cookies(cookie, stepup_pazuru=stepup_pazuru)
 
     async with httpx.AsyncClient() as client:
-        accounts, goals, recurring, transactions = await asyncio.gather(
+        accounts, goals, recurring, transactions, pazuru_alerts = await asyncio.gather(
             _get_json(client, f"{pazuru_base}/api/accounts", {}, cookies),
             _get_json(client, f"{pazuru_base}/api/goals", {}, cookies),
             _get_json(client, f"{pazuru_base}/api/recurring", {}, cookies),
             _get_json(client, f"{pazuru_base}/api/transactions", {"page_size": 200}, cookies),
+            _get_json(client, f"{pazuru_base}/api/alerts", {}, cookies),
         )
 
-    degraded = any(x is None for x in (accounts, goals, recurring, transactions))
+    degraded = any(x is None for x in (accounts, goals, recurring, transactions, pazuru_alerts))
 
     alerts: list[dict[str, Any]] = []
     if accounts is not None:
@@ -189,6 +231,14 @@ async def generate_notifications(
         alerts += _check_recurring(conn, user_id, recurring)
     if transactions is not None:
         alerts += _check_transaction_anomalies(transactions.get("items", []))
+
+    if pazuru_alerts is not None:
+        flagged = {a["key"] for a in alerts}
+        for a in _pazuru_alerts(pazuru_alerts.get("items", [])):
+            tx_id = a["key"].split(":", 1)[1] if a["type"] == "merchant_spike" else None
+            if tx_id is not None and f"txn_anomaly:{tx_id}" in flagged:
+                continue
+            alerts.append(a)
 
     dismissed = db.get_dismissed_notification_keys(conn, user_id)
     active = [a for a in alerts if a["key"] not in dismissed]
