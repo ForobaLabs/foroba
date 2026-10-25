@@ -72,6 +72,8 @@ class Settings(BaseSettings):
     sandbox_image: str = "foroba-sandbox:latest"
     # set only in docker-compose.yml (TI-B item 4, foroba#120)
     sandbox_runner_url: str | None = None
+    # shared secret sent as X-Sandbox-Token to sandbox-runner (Plan AU M-6)
+    sandbox_runner_token: str = ""
     searxng_url: str = "http://localhost:8080"
 
     # --- Auth (SP9 / C1, RS256 migration foroba#149) ---

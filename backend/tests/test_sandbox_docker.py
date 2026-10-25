@@ -106,7 +106,7 @@ def test_run_sandbox_dispatch_remote_when_set(monkeypatch):
         def json(self):
             return {"ok": True, "text": "remote"}
 
-    def _fake_post(url, json, timeout):
+    def _fake_post(url, json, timeout, **kwargs):
         captured["url"] = url
         captured["json"] = json
         return FakeResponse()
@@ -122,7 +122,7 @@ def test_run_sandbox_dispatch_remote_when_set(monkeypatch):
 def test_run_sandbox_dispatch_remote_http_error(monkeypatch):
     monkeypatch.setattr(settings, "sandbox_runner_url", "http://sandbox-runner:8090")
 
-    def _fake_post(url, json, timeout):
+    def _fake_post(url, json, timeout, **kwargs):
         raise httpx.ConnectError("connection refused")
 
     monkeypatch.setattr(sandbox_docker.httpx, "post", _fake_post)
@@ -130,3 +130,25 @@ def test_run_sandbox_dispatch_remote_http_error(monkeypatch):
     assert result["ok"] is False
     assert "error" in result
     monkeypatch.setattr(settings, "sandbox_runner_url", None)
+
+
+def test_remote_sends_sandbox_token(monkeypatch):
+    # Plan AU M-6: the runner rejects /run without the shared X-Sandbox-Token.
+    monkeypatch.setattr(settings, "sandbox_runner_url", "http://sandbox-runner:8090")
+    monkeypatch.setattr(settings, "sandbox_runner_token", "tok-123")
+    captured = {}
+
+    class FakeResponse:
+        def raise_for_status(self):
+            pass
+
+        def json(self):
+            return {"ok": True}
+
+    def _fake_post(url, **kwargs):
+        captured.update(kwargs)
+        return FakeResponse()
+
+    monkeypatch.setattr(sandbox_docker.httpx, "post", _fake_post)
+    sandbox_docker.run_sandbox_dispatch("code", {})
+    assert captured["headers"] == {"X-Sandbox-Token": "tok-123"}

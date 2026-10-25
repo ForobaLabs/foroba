@@ -143,6 +143,7 @@ def _run_sandbox_remote(code: str, dataframes: dict[str, pd.DataFrame]) -> dict[
         resp = httpx.post(
             f"{settings.sandbox_runner_url}/run",
             json={"code": code, "dataframes": encoded},
+            headers={"X-Sandbox-Token": settings.sandbox_runner_token},
             timeout=CONTAINER_RUN_TIMEOUT_SECONDS + 5,
         )
         resp.raise_for_status()

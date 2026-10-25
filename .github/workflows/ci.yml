@@ -94,6 +94,19 @@ jobs:
             bandit-report.json
           retention-days: 30
 
+  sandbox-runner:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: sandbox-runner
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install -q -r requirements.txt -r requirements-dev.txt
+      - run: python -m pytest -q
+
   sast:
     if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
     uses: ./.github/workflows/security-scan.yml
