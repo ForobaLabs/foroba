@@ -7,6 +7,7 @@ the endpoint cannot be used to test list membership.
 
 from __future__ import annotations
 
+import logging
 import sqlite3
 
 from fastapi import APIRouter, Depends, Request
@@ -19,6 +20,7 @@ from config import settings
 from email_service import send_email
 from rate_limit import limiter
 
+logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/public/v1/waitlist", tags=["waitlist"])
 
 _SUBJECT = {
@@ -61,9 +63,13 @@ def join_waitlist(
     except ws.WaitlistError as exc:
         return JSONResponse({"detail": str(exc)}, status_code=422)
     if token:
-        lang = body.lang if body.lang in ws.ALLOWED_LANGS else "en"
-        link = f"{str(request.base_url).rstrip('/')}{router.prefix}/confirm?token={token}"
-        send_email(body.email.strip().lower(), _SUBJECT[lang], _BODY[lang].format(link=link))
+        base = settings.api_public_base_url.rstrip("/")
+        if not base:
+            logger.error("waitlist: api_public_base_url unset; confirmation e-mail not sent")
+        else:
+            lang = body.lang if body.lang in ws.ALLOWED_LANGS else "en"
+            link = f"{base}{router.prefix}/confirm?token={token}"
+            send_email(body.email.strip().lower(), _SUBJECT[lang], _BODY[lang].format(link=link))
     return {"status": "pending"}
 
 

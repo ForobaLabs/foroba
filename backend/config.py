@@ -65,6 +65,9 @@ class Settings(BaseSettings):
     tsumi_app_url: str = "http://localhost:5178"
     # Public marketing-site origin; the waitlist confirm endpoint redirects back here.
     site_base_url: str = ""
+    # Public origin that proxies /api/public/v1/waitlist (Plan AU M-4): the double opt-in
+    # link is built from it, never from the request Host header. Unset = no e-mail sent.
+    api_public_base_url: str = ""
     jeli_port: int = 8002
     sandbox_image: str = "foroba-sandbox:latest"
     # set only in docker-compose.yml (TI-B item 4, foroba#120)

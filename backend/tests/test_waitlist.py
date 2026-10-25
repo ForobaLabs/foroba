@@ -94,6 +94,7 @@ def client(monkeypatch):
 
     monkeypatch.setattr(waitlist_router, "send_email", lambda to, s, b: sent.append((to, s, b)))
     monkeypatch.setattr(settings, "site_base_url", "")
+    monkeypatch.setattr(settings, "api_public_base_url", "https://api.example")
     app.dependency_overrides[get_conn] = lambda: conn
     limiter.reset()
     try:
@@ -151,3 +152,20 @@ def test_post_waitlist_rate_limited(client):
         for i in range(6)
     ]
     assert codes[:5] == [202] * 5 and codes[5] == 429
+
+
+def test_confirm_link_ignores_host_header(client, monkeypatch):
+    """Plan AU M-4: the e-mailed link comes from API_PUBLIC_BASE_URL, never the Host header."""
+    c, _, sent = client
+    monkeypatch.setattr(settings, "api_public_base_url", "https://foroba-app.duckdns.org/")
+    c.post("/api/public/v1/waitlist", json=_body(), headers={"Host": "evil.example"})
+    assert "evil.example" not in sent[0][2]
+    assert "https://foroba-app.duckdns.org/api/public/v1/waitlist/confirm?token=" in sent[0][2]
+
+
+def test_no_email_when_base_url_unset(client, monkeypatch):
+    c, _, sent = client
+    monkeypatch.setattr(settings, "api_public_base_url", "")
+    r = c.post("/api/public/v1/waitlist", json=_body(email="b@example.org"))
+    assert r.status_code == 202 and r.json() == {"status": "pending"}
+    assert sent == []
