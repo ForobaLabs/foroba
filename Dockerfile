@@ -59,7 +59,8 @@ COPY --from=frontend-build /app/foroba/dist /app/static
 # Plan AU M-5: run as an unprivileged user. Prod volumes must be chown'd to 10001.
 RUN groupadd --system --gid 10001 app \
  && useradd --system --uid 10001 --gid app --create-home --home-dir /home/app app \
- && mkdir -p /data && chown -R app:app /data
+ && mkdir -p /data /app/backend/static && chown -R app:app /data /app/backend/static \
+ && chmod -R a+rX /app
 USER app
 
 ENV PYTHONUNBUFFERED=1
