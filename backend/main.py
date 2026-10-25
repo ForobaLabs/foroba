@@ -57,6 +57,7 @@ from monthly_report_router import router as monthly_report_router
 from observability import init_error_tracking
 from onboarding.router import router as onboarding_router
 from passkeys.router import router as passkeys_router
+from prod_guard import check_production_config
 from public_api_router import router as public_api_router
 from rate_limit import limiter, rate_limit_exceeded_handler, session_rate_limit_key
 from report_scheduler import start_report_scheduler
@@ -72,6 +73,8 @@ from webhook_dispatch_job import start_webhook_dispatch_scheduler
 from whatif_router import router as whatif_router
 
 RATE_LIMIT_DEFAULT = os.getenv("RATE_LIMIT_DEFAULT", "60/minute")
+check_production_config(os.environ, cookie_secure=settings.cookie_secure)
+
 ALLOWED_ORIGINS = os.getenv(
     "ALLOWED_ORIGINS",
     "http://localhost:5175,http://localhost:5173,http://localhost:5174,http://localhost:5178",
