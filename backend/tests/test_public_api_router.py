@@ -110,3 +110,17 @@ def test_notifications_returns_200_with_valid_premium_key(monkeypatch):
         assert resp.json() == {"items": [], "degraded": False}
     finally:
         app.dependency_overrides.pop(get_conn, None)
+
+
+def test_public_api_cookie_carries_current_session_version():
+    """Plan AU M-10: the minted fan-out session must carry the user's current
+    session_version, or Pazuru/Tsumi reject it as revoked once the user has
+    ever logged out (floor > 1)."""
+    import jwt as pyjwt
+
+    from public_api_router import _cookie_for
+
+    tok = _cookie_for(
+        {"id": 1, "tier": "free", "audience": "base", "is_admin": 0, "session_version": 4}
+    )
+    assert pyjwt.decode(tok, options={"verify_signature": False})["session_version"] == 4

@@ -37,6 +37,8 @@ def _cookie_for(user: dict) -> str:
         audience=user["audience"],
         is_admin=bool(user["is_admin"]),
         kid=kid,
+        # Plan AU M-10: below the user's floor, Pazuru/Tsumi would 401 it as revoked.
+        session_version=int(user.get("session_version") or 1),
     )
 
 
