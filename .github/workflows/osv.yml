@@ -1,0 +1,24 @@
+name: osv-scanner
+
+# Plan AU H-3: dependency advisories on every push/PR (lockfiles + requirements).
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+  security-events: write
+
+jobs:
+  scan:
+    uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@v2.6.0
+    with:
+      scan-args: --recursive ./
+      # Private repos have no code-scanning upload; findings go to the job log.
+      upload-sarif: false
+      # Report-only until the dev-tooling majors (vite/vitest/eslint chains) are bumped;
+      # runtime (`pnpm audit --prod`, pip) advisories are clean as of Plan AU.
+      fail-on-vuln: false
