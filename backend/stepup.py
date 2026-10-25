@@ -24,14 +24,22 @@ class StepupTokenError(Exception):
     """Raised for any invalid/expired/mismatched step-up token."""
 
 
-def issue_stepup_token(user_id: int, app: str) -> str:
+def issue_stepup_token(
+    user_id: int, app: str, *, auth_time: int | None = None, session_version: int = 1
+) -> str:
+    """`auth_time` is when the user last proved MFA (kept across refreshes so the window
+    has an absolute cap); `sv` is the user's session_version at issue time, so raising
+    the floor (password change, revoke-all) stops further refreshes (Plan AU M-1)."""
     private_key, _, kid = keys.get_keypair(settings)
     now = datetime.now(UTC)
     payload = {
         "sub": str(user_id),
         "app": app,
+        "typ": "stepup",
         "iat": now,
         "exp": now + timedelta(minutes=settings.stepup_ttl_minutes),
+        "auth_time": auth_time if auth_time is not None else int(now.timestamp()),
+        "sv": session_version,
     }
     return jwt.encode(payload, private_key, algorithm=_ALGO, headers={"kid": kid})
 

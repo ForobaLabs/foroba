@@ -68,23 +68,90 @@ def test_stepup_verify_with_totp_sets_app_cookie(client):
     assert client.cookies.get("stepup_pazuru")
 
 
-def test_stepup_refresh_rejects_expired_token(client, monkeypatch):
+def _refresh(client, token, internal=True):
+    from config import settings
+
+    headers = {"X-Internal-Token": settings.internal_api_token} if internal else {}
+    return client.post(
+        "/auth/stepup/refresh", json={"app": "pazuru", "token": token}, headers=headers
+    )
+
+
+@pytest.fixture
+def internal_token(monkeypatch):
+    from config import settings
+
+    monkeypatch.setattr(settings, "internal_api_token", "t" * 32)
+
+
+def test_stepup_refresh_rejects_expired_token(client, monkeypatch, internal_token):
     from config import settings
 
     monkeypatch.setattr(settings, "stepup_ttl_minutes", 0)
     from stepup import issue_stepup_token
 
     token = issue_stepup_token(user_id=1, app="pazuru")
-    resp = client.post("/auth/stepup/refresh", json={"app": "pazuru", "token": token})
-    assert resp.status_code == 401
+    assert _refresh(client, token).status_code == 401
 
 
-def test_stepup_refresh_extends_a_valid_token(client):
+def test_stepup_refresh_extends_a_valid_token(client, internal_token):
     from stepup import issue_stepup_token, verify_stepup_token
 
     token = issue_stepup_token(user_id=1, app="pazuru")
-    resp = client.post("/auth/stepup/refresh", json={"app": "pazuru", "token": token})
+    resp = _refresh(client, token)
     assert resp.status_code == 200
     new_token = resp.json()["token"]
     claims = verify_stepup_token(new_token, expected_app="pazuru")
     assert claims["sub"] == "1"
+
+
+# Plan AU M-1: refresh is server-to-server only, capped, and honours the session floor.
+def test_refresh_requires_internal_token(client, internal_token):
+    from stepup import issue_stepup_token
+
+    tok = issue_stepup_token(user_id=1, app="pazuru")
+    assert _refresh(client, tok, internal=False).status_code == 403
+
+
+def test_refresh_rejected_when_internal_token_unconfigured(client, monkeypatch):
+    from config import settings
+    from stepup import issue_stepup_token
+
+    monkeypatch.setattr(settings, "internal_api_token", "")
+    tok = issue_stepup_token(user_id=1, app="pazuru")
+    assert _refresh(client, tok).status_code == 403
+
+
+def test_refresh_refuses_past_absolute_cap(client, internal_token):
+    import time
+
+    from stepup import issue_stepup_token
+
+    old = int(time.time()) - 13 * 3600
+    tok = issue_stepup_token(user_id=1, app="pazuru", auth_time=old)
+    assert _refresh(client, tok).status_code == 401
+
+
+def test_refresh_keeps_original_auth_time(client, internal_token):
+    import time
+
+    import jwt as pyjwt
+
+    from stepup import issue_stepup_token
+
+    at = int(time.time()) - 3600
+    resp = _refresh(client, issue_stepup_token(user_id=1, app="pazuru", auth_time=at))
+    assert resp.status_code == 200
+    claims = pyjwt.decode(resp.json()["token"], options={"verify_signature": False})
+    assert claims["auth_time"] == at
+    assert claims["typ"] == "stepup"
+
+
+def test_refresh_refuses_after_session_floor_raised(client, internal_token):
+    from stepup import issue_stepup_token
+
+    tok = issue_stepup_token(user_id=1, app="pazuru", session_version=1)
+    conn = client.app.dependency_overrides[get_conn]()
+    conn.execute("UPDATE users SET session_version = 2 WHERE id = 1")
+    conn.commit()
+    assert _refresh(client, tok).status_code == 401

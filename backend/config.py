@@ -134,6 +134,8 @@ class Settings(BaseSettings):
     # --- Cross-app step-up tokens (MFA hardening, foroba#199) ---
     stepup_ttl_minutes: int = 45
     stepup_refresh_threshold_minutes: int = 15
+    # Plan AU M-1: refresh never slides a step-up past this age since the original MFA proof.
+    stepup_max_age_hours: int = 12
 
 
 settings = Settings()
