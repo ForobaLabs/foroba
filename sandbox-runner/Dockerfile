@@ -17,7 +17,8 @@ COPY config.py main.py sandbox_docker.py ./
 # Plan AU M-5/M-6: unprivileged. The host .workspaces bind mount must be chown'd to 10001.
 RUN groupadd --system --gid 10001 app \
  && useradd --system --uid 10001 --gid app --create-home --home-dir /home/app app \
- && mkdir -p /tmp/sandbox-workspaces && chown app:app /tmp/sandbox-workspaces
+ && mkdir -p /tmp/sandbox-workspaces && chown app:app /tmp/sandbox-workspaces \
+ && chmod a+rX /app /app/*.py
 USER app
 
 EXPOSE 8090
