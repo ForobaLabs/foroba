@@ -70,6 +70,8 @@ def create_token(
     now = datetime.now(UTC)
     payload = {
         "sub": str(user_id),
+        "typ": "session",
+        "iss": "foroba",
         "iat": now,
         "exp": now + timedelta(minutes=ttl_minutes),
         "tier": tier,
@@ -82,4 +84,9 @@ def create_token(
 
 
 def decode_token(token: str, public_key: str) -> dict:
-    return jwt.decode(token, public_key, algorithms=[_ALGO])
+    """Session tokens only. A missing `typ` is accepted for tokens issued before
+    Plan AU M-2 (≤30-day grace); any other `typ` (e.g. "stepup") is rejected."""
+    claims = jwt.decode(token, public_key, algorithms=[_ALGO])
+    if claims.get("typ", "session") != "session":
+        raise jwt.InvalidTokenError("not a session token")
+    return claims

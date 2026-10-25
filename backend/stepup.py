@@ -50,6 +50,8 @@ def verify_stepup_token(token: str, *, expected_app: str) -> dict:
         claims = jwt.decode(token, public_key, algorithms=[_ALGO])
     except jwt.PyJWTError as exc:
         raise StepupTokenError(str(exc)) from exc
+    if claims.get("typ") != "stepup":
+        raise StepupTokenError("not a step-up token")
     if claims.get("app") != expected_app:
         raise StepupTokenError(
             f"Token is scoped to app={claims.get('app')!r}, expected {expected_app!r}"

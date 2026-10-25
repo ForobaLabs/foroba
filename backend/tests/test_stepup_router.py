@@ -155,3 +155,37 @@ def test_refresh_refuses_after_session_floor_raised(client, internal_token):
     conn.execute("UPDATE users SET session_version = 2 WHERE id = 1")
     conn.commit()
     assert _refresh(client, tok).status_code == 401
+
+
+# --- Plan AU M-2: typed JWTs (session vs stepup) ---
+
+def test_stepup_token_is_not_a_session_token(client):
+    from stepup import issue_stepup_token
+
+    tok = issue_stepup_token(user_id=1, app="pazuru")
+    r = client.get("/auth/me", headers={"Authorization": f"Bearer {tok}"})
+    assert r.status_code == 401
+
+
+def test_session_token_is_not_a_stepup_token():
+    from auth import keys
+    from auth.security import create_token
+    from config import settings
+    from stepup import StepupTokenError, verify_stepup_token
+
+    priv, _, kid = keys.get_keypair(settings)
+    forged = create_token(1, priv, 5, kid=kid)
+    with pytest.raises(StepupTokenError):
+        verify_stepup_token(forged, expected_app="pazuru")
+
+
+def test_session_token_has_typ_and_iss():
+    import jwt as pyjwt
+
+    from auth import keys
+    from auth.security import create_token
+    from config import settings
+
+    priv, _, kid = keys.get_keypair(settings)
+    claims = pyjwt.decode(create_token(1, priv, 5, kid=kid), options={"verify_signature": False})
+    assert claims["typ"] == "session" and claims["iss"] == "foroba"
