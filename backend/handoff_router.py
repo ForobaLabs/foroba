@@ -8,6 +8,12 @@ target app's own /auth/handoff consumer (reached via the already-mounted
 consumer redeems the code back-channel via `POST /internal/handoff/redeem`
 (shared X-Internal-Token), sets its own domain-scoped cookies and redirects on to
 the originally-intended page. No session material ever appears in a URL.
+
+Plan AU L-3 (login CSRF): every code is bound to a `nonce` that the consumer app first
+set as an httponly cookie in this same browser (its `/auth/handoff/start`), and the
+consumer refuses a code whose nonce doesn't match. A request without a nonce (the
+shell's plain links) is bounced to the consumer's start route, which comes back here
+with one.
 """
 
 from __future__ import annotations
@@ -33,6 +39,7 @@ _APP_URLS = {
 
 # Same-origin internal path only — no scheme, no host, no protocol-relative "//".
 _SAFE_REDIRECT = re.compile(r"^/(?!/)[A-Za-z0-9/_.-]*$")
+_NONCE = re.compile(r"^[A-Za-z0-9_-]{32,64}$")
 
 
 @router.get("/{app}")
@@ -41,6 +48,7 @@ def handoff_mint(
     request: Request,
     app: str,
     redirect: str = Query(default="/"),
+    nonce: str | None = Query(default=None),
     user: dict = Depends(get_current_user),
     suite_session: str | None = Cookie(default=None),
 ) -> RedirectResponse:
@@ -50,6 +58,11 @@ def handoff_mint(
         raise HTTPException(401, "Not authenticated")
     if not _SAFE_REDIRECT.match(redirect):
         redirect = "/"
+    if nonce is None:
+        start = f"{_APP_URLS[app]()}/api/v1/{app}/auth/handoff/start?redirect={redirect}"
+        return RedirectResponse(url=start, status_code=302)
+    if not _NONCE.match(nonce):
+        raise HTTPException(400, "Invalid handoff nonce")
 
     stepup_token = request.cookies.get(f"stepup_{app}")
     code = issue_handoff_code(
@@ -58,6 +71,7 @@ def handoff_mint(
         redirect=redirect,
         sess=suite_session,
         stepup=stepup_token,
+        nonce=nonce,
     )
     target = f"{_APP_URLS[app]()}/api/v1/{app}/auth/handoff?code={code}"
     return RedirectResponse(url=target, status_code=302)

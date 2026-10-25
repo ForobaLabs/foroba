@@ -38,7 +38,7 @@ def _purge_expired(now: float) -> None:
 
 
 def issue_handoff_code(
-    *, user_id: int, app: str, redirect: str, sess: str, stepup: str | None
+    *, user_id: int, app: str, redirect: str, sess: str, stepup: str | None, nonce: str
 ) -> str:
     if app not in VALID_APPS:
         raise ValueError(f"unknown handoff target app {app!r}")
@@ -54,6 +54,7 @@ def issue_handoff_code(
             "redirect": redirect,
             "sess": sess,
             "stepup": stepup,
+            "nonce": nonce,
             "exp": now + _HANDOFF_TTL_SECONDS,
         }
     return code
@@ -76,4 +77,5 @@ def redeem_handoff_code(code: str, *, expected_app: str) -> dict:
         "stepup": entry["stepup"],
         "redirect": entry["redirect"],
         "user_id": entry["user_id"],
+        "nonce": entry["nonce"],
     }

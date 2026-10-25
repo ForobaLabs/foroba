@@ -6,10 +6,11 @@ from __future__ import annotations
 import sqlite3
 from datetime import date
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 
 import fx_service
 from auth.conn import get_conn
+from rate_limit import limiter
 
 router = APIRouter(prefix="/fx", tags=["fx"])
 
@@ -29,7 +30,8 @@ def _get_latest_rates(conn: sqlite3.Connection) -> dict[str, float]:
 
 
 @router.get("/rates")
-def get_fx_rates(conn: sqlite3.Connection = Depends(get_conn)) -> dict:
+@limiter.limit("60/minute")  # Plan AU L-4: unauthenticated and refreshes from upstream
+def get_fx_rates(request: Request, conn: sqlite3.Connection = Depends(get_conn)) -> dict:
     """Return cached FX rates, refreshing today's rates first if not yet cached."""
     fx_service.refresh_latest_rates(conn)
     return {

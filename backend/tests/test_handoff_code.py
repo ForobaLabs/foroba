@@ -24,9 +24,12 @@ def _reset(monkeypatch):
     monkeypatch.setattr(settings, "tsumi_app_url", "https://ts.test", raising=False)
 
 
-def _issue(app="tsumi", redirect="/portfolio", stepup="STEP"):
+NONCE = "n" * 43
+
+
+def _issue(app="tsumi", redirect="/portfolio", stepup="STEP", nonce=NONCE):
     return handoff.issue_handoff_code(
-        user_id=5, app=app, redirect=redirect, sess="SESS-JWT", stepup=stepup
+        user_id=5, app=app, redirect=redirect, sess="SESS-JWT", stepup=stepup, nonce=nonce
     )
 
 
@@ -39,7 +42,10 @@ def test_code_is_opaque_and_carries_no_session():
 def test_redeem_returns_payload_once():
     code = _issue()
     out = handoff.redeem_handoff_code(code, expected_app="tsumi")
-    assert out == {"sess": "SESS-JWT", "stepup": "STEP", "redirect": "/portfolio", "user_id": 5}
+    assert out == {
+        "sess": "SESS-JWT", "stepup": "STEP", "redirect": "/portfolio", "user_id": 5,
+        "nonce": NONCE,
+    }
     with pytest.raises(handoff.HandoffTokenError):
         handoff.redeem_handoff_code(code, expected_app="tsumi")
 
@@ -76,7 +82,7 @@ def _client():
 def test_mint_redirects_with_code_not_jwt():
     c = _client()
     c.cookies.set("suite_session", "SESS-JWT")
-    r = c.get("/auth/handoff/tsumi?redirect=/portfolio")
+    r = c.get(f"/auth/handoff/tsumi?redirect=/portfolio&nonce={NONCE}")
     assert r.status_code == 302
     loc = r.headers["location"]
     assert loc.startswith("https://ts.test/api/v1/tsumi/auth/handoff?code=")
@@ -112,3 +118,31 @@ def test_redeem_endpoint_fails_closed_when_token_unset(monkeypatch):
     r = _client().post("/internal/handoff/redeem", json={"code": code, "app": "tsumi"},
                        headers={"X-Internal-Token": ""})
     assert r.status_code == 403
+
+
+# Plan AU L-3: codes are bound to a nonce cookie the consumer set in this browser, so an
+# attacker can't log a victim into the attacker's account with a code of their own.
+
+
+def test_mint_without_nonce_bounces_to_consumer_start():
+    c = _client()
+    c.cookies.set("suite_session", "SESS-JWT")
+    r = c.get("/auth/handoff/tsumi?redirect=/portfolio")
+    assert r.status_code == 302
+    assert r.headers["location"] == "https://ts.test/api/v1/tsumi/auth/handoff/start?redirect=/portfolio"
+    assert handoff._codes == {}
+
+
+def test_mint_binds_nonce_to_code():
+    c = _client()
+    c.cookies.set("suite_session", "SESS-JWT")
+    r = c.get(f"/auth/handoff/pazuru?redirect=/settings&nonce={NONCE}")
+    code = r.headers["location"].split("code=")[1]
+    assert handoff.redeem_handoff_code(code, expected_app="pazuru")["nonce"] == NONCE
+
+
+def test_mint_rejects_malformed_nonce():
+    c = _client()
+    c.cookies.set("suite_session", "SESS-JWT")
+    assert c.get("/auth/handoff/pazuru?nonce=short").status_code == 400
+    assert handoff._codes == {}
