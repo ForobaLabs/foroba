@@ -70,3 +70,12 @@ def connect():
     conn.execute("PRAGMA busy_timeout = 10000")
     init_schema(conn)
     return conn
+
+
+def get_conn():
+    """FastAPI dependency: one connection per request."""
+    conn = connect()
+    try:
+        yield conn
+    finally:
+        conn.close()

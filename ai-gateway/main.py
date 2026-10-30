@@ -4,7 +4,9 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
+import consent
 import db
+import prefs
 
 
 @asynccontextmanager
@@ -20,6 +22,9 @@ app = FastAPI(
     openapi_url=None,
     lifespan=lifespan,
 )
+
+app.include_router(consent.router)
+app.include_router(prefs.router)
 
 
 @app.get("/healthz")
