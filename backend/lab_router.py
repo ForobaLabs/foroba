@@ -8,6 +8,7 @@ from fastapi import APIRouter, Cookie, Depends, Request
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
+import ai_router
 from auth.conn import get_conn
 from auth.dependencies import get_current_user
 from config import settings
@@ -132,6 +133,11 @@ async def lab_chat(
             history=history,
             user_context=context,
             web_results=web_results,
+            ai_ctx=ai_router.context_for(
+                user,
+                ai_router.jwt_from(request.headers.get("authorization"), suite_session),
+                feature="lab",
+            ),
         ):
             if event["type"] == "token":
                 answer_parts.append(event["value"])

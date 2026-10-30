@@ -10,7 +10,9 @@ from typing import Any
 import httpx
 import pandas as pd
 
+import ai_router
 import sandbox_docker
+from ai_router import AiContext, AiOutcome
 from config import settings
 from sandbox_guard import DisallowedImportError, check_imports
 
@@ -41,14 +43,14 @@ def _chunk_words(text: str, size: int = 6) -> list[str]:
     return [" ".join(words[i : i + size]) for i in range(0, len(words), size)]
 
 
-def _generate_code(
+def _codegen_messages(
     question: str,
     dataframe_names: list[str],
     history: list[dict[str, Any]],
     user_context: str,
     error_feedback: str | None = None,
     web_results: list[dict[str, str]] | None = None,
-) -> dict[str, str]:
+) -> list[dict[str, str]]:
     messages = [
         {
             "role": "system",
@@ -77,7 +79,20 @@ def _generate_code(
                 ),
             }
         )
+    return messages
 
+
+def _generate_code(
+    question: str,
+    dataframe_names: list[str],
+    history: list[dict[str, Any]],
+    user_context: str,
+    error_feedback: str | None = None,
+    web_results: list[dict[str, str]] | None = None,
+) -> dict[str, str]:
+    messages = _codegen_messages(
+        question, dataframe_names, history, user_context, error_feedback, web_results
+    )
     response = httpx.post(
         f"{settings.ollama_base_url}/api/chat",
         json={
@@ -93,29 +108,63 @@ def _generate_code(
     return json.loads(content)
 
 
+async def _generate_code_routed(
+    ctx: AiContext,
+    question: str,
+    dataframe_names: list[str],
+    history: list[dict[str, Any]],
+    user_context: str,
+    error_feedback: str | None,
+    web_results: list[dict[str, str]] | None,
+) -> dict[str, str]:
+    messages = _codegen_messages(
+        question, dataframe_names, history, user_context, error_feedback, web_results
+    )
+
+    async def _local() -> AiOutcome:
+        result = await asyncio.to_thread(
+            _generate_code,
+            question,
+            dataframe_names,
+            history,
+            user_context,
+            error_feedback,
+            web_results,
+        )
+        return AiOutcome(text=json.dumps(result))
+
+    out = await ai_router.complete(
+        ctx, task="tools", messages=messages, json_mode=True, local=_local
+    )
+    return json.loads(out.text)
+
+
+def _context_update_messages(question: str, existing_context: str) -> list[dict[str, str]]:
+    return [
+        {
+            "role": "system",
+            "content": (
+                "Update this user's durable profile notes in one short paragraph, "
+                "given their existing notes and their latest question. Respond with "
+                "plain text only, no JSON."
+            ),
+        },
+        {
+            "role": "user",
+            "content": (
+                f"Existing notes: {existing_context or '(none yet)'}\nLatest question: {question}"
+            ),
+        },
+    ]
+
+
 def _update_user_context(question: str, code: str, existing_context: str) -> str:
     try:
         response = httpx.post(
             f"{settings.ollama_base_url}/api/chat",
             json={
                 "model": settings.ollama_model,
-                "messages": [
-                    {
-                        "role": "system",
-                        "content": (
-                            "Update this user's durable profile notes in one short paragraph, "
-                            "given their existing notes and their latest question. Respond with "
-                            "plain text only, no JSON."
-                        ),
-                    },
-                    {
-                        "role": "user",
-                        "content": (
-                            f"Existing notes: {existing_context or '(none yet)'}\n"
-                            f"Latest question: {question}"
-                        ),
-                    },
-                ],
+                "messages": _context_update_messages(question, existing_context),
                 "stream": False,
             },
             timeout=30,
@@ -124,6 +173,23 @@ def _update_user_context(question: str, code: str, existing_context: str) -> str
         return response.json()["message"]["content"].strip()
     except Exception:
         return existing_context
+
+
+async def _update_user_context_routed(
+    ctx: AiContext, question: str, code: str, existing_context: str
+) -> str:
+    messages = _context_update_messages(question, existing_context)
+
+    async def _local() -> AiOutcome:
+        return AiOutcome(
+            text=await asyncio.to_thread(_update_user_context, question, code, existing_context)
+        )
+
+    try:
+        out = await ai_router.complete(ctx, task="chat", messages=messages, local=_local)
+    except Exception:
+        return existing_context
+    return out.text.strip() or existing_context
 
 
 async def _run_sandbox_limited(code: str, dataframes: dict[str, pd.DataFrame]) -> dict[str, Any]:
@@ -155,6 +221,7 @@ async def _attempt_turn(
     user_context: str,
     error_feedback: str | None,
     web_results: list[dict[str, str]] | None = None,
+    ai_ctx: AiContext | None = None,
 ) -> dict[str, Any]:
     """Generate code for one attempt, guard it, and run it in the sandbox.
 
@@ -164,15 +231,26 @@ async def _attempt_turn(
     caller's retry loop can feed the error back to the LLM.
     """
     try:
-        generated = await asyncio.to_thread(
-            _generate_code,
-            question,
-            dataframe_names,
-            history,
-            user_context,
-            error_feedback,
-            web_results,
-        )
+        if ai_ctx is not None:
+            generated = await _generate_code_routed(
+                ai_ctx,
+                question,
+                dataframe_names,
+                history,
+                user_context,
+                error_feedback,
+                web_results,
+            )
+        else:
+            generated = await asyncio.to_thread(
+                _generate_code,
+                question,
+                dataframe_names,
+                history,
+                user_context,
+                error_feedback,
+                web_results,
+            )
     except Exception as exc:
         return {"ok": False, "code": "", "error": str(exc)}
 
@@ -232,6 +310,7 @@ async def run_lab_turn(
     history: list[dict[str, Any]],
     user_context: str,
     web_results: list[dict[str, str]] | None = None,
+    ai_ctx: AiContext | None = None,
 ) -> AsyncGenerator[dict[str, Any], None]:
     """Drive the generate-guard-run-retry loop for one chat turn, yielding NDJSON events."""
     async for event in _ensure_sandbox_ready():
@@ -252,19 +331,28 @@ async def run_lab_turn(
             user_context,
             error_feedback,
             web_results,
+            ai_ctx,
         )
         code = result.get("code", "")
 
         if result.get("ok"):
             async for event in _stream_success(result):
                 yield event
-            updated_context = await asyncio.to_thread(
-                _update_user_context,
-                question,
-                code,
-                user_context,
-            )
-            yield {"type": "done", "code": code, "context": updated_context}
+            if ai_ctx is not None:
+                updated_context = await _update_user_context_routed(
+                    ai_ctx, question, code, user_context
+                )
+            else:
+                updated_context = await asyncio.to_thread(
+                    _update_user_context,
+                    question,
+                    code,
+                    user_context,
+                )
+            done = {"type": "done", "code": code, "context": updated_context}
+            if ai_ctx is not None and ai_ctx.last_meta:
+                done["ai_meta"] = ai_ctx.last_meta
+            yield done
             return
 
         if result.get("busy"):

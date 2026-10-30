@@ -10,6 +10,8 @@ from pathlib import Path
 
 import httpx
 
+import ai_router
+from ai_router import AiContext, AiOutcome
 from config import settings
 from suite_cookies import suite_cookies
 
@@ -71,8 +73,7 @@ async def _fetch_context(
         resp = await client.get(url, timeout=3.0, cookies=cookies)
         if resp.status_code == 428:
             return (
-                f"{label} data is locked until the user completes identity "
-                f"verification in {label}."
+                f"{label} data is locked until the user completes identity verification in {label}."
             )
         resp.raise_for_status()
         data = resp.json()
@@ -174,7 +175,29 @@ async def stream_chat(system_prompt: str, message: str) -> AsyncIterator[str]:
         return
 
 
-async def generate_narrative(system_prompt: str, message: str) -> str:
+async def generate_narrative(system_prompt: str, message: str, ctx: AiContext | None = None) -> str:
+    """Routed through ai_router (feature monthly_report, task long). Scheduler jobs carry no
+    session JWT, so ctx defaults to a jwt-less context and stays on local Ollama."""
+    ctx = ctx or AiContext(jwt=None, app="foroba", feature="monthly_report")
+
+    async def _local() -> AiOutcome:
+        return AiOutcome(text=await _ollama_narrative(system_prompt, message))
+
+    out = await ai_router.complete(
+        ctx,
+        task="long",
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": message},
+        ],
+        local=_local,
+    )
+    if not out.text:
+        raise ValueError("AI returned an empty response")
+    return out.text
+
+
+async def _ollama_narrative(system_prompt: str, message: str) -> str:
     """Non-streaming Ollama call for background jobs (monthly report) that need
     the complete text and must surface failures explicitly to the caller —
     unlike stream_chat, which degrades silently to an empty stream for the

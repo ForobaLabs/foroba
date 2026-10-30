@@ -15,7 +15,7 @@ from typing import Annotated, Literal
 
 from fastapi import Cookie, Depends, FastAPI, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 from slowapi.errors import RateLimitExceeded
@@ -23,6 +23,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request as StarletteRequest
 from starlette.responses import Response
 
+import ai_router
 import db
 import markets_service
 import networth_service
@@ -373,12 +374,12 @@ async def dismiss_notification(
 async def jeli_chat(
     request: Request,
     req: ChatRequest,
-    _: dict = Depends(get_current_user),
+    user: dict = Depends(get_current_user),
     suite_session: str | None = Cookie(default=None),
     stepup_pazuru: str | None = Cookie(default=None),
     stepup_tsumi: str | None = Cookie(default=None),
-) -> StreamingResponse:
-    """Stream a Jeli response for the given message.
+) -> Response:
+    """Return a Jeli response for the given message.
 
     Gathers context from Pazuru + Tsumi, builds the system prompt,
     then streams the Ollama response as plain text chunks (SSE-compatible).
@@ -399,14 +400,36 @@ async def jeli_chat(
         lang=req.lang,
     )
 
-    async def generate():
-        # Buffered rather than forwarded token-by-token: sanitize_reply needs the
-        # complete reply to reliably detect a fabricated monetary figure or a missing
-        # disclaimer (Plan W, 2026-09-24/25 benchmarking found both are real,
-        # reproducible defects in the shared model) — a figure or the disclaimer
-        # phrase can straddle a chunk boundary, so partial text can't be checked.
-        full_reply = "".join([chunk async for chunk in stream_chat(system_prompt, req.message)])
-        context_text = f"{pazuru_ctx}\n{tsumi_ctx}"
-        yield sanitize_reply(full_reply, context_text=context_text, lang=req.lang)
-
-    return StreamingResponse(generate(), media_type="text/plain; charset=utf-8")
+    # Buffered rather than forwarded token-by-token: sanitize_reply needs the
+    # complete reply to reliably detect a fabricated monetary figure or a missing
+    # disclaimer (Plan W, 2026-09-24/25 benchmarking found both are real,
+    # reproducible defects in the shared model) — a figure or the disclaimer
+    # phrase can straddle a chunk boundary, so partial text can't be checked.
+    # Plan AV: the reply may come from the gateway (cloud/BYOK) or local Ollama; the
+    # guard runs on the final text either way, and ai_meta travels in response headers.
+    ctx = ai_router.context_for(
+        user,
+        ai_router.jwt_from(request.headers.get("authorization"), suite_session),
+        feature="jeli",
+    )
+    full_reply, meta = await ai_router.collect(
+        ai_router.stream(
+            ctx,
+            task="chat",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": req.message},
+            ],
+            local_stream=lambda: stream_chat(system_prompt, req.message),
+        )
+    )
+    context_text = f"{pazuru_ctx}\n{tsumi_ctx}"
+    return Response(
+        sanitize_reply(full_reply, context_text=context_text, lang=req.lang),
+        media_type="text/plain; charset=utf-8",
+        headers={
+            "X-AI-Provider": meta.get("provider") or "local",
+            "X-AI-Model": meta.get("model") or "",
+            "X-AI-Notice": meta.get("notice") or "",
+        },
+    )
