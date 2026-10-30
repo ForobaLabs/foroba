@@ -1,0 +1,30 @@
+{
+  "known": {
+    "persons": [
+      "Giulia Ferrari"
+    ],
+    "orgs": [
+      "Acme Logistica"
+    ],
+    "addresses": []
+  },
+  "must_mask": [
+    "Acme Logistica",
+    "Giulia Ferrari",
+    "12345678903",
+    "Giuseppe Garibaldi",
+    "FRRGLI85C43L219K",
+    "004512",
+    "12/03/1985",
+    "IT60 X054 2811 1010 0000 0123 456"
+  ],
+  "must_keep": [
+    "2.450,00",
+    "225,20",
+    "410,15",
+    "1.789,35",
+    "27/09/2026",
+    "INPS",
+    "IRPEF"
+  ]
+}

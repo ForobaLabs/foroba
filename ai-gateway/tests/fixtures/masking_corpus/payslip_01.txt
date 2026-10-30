@@ -1,0 +1,14 @@
+CEDOLINO PAGA - Settembre 2026
+Datore di lavoro: Acme Logistica S.r.l.
+Partita IVA: 12345678903
+Sede: Via Giuseppe Garibaldi 14, 20121 Milano
+Dipendente: Giulia Ferrari
+Codice fiscale: FRRGLI85C43L219K
+Matricola: 004512
+Nata a Torino il 12/03/1985
+IBAN accredito: IT60 X054 2811 1010 0000 0123 456
+Retribuzione lorda: 2.450,00
+Contributi INPS: 225,20
+IRPEF: 410,15
+Netto in busta: 1.789,35
+Data pagamento: 27/09/2026

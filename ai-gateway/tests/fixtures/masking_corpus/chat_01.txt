@@ -1,0 +1,3 @@
+Ciao, mi chiamo Paolo Verdi e abito in Via Roma 25, 00184 Roma.
+Il mio IBAN e' IT66B0503411700000000778123 e la mia email e' paolo.verdi@example.com.
+Il mio numero e' 333 9876543. Ho speso 120,50 euro il 14/10/2026 al supermercato, vorrei capire se sto risparmiando abbastanza.

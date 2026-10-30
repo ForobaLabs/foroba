@@ -1,0 +1,20 @@
+{
+  "known": {
+    "persons": [
+      "Paolo Verdi"
+    ],
+    "orgs": [],
+    "addresses": []
+  },
+  "must_mask": [
+    "Paolo Verdi",
+    "Via Roma 25",
+    "IT66B0503411700000000778123",
+    "paolo.verdi@example.com",
+    "333 9876543"
+  ],
+  "must_keep": [
+    "120,50",
+    "14/10/2026"
+  ]
+}

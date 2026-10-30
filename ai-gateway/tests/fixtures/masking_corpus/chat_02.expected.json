@@ -1,0 +1,22 @@
+{
+  "known": {
+    "persons": [
+      "Sofia Greco"
+    ],
+    "orgs": [
+      "Omega Consulting"
+    ],
+    "addresses": []
+  },
+  "must_mask": [
+    "Sofia Greco",
+    "Omega Consulting",
+    "RSSMRA80A01H501U"
+  ],
+  "must_keep": [
+    "2.050,00",
+    "780,00",
+    "140.000,00",
+    "350,00"
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "known": {
+    "persons": [
+      "Anna Conti"
+    ],
+    "orgs": [
+      "Gamma Costruzioni"
+    ],
+    "addresses": []
+  },
+  "must_mask": [
+    "Anna Conti",
+    "IT96Q0200801600000102345678",
+    "4539 1488 0343 6467",
+    "GIORGIO NERI",
+    "GAMMA COSTRUZIONI"
+  ],
+  "must_keep": [
+    "ZARA",
+    "LIDL",
+    "-39,90",
+    "-18,75",
+    "1.502,77",
+    "-480,00",
+    "01/11/2026"
+  ]
+}

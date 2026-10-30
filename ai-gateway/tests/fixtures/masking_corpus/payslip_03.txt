@@ -1,0 +1,10 @@
+Cedolino;Novembre 2026
+Azienda;Gamma Costruzioni S.p.A.
+Residenza dipendente;Corso Vittorio Emanuele 101 10128 Torino
+Dipendente;Anna Conti
+Codice fiscale;VRDPLA75M20D612Z
+Badge;AB-40021
+Telefono;+39 347 1234567
+Email;anna.conti@example.com
+Lordo;1.980,00
+Netto;1.502,77

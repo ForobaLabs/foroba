@@ -1,0 +1,24 @@
+{
+  "known": {
+    "persons": [
+      "Giulia Ferrari"
+    ],
+    "orgs": [],
+    "addresses": []
+  },
+  "must_mask": [
+    "Giulia Ferrari",
+    "IT60X0542811101000000123456",
+    "MARIO ROSSI"
+  ],
+  "must_keep": [
+    "ESSELUNGA",
+    "-54,30",
+    "1.734,05",
+    "-650,00",
+    "-72,18",
+    "-23,99",
+    "02/10/2026",
+    "07/10/2026"
+  ]
+}

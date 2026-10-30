@@ -1,0 +1,26 @@
+{
+  "known": {
+    "persons": [
+      "Anna Conti"
+    ],
+    "orgs": [
+      "Gamma Costruzioni"
+    ],
+    "addresses": [
+      "Corso Vittorio Emanuele 101"
+    ]
+  },
+  "must_mask": [
+    "Gamma Costruzioni",
+    "Corso Vittorio Emanuele 101",
+    "Anna Conti",
+    "VRDPLA75M20D612Z",
+    "AB-40021",
+    "347 1234567",
+    "anna.conti@example.com"
+  ],
+  "must_keep": [
+    "1.980,00",
+    "1.502,77"
+  ]
+}

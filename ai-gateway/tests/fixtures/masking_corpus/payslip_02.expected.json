@@ -1,0 +1,26 @@
+{
+  "known": {
+    "persons": [
+      "Luca Bianchi"
+    ],
+    "orgs": [
+      "Beta Servizi"
+    ],
+    "addresses": []
+  },
+  "must_mask": [
+    "BETA SERVIZI",
+    "VIALE DEI MILLE",
+    "98765432103",
+    "LUCA BIANCHI",
+    "BNCLCU92D15F205W",
+    "77310",
+    "15/04/1992",
+    "IT65Y0306909606100000063852"
+  ],
+  "must_keep": [
+    "3.120,50",
+    "842,10",
+    "2.278,40"
+  ]
+}

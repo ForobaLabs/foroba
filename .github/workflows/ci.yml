@@ -119,8 +119,8 @@ jobs:
           python-version: '3.12'
       - run: |
           sudo apt-get update -q && sudo apt-get install -y -q libsqlcipher-dev
-          pip install -q fastapi==0.162.0 uvicorn==0.54.0 pydantic-settings==2.16.1 sqlcipher3==0.5.4 \
-            cryptography==50.0.2 "PyJWT[crypto]==2.15.1" httpx==0.28.1 -r requirements-dev.txt
+          pip install -q -r requirements.txt -r requirements-dev.txt
+          python -m spacy download it_core_news_lg
       - run: python -m pytest -q
 
   sast:

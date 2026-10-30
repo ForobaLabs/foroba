@@ -1,0 +1,23 @@
+{
+  "known": {
+    "persons": [
+      "Marco Esposito"
+    ],
+    "orgs": [
+      "Delta Informatica"
+    ],
+    "addresses": []
+  },
+  "must_mask": [
+    "Delta Informatica",
+    "Piazza Duomo",
+    "Marco Esposito",
+    "1190",
+    "IT19K0100503200000000218745"
+  ],
+  "must_keep": [
+    "2.100,00",
+    "1.655,90",
+    "15/12/2026"
+  ]
+}

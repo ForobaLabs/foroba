@@ -1,0 +1,22 @@
+{
+  "known": {
+    "persons": [
+      "Luca Bianchi"
+    ],
+    "orgs": [],
+    "addresses": []
+  },
+  "must_mask": [
+    "Luca Bianchi",
+    "4539 1488 0343 6467",
+    "IT65Y0306909606100000063852",
+    "ANNA CONTI"
+  ],
+  "must_keep": [
+    "DECATHLON",
+    "-64,90",
+    "-25,00",
+    "89,90",
+    "05/11/2026"
+  ]
+}

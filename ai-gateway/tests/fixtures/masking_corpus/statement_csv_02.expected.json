@@ -1,0 +1,27 @@
+{
+  "known": {
+    "persons": [
+      "Luca Bianchi"
+    ],
+    "orgs": [
+      "Beta Servizi"
+    ],
+    "addresses": []
+  },
+  "must_mask": [
+    "Luca Bianchi",
+    "IT65Y0306909606100000063852",
+    "ANNA CONTI",
+    "PAOLA VERDI",
+    "BETA SERVIZI"
+  ],
+  "must_keep": [
+    "CONAD",
+    "-15,00",
+    "-31,45",
+    "2.278,40",
+    "-200,00",
+    "10/10/2026",
+    "13/10/2026"
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "known": {
+    "persons": [
+      "Giulia Ferrari"
+    ],
+    "orgs": [],
+    "addresses": []
+  },
+  "must_mask": [
+    "Giulia Ferrari",
+    "Giuseppe Garibaldi",
+    "FRRGLI85C43L219K",
+    "IT60 X054 2811 1010 0000 0123 456",
+    "MARIO ROSSI"
+  ],
+  "must_keep": [
+    "2.100,00",
+    "-54,30",
+    "-650,00",
+    "1.395,70",
+    "ESSELUNGA",
+    "02/10/2026"
+  ]
+}

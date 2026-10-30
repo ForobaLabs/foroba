@@ -1,0 +1,24 @@
+{
+  "known": {
+    "persons": [
+      "Marco Esposito"
+    ],
+    "orgs": [],
+    "addresses": []
+  },
+  "must_mask": [
+    "Marco Esposito",
+    "IT70Z0303201600010000451237",
+    "SARA GALLI",
+    "LAURA MARINI"
+  ],
+  "must_keep": [
+    "IKEA",
+    "SPOTIFY",
+    "-119,00",
+    "-90,00",
+    "-10,99",
+    "-12,50",
+    "20/11/2026"
+  ]
+}
