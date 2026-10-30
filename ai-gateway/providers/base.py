@@ -11,6 +11,7 @@ class ChatRequest:
     tools: list | None = None
     json_mode: bool = False
     stream: bool = False
+    max_tokens: int | None = None
 
 
 @dataclass

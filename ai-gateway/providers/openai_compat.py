@@ -42,6 +42,8 @@ def _payload(req: ChatRequest) -> dict:
     body: dict = {"model": req.model, "messages": req.messages, "stream": req.stream}
     if req.tools:
         body["tools"] = req.tools
+    if req.max_tokens:
+        body["max_tokens"] = req.max_tokens
     if req.json_mode:
         body["response_format"] = {"type": "json_object"}
     return body
