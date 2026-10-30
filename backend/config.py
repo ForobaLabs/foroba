@@ -49,6 +49,11 @@ class Settings(BaseSettings):
     # Each container caps at 512MB; keep this low relative to total VPS RAM.
     lab_sandbox_concurrency_limit: int = 3
 
+    # --- Cloud AI gateway (Plan AV). Foroba never holds provider credentials; it forwards the
+    # session JWT + this shared token to the isolated ai-gateway service. ---
+    ai_gateway_url: str = "http://ai-gateway:8090"
+    ai_gateway_token: str = ""
+
     pazuru_api_url: str = "http://localhost:8000"
     tsumi_api_url: str = "http://localhost:8050"
     # Shared secret sent as X-Internal-Token on server-to-server pushes to Pazuru/Tsumi

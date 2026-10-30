@@ -29,6 +29,7 @@ import networth_service
 import notification_service
 import settings_store
 from admin_router import router as admin_router
+from ai_proxy_router import router as ai_proxy_router
 from auth import keys
 from auth.api_keys_router import router as api_keys_router
 from auth.dependencies import get_current_user, require_admin
@@ -173,6 +174,7 @@ app.include_router(webhooks_router)
 app.include_router(public_api_router)
 app.include_router(waitlist_router)
 app.include_router(billing_router)
+app.include_router(ai_proxy_router)
 
 
 @app.on_event("startup")

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import hashlib
+import logging
 import secrets
 import sqlite3
 import uuid
@@ -26,6 +27,7 @@ from fastapi import (
 from pydantic import BaseModel
 
 import security_log
+from ai_gateway_client import get_client, record_pending_delete
 from auth import keys, refresh_tokens
 from auth import repository as repo
 from auth.avatar_storage import save_avatar
@@ -70,6 +72,8 @@ from settings_store import get_all as get_settings
 from stepup import issue_stepup_cookies
 from suite_cookies import suite_cookies
 from twofa.totp import verify_code
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -260,6 +264,11 @@ async def export_account(
     pazuru_data = await _get_app_data(f"{settings.pazuru_api_url.rstrip('/')}/account/export")
     tsumi_data = await _get_app_data(f"{settings.tsumi_api_url.rstrip('/')}/account/export")
 
+    try:
+        ai_data = await get_client().export_user(user["id"])
+    except Exception:  # export must still succeed without the AI section
+        ai_data = {"unavailable": True}
+
     subscriptions = [
         dict(row)
         for row in conn.execute(
@@ -274,6 +283,7 @@ async def export_account(
         "foroba": {"profile": profile, "consents": consents, "subscriptions": subscriptions},
         "pazuru": pazuru_data,
         "tsumi": tsumi_data,
+        "ai": ai_data,
     }
 
 
@@ -563,6 +573,14 @@ async def delete_account(
         raise HTTPException(
             status.HTTP_502_BAD_GATEWAY, "Account deletion failed — please try again"
         )
+
+    # Plan AV: the AI gateway holds consents/prefs/BYOK keys/usage for this user. Its failure must
+    # not block the erasure the user asked for: record it and let scripts/ai_gateway_purge.py retry.
+    try:
+        await get_client().delete_user(user["id"])
+    except Exception:  # any gateway problem defers, never aborts, the erasure
+        logger.warning("ai_gateway_delete_pending user_id=%s", user["id"])
+        record_pending_delete(conn, user["id"])
 
     repo.delete_user(conn, user["id"])
     response.delete_cookie("suite_session")
