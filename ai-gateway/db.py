@@ -40,6 +40,7 @@ CREATE TABLE IF NOT EXISTS byok_keys(
 CREATE TABLE IF NOT EXISTS ai_usage(
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   user_id INTEGER NOT NULL,
+  tier TEXT,
   app TEXT,
   feature TEXT,
   task TEXT,

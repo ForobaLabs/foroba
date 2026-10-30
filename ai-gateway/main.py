@@ -4,14 +4,19 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
+import chat
 import consent
 import db
 import prefs
+import quota
+import usage
 
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
-    db.connect().close()
+    conn = db.connect()
+    quota.load_breaker(conn)
+    conn.close()
     yield
 
 
@@ -25,6 +30,8 @@ app = FastAPI(
 
 app.include_router(consent.router)
 app.include_router(prefs.router)
+app.include_router(chat.router)
+app.include_router(usage.router)
 
 
 @app.get("/healthz")

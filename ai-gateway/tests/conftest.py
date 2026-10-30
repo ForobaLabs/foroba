@@ -69,3 +69,32 @@ def make_token(rsa_key):
         return jwt.encode(claims, pem, algorithm="RS256", headers={"kid": "k1"})
 
     return _make
+
+
+@pytest.fixture(autouse=True)
+def _reset_quota_state():
+    import quota
+
+    quota.reset()
+    yield
+    quota.reset()
+
+
+@pytest.fixture
+def api(make_token):
+    """Authenticated call helper: api("POST", "/v1/chat", user=7, tier="free", json=...)."""
+    from fastapi.testclient import TestClient
+
+    from main import app
+
+    client = TestClient(app)
+
+    def call(method, path, user=7, tier="free", admin=False, **kw):
+        headers = {
+            "X-AI-Gateway-Token": GATEWAY_TOKEN,
+            "Authorization": "Bearer "
+            + make_token(sub=str(user), tier=tier, is_admin=admin),
+        }
+        return client.request(method, path, headers=headers, **kw)
+
+    return call

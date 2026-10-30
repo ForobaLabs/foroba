@@ -1,7 +1,7 @@
 """ai-gateway settings. The gateway is the only holder of provider credentials."""
 
 from functools import lru_cache
-from typing import Annotated
+from typing import Annotated, Literal
 
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
@@ -51,6 +51,12 @@ class Settings(BaseSettings):
     model_long: str = Field(
         "@cf/meta/llama-4-scout-17b-16e-instruct", validation_alias="AI_MODEL_LONG"
     )
+
+    fallback_provider: Literal["none", "gemini"] = Field(
+        "none", validation_alias="AI_FALLBACK_PROVIDER"
+    )
+    gemini_api_key: str = Field("", validation_alias="GEMINI_API_KEY")
+    model_fallback: str = Field("gemini-3.5-flash-lite", validation_alias="AI_MODEL_FALLBACK")
 
     @field_validator("test_allowlist", mode="before")
     @classmethod
