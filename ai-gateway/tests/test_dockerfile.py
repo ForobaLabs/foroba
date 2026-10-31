@@ -12,6 +12,6 @@ def test_dockerfile_copies_every_subpackage():
         assert f"COPY {pkg} ./{pkg}" in docker, f"Dockerfile does not copy package {pkg}/"
 
 
-def test_dockerfile_port_matches_expose_and_cmd():
+def test_dockerfile_port_matches_app_defaults_8090():
     docker = (ROOT / "Dockerfile").read_text()
-    assert "EXPOSE 8095" in docker and '"--port", "8095"' in docker
+    assert "EXPOSE 8090" in docker and '"--port", "8090"' in docker

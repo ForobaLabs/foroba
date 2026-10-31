@@ -21,5 +21,5 @@ RUN groupadd --system --gid 10001 app \
  && chmod -R a+rX /app
 USER app
 
-EXPOSE 8095
-CMD ["python", "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8095"]
+EXPOSE 8090
+CMD ["python", "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8090"]
