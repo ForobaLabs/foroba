@@ -1,4 +1,4 @@
-import { applyCspNonce } from '@foroba/ui';
+import { AiApiProvider, applyCspNonce } from '@foroba/ui';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
@@ -6,6 +6,7 @@ import { I18nextProvider } from 'react-i18next';
 import { RouterProvider } from 'react-router';
 import i18n from './i18n';
 import { router } from './router';
+import { aiApi } from './ai/aiApi';
 import { AuthProvider } from './auth/AuthProvider';
 import { CurrencyProvider } from './contexts/CurrencyContext';
 import { PrivacyProvider } from './contexts/PrivacyContext';
@@ -38,7 +39,9 @@ createRoot(rootEl).render(
         <PrivacyProvider>
           <CurrencyProvider>
             <I18nextProvider i18n={i18n}>
-              <RouterProvider router={router} />
+              <AiApiProvider api={aiApi}>
+                <RouterProvider router={router} />
+              </AiApiProvider>
             </I18nextProvider>
           </CurrencyProvider>
         </PrivacyProvider>

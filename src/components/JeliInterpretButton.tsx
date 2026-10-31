@@ -9,7 +9,16 @@
  */
 
 import { useState } from 'react';
-import { Button, Spinner } from '@foroba/ui';
+import {
+  AiBadge,
+  AiNoticeBanner,
+  AiProviderToggle,
+  Button,
+  Spinner,
+  type AiMeta,
+} from '@foroba/ui';
+import { AI_UPGRADE_HREF } from '../ai/aiApi';
+import { readAiMeta } from '../ai/aiMeta';
 
 interface JeliInterpretButtonProps {
   /** Short label identifying the page/section, prefixed into the Jeli prompt
@@ -22,10 +31,12 @@ interface JeliInterpretButtonProps {
 export function JeliInterpretButton({ contextLabel, buildContext }: JeliInterpretButtonProps) {
   const [text, setText] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [meta, setMeta] = useState<AiMeta | null>(null);
 
   async function run() {
     setLoading(true);
     setText('');
+    setMeta(null);
     try {
       const res = await fetch('/jeli/chat', {
         method: 'POST',
@@ -42,6 +53,7 @@ export function JeliInterpretButton({ contextLabel, buildContext }: JeliInterpre
         );
         return;
       }
+      setMeta(readAiMeta(res.headers));
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let acc = '';
@@ -60,6 +72,7 @@ export function JeliInterpretButton({ contextLabel, buildContext }: JeliInterpre
 
   return (
     <div className="space-y-2">
+      <AiProviderToggle app="foroba" feature="jeli" />
       <Button variant="secondary" onClick={() => void run()} disabled={loading}>
         {loading ? 'Asking Jeli…' : 'Interpret with Jeli'}
       </Button>
@@ -68,6 +81,8 @@ export function JeliInterpretButton({ contextLabel, buildContext }: JeliInterpre
           <div className="rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] p-3 text-sm whitespace-pre-wrap text-[var(--color-text-primary)]">
             {text || <Spinner />}
           </div>
+          <AiBadge meta={meta} />
+          <AiNoticeBanner notice={meta?.notice ?? null} platform="web" upgradeHref={AI_UPGRADE_HREF} />
           <p className="text-xs italic text-[var(--color-text-secondary)]">
             AI-generated interpretation — not financial advice. Verify independently.
           </p>

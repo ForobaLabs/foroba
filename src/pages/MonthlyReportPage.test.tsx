@@ -1,5 +1,6 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { AiTestProviders } from '../test/AiTestProviders';
 import { MonthlyReportPage } from './MonthlyReportPage';
 
 const mockUseEntitlement = vi.fn();
@@ -26,7 +27,7 @@ describe('MonthlyReportPage', () => {
     mockUseEntitlement.mockReturnValue({ visible: true, unlocked: false });
     mockListResponse([]);
 
-    render(<MonthlyReportPage />);
+    render(<AiTestProviders><MonthlyReportPage /></AiTestProviders>);
 
     await waitFor(() => {
       expect(screen.getByRole('heading', { level: 1, name: /monthly report/i })).toBeInTheDocument();
@@ -46,7 +47,7 @@ describe('MonthlyReportPage', () => {
       { used: 1, limit: 6 },
     );
 
-    render(<MonthlyReportPage />);
+    render(<AiTestProviders><MonthlyReportPage /></AiTestProviders>);
 
     await waitFor(() => {
       expect(screen.getByText(/2026-07/)).toBeInTheDocument();
@@ -58,7 +59,7 @@ describe('MonthlyReportPage', () => {
     mockUseEntitlement.mockReturnValue({ visible: true, unlocked: true });
     mockListResponse([], { used: 6, limit: 6 });
 
-    render(<MonthlyReportPage />);
+    render(<AiTestProviders><MonthlyReportPage /></AiTestProviders>);
 
     await waitFor(() => {
       expect(screen.getByRole('button', { name: /generate/i })).toBeDisabled();
@@ -76,7 +77,7 @@ describe('MonthlyReportPage', () => {
       { used: 1, limit: 6 },
     );
 
-    render(<MonthlyReportPage />);
+    render(<AiTestProviders><MonthlyReportPage /></AiTestProviders>);
 
     await waitFor(() => {
       expect(screen.getByRole('button', { name: /retry/i })).toBeInTheDocument();
@@ -95,7 +96,7 @@ describe('MonthlyReportPage', () => {
       { used: 1, limit: 6 },
     );
 
-    render(<MonthlyReportPage />);
+    render(<AiTestProviders><MonthlyReportPage /></AiTestProviders>);
 
     await waitFor(() => {
       expect(screen.getByRole('button', { name: /download pdf/i })).toBeInTheDocument();

@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { Send } from 'lucide-react';
+import { AiBadge, AiNoticeBanner, AiProviderToggle } from '@foroba/ui';
 import { useTranslation } from 'react-i18next';
 import type { JeliMessage } from '../../hooks/useJeli';
+import { AI_UPGRADE_HREF } from '../../ai/aiApi';
 import { JeliPromptChips } from '../JeliPromptChips';
 
 interface JeliPanelProps {
@@ -39,7 +41,7 @@ export function JeliPanel({ messages, streaming, onSend, onStop, onReset }: Jeli
         )}
         {messages.length === 0 && !streaming && <JeliPromptChips onPick={onSend} />}
         {messages.map((msg, i) => (
-          <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+          <div key={i} className={`flex flex-col gap-1 ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
             <div
               className={`max-w-[85%] whitespace-pre-wrap break-words rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed ${
                 msg.role === 'user'
@@ -49,11 +51,18 @@ export function JeliPanel({ messages, streaming, onSend, onStop, onReset }: Jeli
             >
               {msg.content}
             </div>
+            {msg.role === 'assistant' && msg.meta && (
+              <>
+                <AiBadge meta={msg.meta} />
+                <AiNoticeBanner notice={msg.meta.notice ?? null} platform="web" upgradeHref={AI_UPGRADE_HREF} />
+              </>
+            )}
           </div>
         ))}
         <div ref={bottomRef} />
       </div>
       <div className="border-t border-[var(--color-bg-border)] p-3">
+        <AiProviderToggle app="foroba" feature="jeli" className="mb-2" />
         <div className="flex gap-2">
           <input
             value={input}

@@ -1,4 +1,4 @@
-import { Button, Card, CardContent, PageContainer, SectionHeader } from '@foroba/ui';
+import { AiProviderToggle, Button, Card, CardContent, PageContainer, SectionHeader } from '@foroba/ui';
 import { useEffect, useRef, useState } from 'react';
 
 interface TableArtifact { type: 'artifact'; kind: 'table'; data: Record<string, unknown>[] }
@@ -139,6 +139,8 @@ export function JeliLabPage() {
         description="Ask questions about your own data across Naforo and Yiriba. Jeli writes and runs Python in an isolated sandbox."
         className="mb-6"
       />
+
+      <AiProviderToggle app="foroba" feature="lab" className="mb-3" />
 
       <Card>
         <CardContent className="flex h-[60vh] flex-col gap-4 p-6">

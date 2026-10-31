@@ -255,6 +255,9 @@ export function AppSettingsPage() {
       )}
 
       <SettingsPage
+        aiApps={['foroba', 'pazuru', 'tsumi']}
+        aiPlatform="web"
+        aiUpgradeHref="/profile"
         profile={profile}
         onUpdateProfile={handleUpdateProfile}
         onExportData={() => {

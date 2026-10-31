@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { PremiumGate } from '../components/PremiumGate';
 import {
-  Badge, Button, Card, CardContent, ErrorState, PageContainer, SectionHeader,
+  AiProviderToggle, Badge, Button, Card, CardContent, ErrorState, PageContainer, SectionHeader,
   Spinner, useEntitlement,
 } from '@foroba/ui';
 import {
@@ -117,6 +117,7 @@ function MonthlyReportBody() {
 
   return (
     <div className="space-y-6">
+      <AiProviderToggle app="foroba" feature="monthly_report" />
       <Card>
         <CardContent className="flex items-center justify-between gap-4 p-4">
           <span className="text-sm text-[var(--color-text-secondary)]">

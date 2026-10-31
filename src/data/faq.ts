@@ -22,13 +22,13 @@ export const FOROBA_FAQ: FaqItem[] = [
   {
     question: 'How does Jeli, the AI assistant, work?',
     answer:
-      'Jeli runs entirely locally via Ollama — no data ever leaves your machine. It can answer questions about your accounts, spending, and portfolio. If Jeli appears offline, the local AI model may not be running yet.',
+      'By default Jeli runs on our own server with a local model (Ollama), so your questions are not sent to any AI provider. In Settings you can choose, per feature, cloud AI (Cloudflare Workers AI) or your own API key; we ask for your consent first and mask names and identifiers before sending. If Jeli appears offline, the local AI model may not be running yet.',
     tags: ['jeli', 'ai', 'assistant', 'privacy'],
   },
   {
     question: 'Is my financial data shared with any external service?',
     answer:
-      'No. Foroba, Naforo, and Yiriba are all local-first and self-hosted. Bank sync uses Enable Banking under PSD2; market data comes from public, license-clean sources. Nothing is sent to third-party AI providers.',
+      'No. Foroba, Naforo, and Yiriba are all local-first and self-hosted. Bank sync uses Enable Banking under PSD2; market data comes from public, license-clean sources. AI requests stay on our server unless you opt in to cloud AI or add your own key, per feature, in Settings.',
     tags: ['privacy', 'security', 'data'],
   },
   {

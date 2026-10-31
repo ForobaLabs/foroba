@@ -6,6 +6,7 @@ import { MemoryRouter } from 'react-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import i18n from '../i18n';
 import { PrivacyProvider, usePrivacy } from '../contexts/PrivacyContext';
+import { AiTestProviders } from '../test/AiTestProviders';
 import { KelenShell } from './KelenShell';
 
 function setViewport(mobile: boolean) {
@@ -34,6 +35,7 @@ function renderShell(path = '/goals', isAdmin = false) {
   return render(
     <I18nextProvider i18n={i18n}>
       <QueryClientProvider client={qc}>
+        <AiTestProviders>
         <PrivacyProvider>
           <MemoryRouter initialEntries={[path]}>
             <KelenShell isAdmin={isAdmin}>
@@ -42,6 +44,7 @@ function renderShell(path = '/goals', isAdmin = false) {
             </KelenShell>
           </MemoryRouter>
         </PrivacyProvider>
+        </AiTestProviders>
       </QueryClientProvider>
     </I18nextProvider>,
   );

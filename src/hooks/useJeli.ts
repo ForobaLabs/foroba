@@ -1,10 +1,13 @@
 import { useCallback, useRef, useState } from 'react';
+import type { AiMeta } from '@foroba/ui';
+import { readAiMeta } from '../ai/aiMeta';
 import i18n from '../i18n';
 
 export interface JeliMessage {
   role: 'user' | 'assistant';
   content: string;
   timestamp: Date;
+  meta?: AiMeta | null;
 }
 
 export interface JeliPersonality {
@@ -64,6 +67,7 @@ export function useJeli(userName?: string) {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       if (!res.body) throw new Error('No response body');
 
+      const meta = readAiMeta(res.headers);
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let accumulated = '';
@@ -78,6 +82,7 @@ export function useJeli(userName?: string) {
           updated[updated.length - 1] = {
             ...updated[updated.length - 1],
             content: accumulated,
+            meta,
           };
           return updated;
         });

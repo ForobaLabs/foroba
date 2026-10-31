@@ -59,6 +59,8 @@ WHO WE SHARE YOUR DATA WITH
 Brevo SAS — transactional email (pending); EU-based (France).
 GlitchTip error monitoring runs self-hosted on our own server — no data is sent to a third party.
 
+AI providers — only if you opt in. By default AI features run on our own server with a local model and nothing is sent out. If you choose cloud AI for a feature, requests are processed by Cloudflare (Workers AI); if you add your own API key, requests go to the provider you pick (OpenAI, Anthropic, Mistral, Google Gemini, OpenRouter or Cloudflare). We ask for your explicit consent first, which you can withdraw at any time in Settings; names, addresses, IBANs and similar identifiers are masked before sending, and providers may not train on your data. Your API keys are stored encrypted and never shown again.
+
 We do not sell your personal data. We do not share your data with advertisers.
 
 INTERNATIONAL TRANSFERS
