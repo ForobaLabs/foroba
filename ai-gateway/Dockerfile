@@ -11,12 +11,14 @@ RUN pip install --no-cache-dir -r requirements.txt \
  && rm -rf /var/lib/apt/lists/*
 
 COPY *.py ./
+COPY masking ./masking
+COPY providers ./providers
 
 # Plan AU: unprivileged uid 10001; the /data volume must be chown'd to 10001 on the host.
 RUN groupadd --system --gid 10001 app \
  && useradd --system --uid 10001 --gid app --create-home --home-dir /home/app app \
  && mkdir -p /data && chown app:app /data \
- && chmod a+rX /app /app/*.py
+ && chmod -R a+rX /app
 USER app
 
 EXPOSE 8095
