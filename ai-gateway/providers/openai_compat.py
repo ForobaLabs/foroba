@@ -65,6 +65,11 @@ def _map_status(status: int, body: bytes) -> ProviderError:
     return ProviderError("bad_request", status)
 
 
+def _as_text(content) -> str:
+    # Workers AI parses numeric-looking tokens as JSON numbers ("content": 2026).
+    return "" if content is None else str(content)
+
+
 def _neurons(spec: ProviderSpec, usage: dict | None) -> int:
     if not spec.needs_account_id or not usage:
         return 0
@@ -94,7 +99,7 @@ async def complete(
     except (ValueError, KeyError, IndexError, TypeError):
         raise ProviderError("unavailable", resp.status_code) from None
     return ChatResult(
-        text=message.get("content") or "",
+        text=_as_text(message.get("content")),
         tool_calls=message.get("tool_calls") or [],
         neurons=_neurons(spec, data.get("usage")),
         model=data.get("model") or req.model,
@@ -138,8 +143,9 @@ async def stream(
                 neurons = _neurons(spec, data.get("usage")) or neurons
                 for choice in data.get("choices") or []:
                     delta = choice.get("delta") or {}
-                    if delta.get("content"):
-                        yield {"type": "token", "text": delta["content"]}
+                    text = _as_text(delta.get("content"))
+                    if text:
+                        yield {"type": "token", "text": text}
                     for tc in delta.get("tool_calls") or []:
                         slot = calls.setdefault(
                             tc.get("index", 0),

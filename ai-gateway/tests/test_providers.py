@@ -168,3 +168,32 @@ async def test_json_mode_sets_response_format():
 def test_allowed_hosts_derived_from_registry():
     assert "api.cloudflare.com" in ALLOWED_HOSTS and "openrouter.ai" in ALLOWED_HOSTS
     assert set(PROVIDERS) == {"cloudflare", "openai", "anthropic", "mistral", "gemini", "openrouter"}
+
+
+@pytest.mark.asyncio
+@respx.mock
+async def test_stream_coerces_non_string_content_to_text():
+    # Workers AI parses numeric-looking tokens as JSON numbers ("content": 2026).
+    sse = (
+        'data: {"choices":[{"delta":{"content":"Nel "}}]}\n\n'
+        'data: {"choices":[{"delta":{"content":2026}}]}\n\n'
+        'data: {"choices":[{"delta":{"content":0}}]}\n\n'
+        "data: [DONE]\n\n"
+    )
+    respx.post("https://api.cloudflare.com/client/v4/accounts/a/ai/v1/chat/completions").mock(
+        return_value=httpx.Response(200, content=sse, headers={"content-type": "text/event-stream"})
+    )
+    events = [
+        e async for e in openai_compat.stream(PROVIDERS["cloudflare"], KEY, "a", _req(stream=True))
+    ]
+    assert [e["text"] for e in events if e["type"] == "token"] == ["Nel ", "2026", "0"]
+
+
+@pytest.mark.asyncio
+@respx.mock
+async def test_complete_coerces_non_string_content_to_text():
+    respx.post("https://api.cloudflare.com/client/v4/accounts/a/ai/v1/chat/completions").mock(
+        return_value=httpx.Response(200, json=_ok(content=2026))
+    )
+    res = await openai_compat.complete(PROVIDERS["cloudflare"], KEY, "a", _req())
+    assert res.text == "2026"
