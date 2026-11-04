@@ -84,7 +84,7 @@ def verify_registration(
     verification = webauthn.verify_registration_response(
         credential=credential,
         expected_challenge=base64url_to_bytes(expected_challenge),
-        expected_origin=settings.webauthn_origin,
+        expected_origin=settings.webauthn_origins,
         expected_rp_id=settings.webauthn_rp_id,
     )
     conn.execute(
@@ -132,7 +132,7 @@ def verify_authentication(conn: sqlite3.Connection, user_id: int, credential_jso
     verification = webauthn.verify_authentication_response(
         credential=credential,
         expected_challenge=base64url_to_bytes(expected_challenge),
-        expected_origin=settings.webauthn_origin,
+        expected_origin=settings.webauthn_origins,
         expected_rp_id=settings.webauthn_rp_id,
         credential_public_key=base64url_to_bytes(stored["public_key"]),
         credential_current_sign_count=stored["sign_count"],

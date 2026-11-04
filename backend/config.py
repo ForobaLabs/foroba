@@ -139,6 +139,8 @@ class Settings(BaseSettings):
     # --- WebAuthn / Passkeys (MFA hardening, foroba#199) ---
     webauthn_rp_id: str = "localhost"
     webauthn_rp_name: str = "Foroba"
+    # One origin, or a comma-separated list (every host that runs a passkey ceremony:
+    # app/pazuru/tsumi/m under the shared RP ID). Read it through `webauthn_origins`.
     webauthn_origin: str = "http://localhost:5175"
 
     # --- Cross-app step-up tokens (MFA hardening, foroba#199) ---
@@ -146,6 +148,10 @@ class Settings(BaseSettings):
     stepup_refresh_threshold_minutes: int = 15
     # Plan AU M-1: refresh never slides a step-up past this age since the original MFA proof.
     stepup_max_age_hours: int = 12
+
+    @property
+    def webauthn_origins(self) -> list[str]:
+        return [o.strip() for o in self.webauthn_origin.split(",") if o.strip()]
 
 
 settings = Settings()
