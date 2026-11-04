@@ -300,6 +300,7 @@ def test_login_sets_cookie_domain_when_configured(client, monkeypatch):
     from config import settings
 
     monkeypatch.setattr(settings, "cookie_domain", ".pfh.example.com")
+    client = TestClient(client.app, base_url="https://app.pfh.example.com")
     resp = client.post(
         "/auth/register",
         json={
@@ -319,6 +320,7 @@ def test_login_cookie_domain_attribute_present(client, monkeypatch):
     from config import settings
 
     monkeypatch.setattr(settings, "cookie_domain", ".pfh.example.com")
+    client = TestClient(client.app, base_url="https://app.pfh.example.com")
     resp = client.post(
         "/auth/register",
         json={

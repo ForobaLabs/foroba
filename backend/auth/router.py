@@ -60,6 +60,7 @@ from auth.security import check_password, create_token, hash_password, needs_reh
 from auth.session_invalidation import invalidate_sessions_downstream
 from billing.provider import BillingProviderError, get_provider
 from config import settings
+from cookie_scope import cookie_domain_for
 from email_otp import EmailNotConfiguredError, generate_and_send, generate_and_send_signup_verify
 from email_otp import verify_and_consume as verify_email_otp
 from email_service import send_email_change_email, send_household_invite_email
@@ -78,7 +79,16 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 
-def _set_session_cookie(response: Response, user: dict) -> None:
+def _clear_session_cookie(response: Response, host: str | None) -> None:
+    """Delete suite_session under both scopes: the browser only removes a cookie when the
+    deletion carries the same Domain it was set with, and a user may hold either variant."""
+    response.delete_cookie("suite_session")
+    domain = cookie_domain_for(host)
+    if domain:
+        response.delete_cookie("suite_session", domain=domain)
+
+
+def _set_session_cookie(response: Response, user: dict, host: str | None = None) -> None:
     private_key, _, kid = keys.get_keypair(settings)
     token = create_token(
         user["id"],
@@ -97,7 +107,7 @@ def _set_session_cookie(response: Response, user: dict) -> None:
         samesite="lax",
         secure=settings.cookie_secure,
         max_age=settings.jwt_ttl_minutes * 60,
-        domain=settings.cookie_domain or None,
+        domain=cookie_domain_for(host),
     )
 
 
@@ -149,7 +159,7 @@ def register(
             generate_and_send_signup_verify(conn, user["id"], user["email"], country=req.country)
         except Exception:
             pass  # non-blocking — user can resend; don't fail registration
-    _set_session_cookie(response, user)
+    _set_session_cookie(response, user, request.url.hostname)
     return user
 
 
@@ -317,7 +327,7 @@ def login(
     repo.reset_failed_login(conn, user["id"])
     security_log.log_event(conn, user_id=user["id"], event="login_success",
                            detail=None, ip=request.client.host if request.client else None)
-    _set_session_cookie(response, user)
+    _set_session_cookie(response, user, request.url.hostname)
     return UserPublic(**user).model_dump()
 
 
@@ -350,7 +360,7 @@ def login_2fa(
             repo.register_failed_login(conn, user["id"])
             raise HTTPException(401, "Invalid code")
     repo.reset_failed_login(conn, user["id"])
-    _set_session_cookie(response, user)
+    _set_session_cookie(response, user, request.url.hostname)
     return UserPublic(**user).model_dump()
 
 
@@ -396,7 +406,7 @@ def login_recovery_code(
             repo.register_failed_login(conn, user["id"])
         raise HTTPException(401, "Invalid recovery code")
     repo.reset_failed_login(conn, user["id"])
-    _set_session_cookie(response, user)
+    _set_session_cookie(response, user, request.url.hostname)
     return UserPublic(**user).model_dump()
 
 
@@ -438,7 +448,7 @@ def login_webauthn_verify(
     if not verify_webauthn_authentication(conn, user["id"], req.credential):
         raise HTTPException(401, "Passkey verification failed")
     repo.reset_failed_login(conn, user["id"])
-    _set_session_cookie(response, user)
+    _set_session_cookie(response, user, request.url.hostname)
     return UserPublic(**user).model_dump()
 
 
@@ -461,6 +471,7 @@ def _enabled_methods(user: dict) -> list[str]:
 
 @router.post("/logout", status_code=204)
 def logout(
+    request: Request,
     response: Response,
     conn: sqlite3.Connection = Depends(get_conn),
     authorization: str | None = Header(default=None),
@@ -468,7 +479,7 @@ def logout(
 ) -> None:
     """Clear the session cookie. When a valid session can be identified (Bearer header or
     cookie), also revoke all refresh tokens so native clients are signed out too."""
-    response.delete_cookie("suite_session")
+    _clear_session_cookie(response, request.url.hostname)
     # Resolve user id from Bearer header (native) or cookie (web) — best-effort,
     # do not raise on invalid/missing credentials.
     import jwt
@@ -583,7 +594,7 @@ async def delete_account(
         record_pending_delete(conn, user["id"])
 
     repo.delete_user(conn, user["id"])
-    response.delete_cookie("suite_session")
+    _clear_session_cookie(response, request.url.hostname)
 
 
 @router.get("/me", response_model=UserPublic)

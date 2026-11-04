@@ -14,6 +14,7 @@ from auth import repository as repo
 from auth.conn import get_conn
 from auth.dependencies import get_current_user
 from config import settings
+from cookie_scope import cookie_domain_for
 from email_otp import verify_and_consume as verify_email_otp
 from passkeys.service import verify_authentication as verify_webauthn_authentication
 from rate_limit import limiter
@@ -65,7 +66,7 @@ def stepup_verify(
         samesite="lax",
         secure=settings.cookie_secure,
         max_age=settings.stepup_ttl_minutes * 60,
-        domain=settings.cookie_domain or None,
+        domain=cookie_domain_for(request.url.hostname),
     )
     if (x_client or "").lower() == "native":
         return {"app": req.app, "token": token}
