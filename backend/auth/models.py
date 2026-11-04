@@ -50,6 +50,7 @@ class UserPublic(BaseModel):
     totp_enabled: bool
     email_otp_enabled: bool = False
     webauthn_enabled: bool = False
+    passkey_reenrol_needed: bool = False
     mfa_enrollment_pending: bool = False
     display_currency: str
     show_debts: bool

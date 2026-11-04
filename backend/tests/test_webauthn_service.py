@@ -93,9 +93,10 @@ def _auth_credential_json(challenge: bytes, origin: str, raw_id: bytes) -> str:
 def _conn_with_credential(raw_id: bytes) -> tuple[sqlite3.Connection, int]:
     conn, user_id = _conn_with_user()
     conn.execute(
-        "INSERT INTO webauthn_credentials (user_id, credential_id, public_key, sign_count, label) "
-        "VALUES (?, ?, ?, 0, 'k')",
-        (user_id, bytes_to_base64url(raw_id), bytes_to_base64url(b"pk")),
+        "INSERT INTO webauthn_credentials "
+        "(user_id, credential_id, public_key, sign_count, label, rp_id) "
+        "VALUES (?, ?, ?, 0, 'k', ?)",
+        (user_id, bytes_to_base64url(raw_id), bytes_to_base64url(b"pk"), settings.webauthn_rp_id),
     )
     conn.commit()
     return conn, user_id
@@ -144,3 +145,77 @@ def test_verify_authentication_rejects_unlisted_origin(monkeypatch):
     cred = _auth_credential_json(challenge, "https://evil.example", b"cred-1")
     with pytest.raises(InvalidAuthenticationResponse, match="origin"):
         verify_authentication(conn, user_id, cred)
+
+
+# --- Task 2b: stale-passkey detection (credentials bound to a previous RP ID) ---
+
+
+def _add_cred(conn, user_id, raw_id: bytes, rp_id: str | None) -> None:
+    conn.execute(
+        "INSERT INTO webauthn_credentials "
+        "(user_id, credential_id, public_key, sign_count, label, rp_id) "
+        "VALUES (?, ?, ?, 0, 'k', ?)",
+        (user_id, bytes_to_base64url(raw_id), bytes_to_base64url(b"pk"), rp_id),
+    )
+    conn.commit()
+
+
+def test_init_schema_has_rp_id():
+    conn, _ = _conn_with_user()
+    cols = [r["name"] for r in conn.execute("PRAGMA table_info(webauthn_credentials)")]
+    assert "rp_id" in cols
+
+
+def test_init_schema_adds_and_backfills_rp_id_on_legacy_table(monkeypatch):
+    monkeypatch.setenv("WEBAUTHN_RP_ID", "foroba-app.duckdns.org")
+    conn = sqlite3.connect(":memory:")
+    conn.row_factory = sqlite3.Row
+    conn.executescript(
+        "CREATE TABLE webauthn_credentials (id INTEGER PRIMARY KEY AUTOINCREMENT,"
+        " user_id INTEGER NOT NULL, credential_id TEXT NOT NULL UNIQUE,"
+        " public_key TEXT NOT NULL, sign_count INTEGER NOT NULL DEFAULT 0, label TEXT,"
+        " created_at TEXT NOT NULL DEFAULT (datetime('now')));"
+        "INSERT INTO webauthn_credentials (user_id, credential_id, public_key)"
+        " VALUES (1, 'c', 'p');"
+    )
+    init_schema(conn)
+    row = conn.execute("SELECT rp_id FROM webauthn_credentials").fetchone()
+    assert row["rp_id"] == "foroba-app.duckdns.org"
+
+
+def test_registration_stores_current_rp_id(monkeypatch):
+    monkeypatch.setattr(settings, "webauthn_rp_id", "forobalabs.com")
+    fake = MagicMock(
+        return_value=MagicMock(credential_id=b"id", credential_public_key=b"pk", sign_count=0)
+    )
+    monkeypatch.setattr(passkey_service.webauthn, "verify_registration_response", fake)
+    monkeypatch.setattr(passkey_service, "parse_registration_credential_json", lambda j: j)
+    conn, user_id = _conn_with_user()
+    store_challenge(conn, user_id, bytes_to_base64url(b"r" * 32), purpose="registration")
+    verify_registration(conn, user_id, "{}", label="k")
+    row = conn.execute("SELECT rp_id FROM webauthn_credentials").fetchone()
+    assert row["rp_id"] == "forobalabs.com"
+
+
+def test_auth_options_exclude_stale_credentials(monkeypatch):
+    monkeypatch.setattr(settings, "webauthn_rp_id", "forobalabs.com")
+    conn, user_id = _conn_with_user()
+    _add_cred(conn, user_id, b"old", "foroba-app.duckdns.org")
+    opts = json.loads(passkey_service.authentication_options_for_user(conn, user_id))
+    assert opts["allowCredentials"] == []
+    _add_cred(conn, user_id, b"new", "forobalabs.com")
+    opts = json.loads(passkey_service.authentication_options_for_user(conn, user_id))
+    assert [c["id"] for c in opts["allowCredentials"]] == [bytes_to_base64url(b"new")]
+
+
+def test_reenrol_needed_states(monkeypatch):
+    monkeypatch.setattr(settings, "webauthn_rp_id", "forobalabs.com")
+    conn, user_id = _conn_with_user()
+    assert passkey_service.reenrol_needed(conn, user_id) is False  # no credentials
+    _add_cred(conn, user_id, b"old", "foroba-app.duckdns.org")
+    assert passkey_service.reenrol_needed(conn, user_id) is True  # stale only
+    _add_cred(conn, user_id, b"null", None)
+    assert passkey_service.reenrol_needed(conn, user_id) is True  # unknown RP counts as stale
+    _add_cred(conn, user_id, b"new", "forobalabs.com")
+    assert passkey_service.reenrol_needed(conn, user_id) is False  # one current is enough
+    assert passkey_service.has_current_credential(conn, user_id) is True

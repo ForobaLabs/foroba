@@ -65,7 +65,8 @@ from email_otp import EmailNotConfiguredError, generate_and_send, generate_and_s
 from email_otp import verify_and_consume as verify_email_otp
 from email_service import send_email_change_email, send_household_invite_email
 from legal import PRIVACY_VERSION, TOS_VERSION
-from passkeys.service import authentication_options_for_user
+from passkeys.service import authentication_options_for_user, has_current_credential
+from passkeys.service import reenrol_needed as passkey_reenrol_needed
 from passkeys.service import verify_authentication as verify_webauthn_authentication
 from rate_limit import limiter
 from recovery_codes import verify_and_consume as verify_recovery_code
@@ -424,7 +425,11 @@ def login_webauthn_options_by_email(
     import json
 
     user = repo.get_user_by_email(conn, req.email)
-    if user is None or not user.get("webauthn_enabled"):
+    if (
+        user is None
+        or not user.get("webauthn_enabled")
+        or not has_current_credential(conn, user["id"])
+    ):
         raise HTTPException(400, "Passkey not set up for this account")
     return json.loads(authentication_options_for_user(conn, user["id"]))
 
@@ -598,8 +603,10 @@ async def delete_account(
 
 
 @router.get("/me", response_model=UserPublic)
-def me(user: dict = Depends(get_current_user)) -> dict:
-    return user
+def me(
+    user: dict = Depends(get_current_user), conn: sqlite3.Connection = Depends(get_conn)
+) -> dict:
+    return {**user, "passkey_reenrol_needed": passkey_reenrol_needed(conn, user["id"])}
 
 
 # ── A2: Email verification (foroba#178) ──────────────────────────────────────

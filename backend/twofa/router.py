@@ -18,6 +18,7 @@ from auth.models import EmailOtpVerifyRequest, MfaMethodsResponse, RecoveryCodes
 from auth.security import verify_password
 from email_otp import EmailNotConfiguredError, generate_and_send
 from email_otp import verify_and_consume as verify_email_otp
+from passkeys.service import has_current_credential
 from rate_limit import limiter
 from recovery_codes import generate_and_store, remaining_count
 from twofa.totp import generate_secret, provisioning_uri, qr_data_url, verify_code
@@ -133,7 +134,9 @@ def methods(
     return {
         "totp_enabled": bool(fresh["totp_enabled"]),
         "email_otp_enabled": bool(fresh["email_otp_enabled"]),
-        "webauthn_enabled": bool(fresh["webauthn_enabled"]),
+        # A passkey bound to a previous RP ID can never verify: don't offer it.
+        "webauthn_enabled": bool(fresh["webauthn_enabled"])
+        and has_current_credential(conn, user["id"]),
         "recovery_codes_remaining": remaining_count(conn, user["id"]),
     }
 

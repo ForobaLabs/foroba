@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import sqlite3
 from pathlib import Path
 
@@ -224,6 +225,7 @@ CREATE TABLE IF NOT EXISTS webauthn_credentials (
     public_key TEXT NOT NULL,
     sign_count INTEGER NOT NULL DEFAULT 0,
     label TEXT,
+    rp_id TEXT,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
@@ -380,6 +382,18 @@ def init_schema(conn: sqlite3.Connection) -> None:
         pass  # column already exists
     try:
         conn.execute("ALTER TABLE users ADD COLUMN webauthn_enabled INTEGER NOT NULL DEFAULT 0")
+        conn.commit()
+    except sqlite3.OperationalError:
+        pass  # column already exists
+    # Idempotent migration: webauthn_credentials.rp_id (free-tier-infra Task 2b). A credential is
+    # bound to the RP ID it was registered under; rows that predate the column belong to the RP ID
+    # the deploy was running with. Mirrors alembic 0028_webauthn_rp_id.
+    try:
+        conn.execute("ALTER TABLE webauthn_credentials ADD COLUMN rp_id TEXT")
+        conn.execute(
+            "UPDATE webauthn_credentials SET rp_id = ? WHERE rp_id IS NULL",
+            (os.environ.get("WEBAUTHN_RP_ID", "localhost"),),
+        )
         conn.commit()
     except sqlite3.OperationalError:
         pass  # column already exists

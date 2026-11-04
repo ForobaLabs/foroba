@@ -88,14 +88,16 @@ def verify_registration(
         expected_rp_id=settings.webauthn_rp_id,
     )
     conn.execute(
-        "INSERT INTO webauthn_credentials (user_id, credential_id, public_key, sign_count, label) "
-        "VALUES (?, ?, ?, ?, ?)",
+        "INSERT INTO webauthn_credentials "
+        "(user_id, credential_id, public_key, sign_count, label, rp_id) "
+        "VALUES (?, ?, ?, ?, ?, ?)",
         (
             user_id,
             bytes_to_base64url(verification.credential_id),
             bytes_to_base64url(verification.credential_public_key),
             verification.sign_count,
             label,
+            settings.webauthn_rp_id,
         ),
     )
     conn.commit()
@@ -103,7 +105,8 @@ def verify_registration(
 
 def authentication_options_for_user(conn: sqlite3.Connection, user_id: int) -> str:
     creds = conn.execute(
-        "SELECT credential_id FROM webauthn_credentials WHERE user_id = ?", (user_id,)
+        "SELECT credential_id FROM webauthn_credentials WHERE user_id = ? AND rp_id = ?",
+        (user_id, settings.webauthn_rp_id),
     ).fetchall()
     options = webauthn.generate_authentication_options(
         rp_id=settings.webauthn_rp_id,
@@ -124,8 +127,8 @@ def verify_authentication(conn: sqlite3.Connection, user_id: int, credential_jso
     credential = parse_authentication_credential_json(credential_json)
     stored = conn.execute(
         "SELECT id, public_key, sign_count FROM webauthn_credentials "
-        "WHERE credential_id = ? AND user_id = ?",
-        (bytes_to_base64url(credential.raw_id), user_id),
+        "WHERE credential_id = ? AND user_id = ? AND rp_id = ?",
+        (bytes_to_base64url(credential.raw_id), user_id, settings.webauthn_rp_id),
     ).fetchone()
     if stored is None:
         return False
@@ -143,3 +146,20 @@ def verify_authentication(conn: sqlite3.Connection, user_id: int, credential_jso
     )
     conn.commit()
     return True
+
+
+def has_current_credential(conn: sqlite3.Connection, user_id: int) -> bool:
+    """True when the user holds a passkey registered under the RP ID this deploy runs with."""
+    row = conn.execute(
+        "SELECT 1 FROM webauthn_credentials WHERE user_id = ? AND rp_id = ? LIMIT 1",
+        (user_id, settings.webauthn_rp_id),
+    ).fetchone()
+    return row is not None
+
+
+def reenrol_needed(conn: sqlite3.Connection, user_id: int) -> bool:
+    """True when the user has passkeys but none works under the current RP ID."""
+    has_any = conn.execute(
+        "SELECT 1 FROM webauthn_credentials WHERE user_id = ? LIMIT 1", (user_id,)
+    ).fetchone()
+    return has_any is not None and not has_current_credential(conn, user_id)
