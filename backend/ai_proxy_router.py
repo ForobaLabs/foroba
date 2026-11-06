@@ -4,15 +4,25 @@ forwarded 1:1 to the ai-gateway with the caller's session JWT. Request bodies ar
 
 from __future__ import annotations
 
+import re
 from typing import Any
 
-from fastapi import APIRouter, Cookie, Depends, Header, Request
+from fastapi import APIRouter, Cookie, Depends, Header, HTTPException, Request
 from fastapi.responses import JSONResponse, Response
 
 from ai_gateway_client import GatewayRejected, GatewayUnavailable, get_client
 from auth.dependencies import _token_from_header, get_current_user, require_admin
 
 router = APIRouter(prefix="/ai", tags=["ai"])
+
+# Provider ids look like "openai" or "byok:openai" (PB-013: never a path, never "..").
+_PROVIDER_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9:_-]{0,63}$")
+
+
+def _provider(provider: str) -> str:
+    if not _PROVIDER_RE.match(provider):
+        raise HTTPException(400, "Invalid provider")
+    return provider
 
 
 def _jwt(authorization: str | None, suite_session: str | None) -> str:
@@ -99,7 +109,7 @@ async def post_consent(
     return await _forward("POST", request, "/v1/consents", authorization, suite_session, body=True)
 
 
-@router.delete("/consents/{provider:path}")
+@router.delete("/consents/{provider}")
 async def delete_consent(
     provider: str,
     request: Request,
@@ -108,7 +118,7 @@ async def delete_consent(
     suite_session: str | None = _Cookie,
 ):
     return await _forward(
-        "DELETE", request, f"/v1/consents/{provider}", authorization, suite_session
+        "DELETE", request, f"/v1/consents/{_provider(provider)}", authorization, suite_session
     )
 
 
@@ -140,7 +150,8 @@ async def delete_byok(
     authorization: str | None = _Auth,
     suite_session: str | None = _Cookie,
 ):
-    return await _forward("DELETE", request, f"/v1/byok/{provider}", authorization, suite_session)
+    path = f"/v1/byok/{_provider(provider)}"
+    return await _forward("DELETE", request, path, authorization, suite_session)
 
 
 @router.post("/byok/{provider}/test")
@@ -152,7 +163,7 @@ async def test_byok(
     suite_session: str | None = _Cookie,
 ):
     return await _forward(
-        "POST", request, f"/v1/byok/{provider}/test", authorization, suite_session
+        "POST", request, f"/v1/byok/{_provider(provider)}/test", authorization, suite_session
     )
 
 
