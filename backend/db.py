@@ -397,6 +397,13 @@ def init_schema(conn: sqlite3.Connection) -> None:
         conn.commit()
     except sqlite3.OperationalError:
         pass  # column already exists
+    # Idempotent migration: users.is_synthetic (pre-beta Task 0.4) — test identities from
+    # scripts/provision_synthetic.py, excluded from admin KPIs. Mirrors alembic 0029.
+    try:
+        conn.execute("ALTER TABLE users ADD COLUMN is_synthetic INTEGER NOT NULL DEFAULT 0")
+        conn.commit()
+    except sqlite3.OperationalError:
+        pass  # column already exists
     # Idempotent migration: add mfa_enrollment_pending flag (GL-4.2, foroba#173 — 2FA on by
     # default for new signups). Defaults to 0 so existing users are never retroactively
     # forced into enrollment; only register() sets it to 1 for brand-new accounts.

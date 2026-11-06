@@ -197,36 +197,44 @@ def get_admin_kpis(conn: sqlite3.Connection) -> dict:
     """Aggregate usage stats for the admin KPIs tab (GL-10.1, foroba#185).
 
     No raw per-user data browsing — only counts/breakdowns, per the issue's explicit
-    "no raw-data browsing" scope constraint.
+    "no raw-data browsing" scope constraint. Synthetic test identities (is_synthetic=1) never count.
     """
-    total_users = conn.execute("SELECT COUNT(*) AS n FROM users").fetchone()["n"]
+    total_users = conn.execute(
+        "SELECT COUNT(*) AS n FROM users WHERE is_synthetic = 0"
+    ).fetchone()["n"]
     by_tier = {
         r["tier"]: r["n"]
-        for r in conn.execute("SELECT tier, COUNT(*) AS n FROM users GROUP BY tier").fetchall()
+        for r in conn.execute(
+            "SELECT tier, COUNT(*) AS n FROM users WHERE is_synthetic = 0 GROUP BY tier"
+        ).fetchall()
     }
     by_audience = {
         r["audience"]: r["n"]
         for r in conn.execute(
-            "SELECT audience, COUNT(*) AS n FROM users GROUP BY audience"
+            "SELECT audience, COUNT(*) AS n FROM users WHERE is_synthetic = 0 GROUP BY audience"
         ).fetchall()
     }
     signups_7d = conn.execute(
-        "SELECT COUNT(*) AS n FROM users WHERE created_at >= datetime('now', '-7 days')"
+        "SELECT COUNT(*) AS n FROM users "
+        "WHERE is_synthetic = 0 AND created_at >= datetime('now', '-7 days')"
     ).fetchone()["n"]
     signups_30d = conn.execute(
-        "SELECT COUNT(*) AS n FROM users WHERE created_at >= datetime('now', '-30 days')"
+        "SELECT COUNT(*) AS n FROM users "
+        "WHERE is_synthetic = 0 AND created_at >= datetime('now', '-30 days')"
     ).fetchone()["n"]
     mfa_enrolled = conn.execute(
-        "SELECT COUNT(*) AS n FROM users WHERE totp_enabled = 1 OR email_otp_enabled = 1 "
-        "OR webauthn_enabled = 1"
+        "SELECT COUNT(*) AS n FROM users WHERE is_synthetic = 0 "
+        "AND (totp_enabled = 1 OR email_otp_enabled = 1 OR webauthn_enabled = 1)"
     ).fetchone()["n"]
     mfa_pending = conn.execute(
-        "SELECT COUNT(*) AS n FROM users WHERE mfa_enrollment_pending = 1"
+        "SELECT COUNT(*) AS n FROM users WHERE is_synthetic = 0 AND mfa_enrollment_pending = 1"
     ).fetchone()["n"]
     disabled = conn.execute(
-        "SELECT COUNT(*) AS n FROM users WHERE account_disabled = 1"
+        "SELECT COUNT(*) AS n FROM users WHERE is_synthetic = 0 AND account_disabled = 1"
     ).fetchone()["n"]
-    admins = conn.execute("SELECT COUNT(*) AS n FROM users WHERE is_admin = 1").fetchone()["n"]
+    admins = conn.execute(
+        "SELECT COUNT(*) AS n FROM users WHERE is_synthetic = 0 AND is_admin = 1"
+    ).fetchone()["n"]
     return {
         "total_users": total_users,
         "users_by_tier": by_tier,
