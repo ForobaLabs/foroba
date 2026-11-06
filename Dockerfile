@@ -3,7 +3,7 @@
 # `"@foroba/ui": "file:../foroba-ui"`, which Docker can only COPY if it's inside the context.
 
 # ── Stage 1: build the shared @foroba/ui design system ──────────────────────
-FROM node:22-alpine AS foroba-ui-build
+FROM node:25-alpine AS foroba-ui-build
 WORKDIR /app/foroba-ui
 COPY foroba-ui/package.json foroba-ui/pnpm-lock.yaml foroba-ui/pnpm-workspace.yaml ./
 RUN npm install -g pnpm@11.6.0 && pnpm install --frozen-lockfile
@@ -11,7 +11,7 @@ COPY foroba-ui/ .
 RUN pnpm build
 
 # ── Stage 2: build React frontend ────────────────────────────────────────────
-FROM node:22-alpine AS frontend-build
+FROM node:25-alpine AS frontend-build
 WORKDIR /app/foroba
 COPY --from=foroba-ui-build /app/foroba-ui /app/foroba-ui
 COPY foroba/package.json foroba/pnpm-lock.yaml foroba/pnpm-workspace.yaml ./
