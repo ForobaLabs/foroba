@@ -121,3 +121,11 @@ async def test_purge_pending_retries_and_clears_only_successes(gw):
     done, failed = await purge_pending(conn, gw)
     assert (done, failed) == (1, 1)
     assert list_pending_deletes(conn) == [2]
+
+
+@pytest.mark.parametrize("path", ["/v1/consents/../users/5", "/v1/./users/5", "v1/prefs"])
+async def test_client_refuses_non_canonical_paths(path):
+    """PB-013 defence in depth: the gateway token must never ride on a path with dot segments."""
+    c = GatewayClient("http://gw.test", "tok")
+    with pytest.raises(ValueError):
+        await c.request("DELETE", "jwt", path)

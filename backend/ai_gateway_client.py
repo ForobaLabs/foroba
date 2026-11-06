@@ -58,6 +58,10 @@ class GatewayClient:
     async def request(
         self, method: str, jwt: str | None, path: str, body: Any = None, params: Any = None
     ) -> Any:
+        # PB-013: httpx resolves dot segments, so "/v1/consents/../users/5" would carry the
+        # gateway token to an internal-only route. Only canonical absolute paths are sent.
+        if not path.startswith("/") or any(seg in (".", "..") for seg in path.split("/")):
+            raise ValueError("non-canonical gateway path")
         try:
             async with httpx.AsyncClient(timeout=_TIMEOUT) as c:
                 resp = await c.request(

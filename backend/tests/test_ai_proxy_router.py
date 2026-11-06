@@ -222,3 +222,24 @@ def test_delete_account_gateway_down_records_pending(auth_client, conn, caplog):
     assert repo.get_user_by_id(conn, uid) is None
     assert f"ai_gateway_delete_pending user_id={uid}" in caplog.text
     assert [r[0] for r in conn.execute("SELECT user_id FROM ai_gateway_pending_deletes")] == [uid]
+
+
+@respx.mock
+@pytest.mark.parametrize(
+    "path",
+    [
+        "/ai/consents/..%2Fusers%2F5",
+        "/ai/consents/%2E%2E/users/5",
+        "/ai/consents/x/..%2F..%2Fusers%2F5",
+        "/ai/byok/..",
+        "/ai/byok/../test",
+    ],
+)
+def test_provider_path_traversal_never_reaches_gateway(client, path):
+    """PB-013: a `../` provider must not turn into a gateway-token call on /v1/users/{id}."""
+    erase = respx.delete(f"{BASE}/v1/users/5").mock(return_value=httpx.Response(204))
+    catch_all = respx.route().mock(return_value=httpx.Response(204))
+    method = client.post if path.endswith("/test") else client.delete
+    r = method(path, headers=AUTH)
+    assert r.status_code in (400, 404, 405, 422)
+    assert not erase.called and not catch_all.called
