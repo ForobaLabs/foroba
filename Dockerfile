@@ -47,8 +47,12 @@ WORKDIR /app
 
 # libsqlcipher1 (runtime .so, not -dev) — the sqlcipher3 wheel compiled in the
 # `backend` stage dlopen()s this at import time; the -dev headers aren't needed here.
+# The base image's pip (dist-info) and ensurepip wheels would survive the site-packages COPY
+# below as stale, vulnerable copies; drop them so only the backend stage's pip 26.2 ships.
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    curl libsqlcipher1 && rm -rf /var/lib/apt/lists/*
+    curl libsqlcipher1 && rm -rf /var/lib/apt/lists/* \
+ && rm -rf /usr/local/lib/python3.12/site-packages/pip /usr/local/lib/python3.12/site-packages/pip-*.dist-info \
+ && rm -f /usr/local/lib/python3.*/ensurepip/_bundled/*.whl
 
 COPY --from=backend /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
 COPY --from=backend /usr/local/bin /usr/local/bin
