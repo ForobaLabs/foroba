@@ -1,0 +1,7 @@
+# Fake fixture keys in tests (reviewed 2026-11-06, pre-beta Task 1.2): none is a real credential.
+81768c6d8b0b3933db4860030dfaf49675c2deca:backend/tests/test_ai_proxy_router.py:generic-api-key:111
+81768c6d8b0b3933db4860030dfaf49675c2deca:backend/tests/test_ai_proxy_router.py:generic-api-key:123
+86b00e4ee249da00099a1082bba752520ceb772a:ai-gateway/tests/test_gdpr.py:generic-api-key:12
+86b00e4ee249da00099a1082bba752520ceb772a:ai-gateway/tests/test_byok.py:generic-api-key:14
+faf302a955d5bd1dca58cf90dd40b891fd31d8e4:ai-gateway/tests/test_providers.py:generic-api-key:11
+efde80c1cda4988e71af0e530b524e28508d041f:src/api/apiKeys.test.ts:generic-api-key:20
