@@ -34,7 +34,7 @@ ruff==0.17.3
 #   macOS:  brew install sqlcipher
 #   Debian/Ubuntu (VPS): apt-get install libsqlcipher-dev
 sqlcipher3==0.5.4
-webauthn==2.5.2
+webauthn==3.0.1
 
 # Transitive dependencies, frozen from the production image (pre-beta Task 1.2, 2026-11-06).
 # Pinned so scanners and rebuilds see the versions that actually ship.
