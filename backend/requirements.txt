@@ -14,7 +14,7 @@ certifi==2026.10.23  # Plan AU H-3: CVE floor
 idna==3.20  # Plan AU H-3: CVE floor
 email-validator==2.2.0
 pyotp==2.9.0
-qrcode[pil]==7.4.2
+qrcode[pil]==8.2
 pillow==13.0.0  # CVE fix (19x PYSEC-2026-*, foroba#211) -- transitive via qrcode[pil], pinned explicitly
 slowapi==0.1.10
 limits==5.8.0
