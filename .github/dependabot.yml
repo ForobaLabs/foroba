@@ -7,6 +7,9 @@ updates:
       interval: weekly
       day: monday
     open-pull-requests-limit: 5
+    # Supply-chain cooldown: let fresh releases age a week; security updates bypass it.
+    cooldown:
+      default-days: 7
     ignore:
       # Sibling package via file:../foroba-ui; bumped by hand with the submodule.
       - dependency-name: "@foroba/ui"
@@ -19,6 +22,9 @@ updates:
       interval: weekly
       day: monday
     open-pull-requests-limit: 5
+    # Supply-chain cooldown: let fresh releases age a week; security updates bypass it.
+    cooldown:
+      default-days: 7
     groups:
       pip-minor-patch:
         update-types: [minor, patch]
@@ -28,6 +34,9 @@ updates:
       interval: weekly
       day: monday
     open-pull-requests-limit: 5
+    # Supply-chain cooldown: let fresh releases age a week; security updates bypass it.
+    cooldown:
+      default-days: 7
     groups:
       pip-minor-patch:
         update-types: [minor, patch]
@@ -37,6 +46,9 @@ updates:
       interval: weekly
       day: monday
     open-pull-requests-limit: 5
+    # Supply-chain cooldown: let fresh releases age a week; security updates bypass it.
+    cooldown:
+      default-days: 7
     groups:
       pip-minor-patch:
         update-types: [minor, patch]
@@ -46,6 +58,9 @@ updates:
       interval: weekly
       day: monday
     open-pull-requests-limit: 5
+    # Supply-chain cooldown: let fresh releases age a week; security updates bypass it.
+    cooldown:
+      default-days: 7
     groups:
       docker-minor-patch:
         update-types: [minor, patch]
@@ -55,6 +70,9 @@ updates:
       interval: weekly
       day: monday
     open-pull-requests-limit: 5
+    # Supply-chain cooldown: let fresh releases age a week; security updates bypass it.
+    cooldown:
+      default-days: 7
     groups:
       docker-minor-patch:
         update-types: [minor, patch]
@@ -64,6 +82,9 @@ updates:
       interval: weekly
       day: monday
     open-pull-requests-limit: 5
+    # Supply-chain cooldown: let fresh releases age a week; security updates bypass it.
+    cooldown:
+      default-days: 7
     groups:
       docker-minor-patch:
         update-types: [minor, patch]
@@ -73,6 +94,9 @@ updates:
       interval: weekly
       day: monday
     open-pull-requests-limit: 5
+    # Supply-chain cooldown: let fresh releases age a week; security updates bypass it.
+    cooldown:
+      default-days: 7
     groups:
       docker-minor-patch:
         update-types: [minor, patch]
@@ -82,6 +106,9 @@ updates:
       interval: weekly
       day: monday
     open-pull-requests-limit: 5
+    # Supply-chain cooldown: let fresh releases age a week; security updates bypass it.
+    cooldown:
+      default-days: 7
     groups:
       github_actions-minor-patch:
         update-types: [minor, patch]
