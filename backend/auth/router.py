@@ -28,7 +28,7 @@ from pydantic import BaseModel
 
 import security_log
 from ai_gateway_client import get_client, record_pending_delete
-from auth import keys, refresh_tokens
+from auth import keys, mfa_ticket, refresh_tokens
 from auth import repository as repo
 from auth.avatar_storage import save_avatar
 from auth.conn import get_conn  # re-exported for tests that import it from here
@@ -324,7 +324,14 @@ def login(
         conn.execute("UPDATE users SET password_hash = ? WHERE id = ?", (new_hash, user["id"]))
         conn.commit()
     if _has_any_mfa_method(user) and settings.auth_2fa_enabled:
-        return {"mfa_required": True, "email": user["email"], "methods": _enabled_methods(user)}
+        ticket = mfa_ticket.issue_mfa_ticket(user["id"], user.get("session_version", 1))
+        mfa_ticket.set_ticket_cookie(response, ticket)
+        return {
+            "mfa_required": True,
+            "email": user["email"],
+            "methods": _enabled_methods(user),
+            "mfa_ticket": ticket,
+        }
     repo.reset_failed_login(conn, user["id"])
     security_log.log_event(conn, user_id=user["id"], event="login_success",
                            detail=None, ip=request.client.host if request.client else None)
@@ -341,6 +348,7 @@ def login_2fa(
     conn: sqlite3.Connection = Depends(get_conn),
 ) -> dict:
     user = repo.get_user_by_email(conn, req.email)
+    mfa_ticket.require_mfa_ticket(request, req.mfa_ticket, user)
     if user is not None and repo.is_locked_out(user):
         raise HTTPException(status.HTTP_423_LOCKED, "Account temporarily locked. Try again later.")
     if user is not None and user.get("account_disabled"):
@@ -361,6 +369,7 @@ def login_2fa(
             repo.register_failed_login(conn, user["id"])
             raise HTTPException(401, "Invalid code")
     repo.reset_failed_login(conn, user["id"])
+    mfa_ticket.clear_ticket_cookie(response)
     _set_session_cookie(response, user, request.url.hostname)
     return UserPublic(**user).model_dump()
 
@@ -378,6 +387,7 @@ def login_email_otp_send(
     takes `email` in the body and looks the user up directly. Rate-limited like the rest of the
     login surface to prevent using it as an email-flooding vector."""
     user = repo.get_user_by_email(conn, req.email)
+    mfa_ticket.require_mfa_ticket(request, req.mfa_ticket, user)
     if user is None or not user.get("email_otp_enabled"):
         raise HTTPException(400, "Email OTP is not set up for this account")
     if repo.is_locked_out(user):
@@ -398,6 +408,7 @@ def login_recovery_code(
     conn: sqlite3.Connection = Depends(get_conn),
 ) -> dict:
     user = repo.get_user_by_email(conn, req.email)
+    mfa_ticket.require_mfa_ticket(request, req.mfa_ticket, user)
     if user is not None and repo.is_locked_out(user):
         raise HTTPException(status.HTTP_423_LOCKED, "Account temporarily locked. Try again later.")
     if user is not None and user.get("account_disabled"):
@@ -407,6 +418,7 @@ def login_recovery_code(
             repo.register_failed_login(conn, user["id"])
         raise HTTPException(401, "Invalid recovery code")
     repo.reset_failed_login(conn, user["id"])
+    mfa_ticket.clear_ticket_cookie(response)
     _set_session_cookie(response, user, request.url.hostname)
     return UserPublic(**user).model_dump()
 

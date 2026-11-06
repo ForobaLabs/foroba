@@ -8,6 +8,7 @@ from fastapi.testclient import TestClient
 import config
 from auth import repository as repo
 from auth.conn import get_conn
+from auth.mfa_ticket import issue_mfa_ticket
 from auth.router import router as auth_router
 from db import init_schema, seed_mock_users
 from rate_limit import limiter
@@ -68,15 +69,19 @@ def test_disabled_account_rejected_before_2fa_step(monkeypatch):
 
 
 def test_2fa_endpoint_rejects_disabled_account_directly(monkeypatch):
-    """Defense in depth: /login/2fa also rejects disabled accounts, even if called
-    directly without going through /login first."""
+    """Defense in depth: /login/2fa also rejects disabled accounts, even with a ticket
+    issued before the account was disabled."""
     c, secret = _client(monkeypatch, True)
     conn = c.app.dependency_overrides[get_conn]()
     demo = repo.get_user_by_email(conn, "demo@foroba.app")
+    ticket = issue_mfa_ticket(demo["id"], demo.get("session_version", 1))
     repo.set_account_disabled(conn, demo["id"], True)
 
     code = pyotp.TOTP(secret).now()
-    r = c.post("/auth/login/2fa", json={"email": "demo@foroba.app", "code": code})
+    r = c.post(
+        "/auth/login/2fa",
+        json={"email": "demo@foroba.app", "code": code, "mfa_ticket": ticket},
+    )
     assert r.status_code == 403
 
 
@@ -110,7 +115,12 @@ def test_login_2fa_dispatches_to_email_otp(monkeypatch):
     code = sent["code"]
     r = c.post(
         "/auth/login/2fa",
-        json={"email": "demo@foroba.app", "code": code, "method": "email_otp"},
+        json={
+            "email": "demo@foroba.app",
+            "code": code,
+            "method": "email_otp",
+            "mfa_ticket": issue_mfa_ticket(demo["id"], demo.get("session_version", 1)),
+        },
     )
     assert r.status_code == 200
     assert c.cookies.get("suite_session")

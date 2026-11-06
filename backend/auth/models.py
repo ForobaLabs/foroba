@@ -91,15 +91,18 @@ class Login2FARequest(BaseModel):
     email: EmailStr
     code: str
     method: Literal["totp", "email_otp"] = "totp"
+    mfa_ticket: str | None = None
 
 
 class RecoveryCodeLoginRequest(BaseModel):
     email: EmailStr
     recovery_code: str = Field(min_length=6, max_length=20)
+    mfa_ticket: str | None = None
 
 
 class EmailOtpSendRequest(BaseModel):
     email: EmailStr
+    mfa_ticket: str | None = None
 
 
 class EmailOtpVerifyRequest(BaseModel):

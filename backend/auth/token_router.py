@@ -16,7 +16,7 @@ import sqlite3
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, EmailStr, Field
 
-from auth import keys, refresh_tokens
+from auth import keys, mfa_ticket, refresh_tokens
 from auth import repository as repo
 from auth.conn import get_conn
 from auth.dependencies import get_current_user
@@ -41,6 +41,7 @@ class Token2FARequest(BaseModel):
     code: str
     method: str
     device_label: str = Field(min_length=1, max_length=64)
+    mfa_ticket: str | None = None
 
 
 class RefreshRequest(BaseModel):
@@ -106,6 +107,9 @@ def token(
             "mfa_required": True,
             "email": user["email"],
             "methods": _enabled_methods(user),
+            "mfa_ticket": mfa_ticket.issue_mfa_ticket(
+                user["id"], user.get("session_version", 1)
+            ),
         }
     repo.reset_failed_login(conn, user["id"])
     return _issue_pair(conn, user, req.device_label)
@@ -119,6 +123,8 @@ def token_2fa(
     conn: sqlite3.Connection = Depends(get_conn),
 ) -> dict:
     user = repo.get_user_by_email(conn, req.email)
+    # Native clients carry the ticket in the body only; never read the browser cookie here.
+    mfa_ticket.require_mfa_ticket(request, req.mfa_ticket, user, allow_cookie=False)
     _guard_account(user)
     if user is None:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "2FA not set up")
