@@ -6,7 +6,7 @@
 FROM node:22-alpine AS foroba-ui-build
 WORKDIR /app/foroba-ui
 COPY foroba-ui/package.json foroba-ui/pnpm-lock.yaml foroba-ui/pnpm-workspace.yaml ./
-RUN npm install -g pnpm && pnpm install --frozen-lockfile
+RUN npm install -g pnpm@11.6.0 && pnpm install --frozen-lockfile
 COPY foroba-ui/ .
 RUN pnpm build
 
@@ -14,8 +14,8 @@ RUN pnpm build
 FROM node:22-alpine AS frontend-build
 WORKDIR /app/foroba
 COPY --from=foroba-ui-build /app/foroba-ui /app/foroba-ui
-COPY foroba/package.json foroba/pnpm-lock.yaml ./
-RUN npm install -g pnpm && pnpm install --frozen-lockfile
+COPY foroba/package.json foroba/pnpm-lock.yaml foroba/pnpm-workspace.yaml ./
+RUN npm install -g pnpm@11.6.0 && pnpm install --frozen-lockfile
 COPY foroba/ .
 # Baked into the bundle at build time (Vite inlines import.meta.env.VITE_*) — used by
 # AccountsPage/PortfolioPage/AppOnboardingPage to link out to Pazuru/Tsumi's own
@@ -37,7 +37,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc libffi-dev libsqlcipher-dev && rm -rf /var/lib/apt/lists/*
 
 COPY foroba/backend/requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir pip==26.2 && pip install --no-cache-dir -r requirements.txt
 
 COPY foroba/backend/ .
 

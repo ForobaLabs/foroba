@@ -5,7 +5,7 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc libsqlcipher-dev && rm -rf /var/lib/apt/lists/*
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt \
+RUN pip install --no-cache-dir pip==26.2 && pip install --no-cache-dir -r requirements.txt \
  && python -m spacy download it_core_news_lg \
  && apt-get purge -y gcc && apt-get install -y --no-install-recommends libsqlcipher1 \
  && rm -rf /var/lib/apt/lists/*
