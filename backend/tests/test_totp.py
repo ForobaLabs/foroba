@@ -26,3 +26,34 @@ def test_verify_code_accepts_current_and_rejects_wrong():
 def test_qr_data_url_is_png_base64():
     url = qr_data_url("otpauth://totp/Foroba:demo?secret=ABC&issuer=Foroba")
     assert url.startswith("data:image/png;base64,")
+
+
+def test_verify_code_rejects_replay_of_an_accepted_code():
+    secret = generate_secret()
+    code = pyotp.TOTP(secret).now()
+    assert verify_code(secret, code) is True
+    assert verify_code(secret, code) is False
+
+
+def test_verify_code_rejects_an_older_step_after_a_newer_one():
+    import time
+
+    secret = generate_secret()
+    totp = pyotp.TOTP(secret)
+    now = time.time()
+    assert verify_code(secret, totp.at(now)) is True
+    assert verify_code(secret, totp.at(now - 30)) is False
+
+
+def test_replay_guard_is_per_secret():
+    a, b = generate_secret(), generate_secret()
+    assert verify_code(a, pyotp.TOTP(a).now()) is True
+    assert verify_code(b, pyotp.TOTP(b).now()) is True
+
+
+def test_enrolment_confirmation_does_not_consume_the_step():
+    secret = generate_secret()
+    code = pyotp.TOTP(secret).now()
+    assert verify_code(secret, code, consume=False) is True
+    assert verify_code(secret, code) is True
+    assert verify_code(secret, code) is False

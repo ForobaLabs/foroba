@@ -66,7 +66,7 @@ def verify(
 ) -> dict:
     fresh = repo.get_user_by_id(conn, user["id"])
     pending_secret = fresh["totp_secret_pending"] or fresh["totp_secret"]
-    if not pending_secret or not verify_code(pending_secret, req.code):
+    if not pending_secret or not verify_code(pending_secret, req.code, consume=False):
         security_log.log_event(conn, user_id=user["id"], event="mfa_failed",
                                detail="invalid TOTP code",
                                ip=request.client.host if request.client else None)
