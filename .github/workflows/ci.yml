@@ -29,7 +29,7 @@ jobs:
           install -m 600 /dev/null "$RUNNER_TEMP/k" && printf '%s\n' "$KEY" > "$RUNNER_TEMP/k"
           GIT_SSH_COMMAND="ssh -i $RUNNER_TEMP/k -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new" \
             git clone --depth 1 git@github.com:ForobaLabs/foroba-ui.git foroba-ui
-      - uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
         with:
           version: 11.6.0
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
