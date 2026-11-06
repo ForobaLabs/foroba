@@ -1,5 +1,7 @@
-fastapi>=0.115.0
-uvicorn[standard]>=0.34.0
-pydantic-settings>=2.0.0
+fastapi==0.162.0
+uvicorn[standard]==0.54.0
+pydantic-settings==2.16.1
 pandas==2.2.2
-pyarrow==16.0.0
+pyarrow==26.0.1
+# Pre-beta SCA (2026-11): base-image setuptools 79 has PYSEC-2026-3447 / GHSA-xmj3-9gf7-h52w.
+setuptools==84.2.1

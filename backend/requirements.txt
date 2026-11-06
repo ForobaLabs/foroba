@@ -1,34 +1,34 @@
-fastapi>=0.115.0
-uvicorn[standard]>=0.32.0
-httpx>=0.28.0
-python-multipart>=0.0.31  # Plan AU H-3 CVE floor; UploadFile support (admin_router.py backup endpoints — TI-A, foroba#151)
-pydantic>=2.10.0
-pydantic-settings>=2.14.2  # CVE fix (GHSA-4xgf-cpjx-pc3j, foroba#211)
-python-dotenv>=1.0.0
-argon2-cffi>=23.1.0
-bcrypt>=4.0.1
-cryptography>=50.0.0
+fastapi==0.162.0
+uvicorn[standard]==0.54.0
+httpx==0.28.1
+python-multipart==0.0.33  # Plan AU H-3 CVE floor; UploadFile support (admin_router.py backup endpoints — TI-A, foroba#151)
+pydantic==2.14.3
+pydantic-settings==2.16.2  # CVE fix (GHSA-4xgf-cpjx-pc3j, foroba#211)
+python-dotenv==1.2.4
+argon2-cffi==25.1.0
+bcrypt==5.0.0
+cryptography==50.0.2
 pyjwt[crypto]==2.15.1
-anyio>=4.14.2  # Plan AU H-3: CVE floor
-certifi>=2026.10.0  # Plan AU H-3: CVE floor
-idna>=3.11  # Plan AU H-3: CVE floor
+anyio==4.16.0  # Plan AU H-3: CVE floor
+certifi==2026.10.23  # Plan AU H-3: CVE floor
+idna==3.20  # Plan AU H-3: CVE floor
 email-validator==2.2.0
 pyotp==2.9.0
 qrcode[pil]==7.4.2
-pillow>=12.3.0  # CVE fix (19x PYSEC-2026-*, foroba#211) -- transitive via qrcode[pil], pinned explicitly
-slowapi>=0.1.9
-limits>=3.7
-pytest>=8.3.0
-pytest-asyncio>=0.24.0
-pandas>=2.0
-pyarrow>=17.0
-respx>=0.21
-alembic>=1.15.2
-sentry-sdk[fastapi]>=2.0.0
-apscheduler>=3.10.0
-reportlab>=4.2.0
-boto3>=1.35.0
-ruff
+pillow==13.0.0  # CVE fix (19x PYSEC-2026-*, foroba#211) -- transitive via qrcode[pil], pinned explicitly
+slowapi==0.1.10
+limits==5.8.0
+pytest==9.2.0
+pytest-asyncio==1.4.1.post1
+pandas==3.1.1
+pyarrow==26.0.1
+respx==0.23.1
+alembic==1.20.1
+sentry-sdk[fastapi]==2.73.0
+apscheduler==3.11.3
+reportlab==5.1.0
+boto3==1.43.124
+ruff==0.17.3
 # GL-11.2: whole-file DB encryption at rest (SQLCipher). Builds from source —
 # requires the system libsqlcipher dev headers at install time:
 #   macOS:  brew install sqlcipher
