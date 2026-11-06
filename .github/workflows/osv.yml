@@ -14,11 +14,10 @@ permissions:
 
 jobs:
   scan:
-    uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@v2.6.0
+    uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@b1d267aea5211fa648d9d442fa64b90dbdcbdd36 # v2.7.0
     with:
-      scan-args: --recursive ./
+      scan-args: --config ./osv-scanner.toml --no-resolve --recursive ./
       # Private repos have no code-scanning upload; findings go to the job log.
       upload-sarif: false
-      # Report-only until the dev-tooling majors (vite/vitest/eslint chains) are bumped;
-      # runtime (`pnpm audit --prod`, pip) advisories are clean as of Plan AU.
-      fail-on-vuln: false
+      # Gating since pre-beta Task 1.2 (SCA clean); accepted build-time lows live in osv-scanner.toml.
+      fail-on-vuln: true

@@ -1,0 +1,6 @@
+# Pre-beta Task 1.1 ruling: build-time only (workbox-build at PWA build), no fixed
+# release reachable without replacing vite-plugin-pwa. Re-check at expiry.
+[[IgnoredVulns]]
+id = "GHSA-gcqx-w48m-w2h4"
+ignoreUntil = 2027-02-06
+reason = "deepmerge via vite-plugin-pwa > workbox-build; build-time only, not shipped"
