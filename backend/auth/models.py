@@ -11,7 +11,7 @@ class RegisterRequest(BaseModel):
     email: EmailStr
     email_confirm: EmailStr
     name: str = Field(min_length=1, max_length=80)
-    password: str = Field(min_length=8, max_length=128)
+    password: str = Field(min_length=12, max_length=128)
     password_confirm: str
     birth_year: int | None = Field(default=None, ge=1900, le=2100)
     country: str | None = Field(default=None, min_length=2, max_length=2)
@@ -135,7 +135,7 @@ class DeleteAccountRequest(BaseModel):
 
 class ChangePasswordRequest(BaseModel):
     current_password: str
-    new_password: str = Field(min_length=8, max_length=128)
+    new_password: str = Field(min_length=12, max_length=128)
     new_password_confirm: str
 
     @model_validator(mode="after")
@@ -152,7 +152,7 @@ class PasswordResetRequestModel(BaseModel):
 class PasswordResetConfirmRequest(BaseModel):
     email: EmailStr
     code: str
-    new_password: str = Field(min_length=8, max_length=128)
+    new_password: str = Field(min_length=12, max_length=128)
     new_password_confirm: str
 
     @model_validator(mode="after")

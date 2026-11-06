@@ -22,7 +22,7 @@ def client(tmp_path, monkeypatch):
         conn,
         email="avatar-test@y.com",
         name="Avatar Test",
-        password_hash=hash_password("password123"),
+        password_hash=hash_password("password12345"),
     )
     app = FastAPI()
     app.dependency_overrides[get_conn] = lambda: conn

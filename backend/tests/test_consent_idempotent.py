@@ -15,8 +15,8 @@ _REG = {
     "email": "idem@y.com",
     "email_confirm": "idem@y.com",
     "name": "Idem",
-    "password": "password123",
-    "password_confirm": "password123",
+    "password": "password12345",
+    "password_confirm": "password12345",
     "tos_accepted": True,
 }
 

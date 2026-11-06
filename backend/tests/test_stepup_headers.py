@@ -49,8 +49,8 @@ def authed_client_with_totp(client):
             "email": "native@example.com",
             "email_confirm": "native@example.com",
             "name": "Native",
-            "password": "Nat1vePass!",
-            "password_confirm": "Nat1vePass!",
+            "password": "Nat1vePass!x",
+            "password_confirm": "Nat1vePass!x",
             "tos_accepted": True,
         },
     )

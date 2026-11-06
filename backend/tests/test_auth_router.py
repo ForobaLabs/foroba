@@ -44,8 +44,8 @@ def test_register_then_me(client):
             "email": "x@y.com",
             "email_confirm": "x@y.com",
             "name": "X",
-            "password": "password123",
-            "password_confirm": "password123",
+            "password": "password12345",
+            "password_confirm": "password12345",
             "tos_accepted": True,
         },
     )
@@ -65,8 +65,8 @@ def test_register_sets_mfa_enrollment_pending(client):
             "email": "pending@y.com",
             "email_confirm": "pending@y.com",
             "name": "Pending",
-            "password": "password123",
-            "password_confirm": "password123",
+            "password": "password12345",
+            "password_confirm": "password12345",
             "tos_accepted": True,
         },
     )
@@ -84,8 +84,8 @@ def test_register_requires_tos_acceptance(client):
             "email": "notos@y.com",
             "email_confirm": "notos@y.com",
             "name": "No Tos",
-            "password": "password123",
-            "password_confirm": "password123",
+            "password": "password12345",
+            "password_confirm": "password12345",
             "tos_accepted": False,
         },
     )
@@ -99,8 +99,8 @@ def test_register_without_invite_code_when_flag_off_succeeds(client):
             "email": "openreg@y.com",
             "email_confirm": "openreg@y.com",
             "name": "Open Reg",
-            "password": "password123",
-            "password_confirm": "password123",
+            "password": "password12345",
+            "password_confirm": "password12345",
             "tos_accepted": True,
         },
     )
@@ -119,8 +119,8 @@ def test_register_requires_valid_invite_code_when_flag_on(client):
             "email": "noinvite@y.com",
             "email_confirm": "noinvite@y.com",
             "name": "No Invite",
-            "password": "password123",
-            "password_confirm": "password123",
+            "password": "password12345",
+            "password_confirm": "password12345",
             "tos_accepted": True,
         },
     )
@@ -132,8 +132,8 @@ def test_register_requires_valid_invite_code_when_flag_on(client):
             "email": "badinvite@y.com",
             "email_confirm": "badinvite@y.com",
             "name": "Bad Invite",
-            "password": "password123",
-            "password_confirm": "password123",
+            "password": "password12345",
+            "password_confirm": "password12345",
             "tos_accepted": True,
             "invite_code": "BOGU-SCOD",
         },
@@ -156,8 +156,8 @@ def test_register_requires_valid_invite_code_when_flag_on(client):
             "email": "goodinvite@y.com",
             "email_confirm": "goodinvite@y.com",
             "name": "Good Invite",
-            "password": "password123",
-            "password_confirm": "password123",
+            "password": "password12345",
+            "password_confirm": "password12345",
             "tos_accepted": True,
             "invite_code": code,
         },
@@ -177,8 +177,8 @@ def test_register_records_consents_and_exposes_them(client):
             "email": "consentflow@y.com",
             "email_confirm": "consentflow@y.com",
             "name": "Consent Flow",
-            "password": "password123",
-            "password_confirm": "password123",
+            "password": "password12345",
+            "password_confirm": "password12345",
             "tos_accepted": True,
         },
     )
@@ -202,8 +202,8 @@ def test_login_wrong_password_401(client):
             "email": "x@y.com",
             "email_confirm": "x@y.com",
             "name": "X",
-            "password": "password123",
-            "password_confirm": "password123",
+            "password": "password12345",
+            "password_confirm": "password12345",
             "tos_accepted": True,
         },
     )
@@ -222,8 +222,8 @@ def test_update_display_currency(client):
             "email": "curr@y.com",
             "email_confirm": "curr@y.com",
             "name": "Curr User",
-            "password": "password123",
-            "password_confirm": "password123",
+            "password": "password12345",
+            "password_confirm": "password12345",
             "tos_accepted": True,
         },
     )
@@ -249,7 +249,7 @@ def test_put_show_debts_updates_preference():
         conn,
         email="debts-toggle@y.com",
         name="Debts Toggle",
-        password_hash=hash_password("password123"),
+        password_hash=hash_password("password12345"),
     )
     app = FastAPI()
     app.dependency_overrides[get_conn] = lambda: conn
@@ -271,7 +271,7 @@ def test_update_name_splits_and_returns_in_me():
         conn,
         email="rename-router@y.com",
         name="Old Name",
-        password_hash=hash_password("password123"),
+        password_hash=hash_password("password12345"),
     )
     app = FastAPI()
     app.dependency_overrides[get_conn] = lambda: conn
@@ -383,7 +383,7 @@ def _client_with_conn():
     return TestClient(app), conn
 
 
-def _register(client, email="delete-me@y.com", password="password123"):
+def _register(client, email="delete-me@y.com", password="password12345"):
     r = client.post(
         "/auth/register",
         json={
@@ -417,7 +417,7 @@ def test_delete_account_success_204_clears_cookie_and_removes_user(monkeypatch):
     monkeypatch.setattr(
         "auth.router.httpx.AsyncClient", lambda *a, **kw: _FakeAsyncClient(status_code=204)
     )
-    r = client.request("DELETE", "/auth/account", json={"password": "password123"})
+    r = client.request("DELETE", "/auth/account", json={"password": "password12345"})
     assert r.status_code == 204, r.text
     raw = (
         r.headers.get_list("set-cookie")
@@ -436,7 +436,7 @@ def test_delete_account_upstream_failure_502_leaves_user_row_untouched(monkeypat
     monkeypatch.setattr(
         "auth.router.httpx.AsyncClient", lambda *a, **kw: _FakeAsyncClient(status_code=500)
     )
-    r = client.request("DELETE", "/auth/account", json={"password": "password123"})
+    r = client.request("DELETE", "/auth/account", json={"password": "password12345"})
     assert r.status_code == 502
     assert conn.execute("SELECT count(*) FROM users WHERE email = ?", ("stay@y.com",)).fetchone()[
         0
@@ -449,7 +449,7 @@ def test_delete_account_upstream_connection_error_502(monkeypatch):
     monkeypatch.setattr(
         "auth.router.httpx.AsyncClient", lambda *a, **kw: _FakeAsyncClient(raise_error=True)
     )
-    r = client.request("DELETE", "/auth/account", json={"password": "password123"})
+    r = client.request("DELETE", "/auth/account", json={"password": "password12345"})
     assert r.status_code == 502
     assert conn.execute(
         "SELECT count(*) FROM users WHERE email = ?", ("staytoo@y.com",)
@@ -490,7 +490,7 @@ def test_delete_account_cancels_live_subscriptions_first(monkeypatch):
     monkeypatch.setattr(
         "auth.router.httpx.AsyncClient", lambda *a, **kw: _FakeAsyncClient(status_code=204)
     )
-    r = client.request("DELETE", "/auth/account", json={"password": "password123"})
+    r = client.request("DELETE", "/auth/account", json={"password": "password12345"})
     assert r.status_code == 204, r.text
     assert prov.cancelled == ["sub_live"]
     assert user is not None
@@ -507,7 +507,7 @@ def test_delete_account_cancel_failure_502_and_nothing_erased(monkeypatch):
         raise AssertionError("erasure must not start when cancellation failed")
 
     monkeypatch.setattr("auth.router.httpx.AsyncClient", _must_not_call)
-    r = client.request("DELETE", "/auth/account", json={"password": "password123"})
+    r = client.request("DELETE", "/auth/account", json={"password": "password12345"})
     assert r.status_code == 502
     assert "subscription" in r.json()["detail"].lower()
     assert conn.execute("SELECT count(*) FROM users WHERE id = ?", (uid,)).fetchone()[0] == 1
@@ -529,7 +529,7 @@ def test_delete_account_bearer_only_client_forwards_session_to_apps(monkeypatch)
     r = client.request(
         "DELETE",
         "/auth/account",
-        json={"password": "password123"},
+        json={"password": "password12345"},
         headers={"Authorization": f"Bearer {token}"},
     )
     assert r.status_code == 204, r.text

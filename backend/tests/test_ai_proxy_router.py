@@ -148,8 +148,8 @@ _REG = {
     "email": "ai@y.com",
     "email_confirm": "ai@y.com",
     "name": "AI",
-    "password": "password123",
-    "password_confirm": "password123",
+    "password": "password12345",
+    "password_confirm": "password12345",
     "tos_accepted": True,
 }
 
@@ -203,7 +203,7 @@ def test_delete_account_calls_gateway_delete(auth_client, conn):
     uid = auth_client.get("/auth/me").json()["id"]
     _erase_mocks()
     gw = respx.delete(f"{BASE}/v1/users/{uid}").mock(return_value=httpx.Response(204))
-    r = auth_client.request("DELETE", "/auth/account", json={"password": "password123"})
+    r = auth_client.request("DELETE", "/auth/account", json={"password": "password12345"})
     assert r.status_code == 204, r.text
     assert gw.called
     assert gw.calls[0].request.headers["x-ai-gateway-token"] == "s3cret-token"
@@ -217,7 +217,7 @@ def test_delete_account_gateway_down_records_pending(auth_client, conn, caplog):
     _erase_mocks()
     respx.delete(f"{BASE}/v1/users/{uid}").mock(side_effect=httpx.ConnectError("down"))
     with caplog.at_level(logging.WARNING):
-        r = auth_client.request("DELETE", "/auth/account", json={"password": "password123"})
+        r = auth_client.request("DELETE", "/auth/account", json={"password": "password12345"})
     assert r.status_code == 204, r.text
     assert repo.get_user_by_id(conn, uid) is None
     assert f"ai_gateway_delete_pending user_id={uid}" in caplog.text
