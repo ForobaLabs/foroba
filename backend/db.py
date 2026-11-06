@@ -404,6 +404,15 @@ def init_schema(conn: sqlite3.Connection) -> None:
         conn.commit()
     except sqlite3.OperationalError:
         pass  # column already exists
+    # Idempotent migration: email_otp_codes.failed_attempts (pre-beta Task 2.2) — five wrong
+    # guesses void the outstanding code. Mirrors alembic 0030.
+    try:
+        conn.execute(
+            "ALTER TABLE email_otp_codes ADD COLUMN failed_attempts INTEGER NOT NULL DEFAULT 0"
+        )
+        conn.commit()
+    except sqlite3.OperationalError:
+        pass  # column already exists
     # Idempotent migration: add mfa_enrollment_pending flag (GL-4.2, foroba#173 — 2FA on by
     # default for new signups). Defaults to 0 so existing users are never retroactively
     # forced into enrollment; only register() sets it to 1 for brand-new accounts.
