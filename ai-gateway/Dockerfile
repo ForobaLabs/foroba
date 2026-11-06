@@ -1,14 +1,15 @@
 FROM python:3.12-slim
 WORKDIR /app
 
-# sqlcipher3 compiles against libsqlcipher; keep only the runtime .so in the final image.
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    gcc libsqlcipher-dev && rm -rf /var/lib/apt/lists/*
+# sqlcipher3 compiles against libsqlcipher; keep only the runtime .so in the final image. One layer,
+# so the apt lists are still present when the runtime library is installed after the purge.
 COPY requirements.txt .
-RUN pip install --no-cache-dir pip==26.2 && pip install --no-cache-dir -r requirements.txt \
+RUN apt-get update && apt-get install -y --no-install-recommends gcc libsqlcipher-dev \
+ && pip install --no-cache-dir pip==26.2 && pip install --no-cache-dir -r requirements.txt \
  && python -m spacy download it_core_news_lg \
- && apt-get purge -y gcc && apt-get install -y --no-install-recommends libsqlcipher1 \
- && rm -rf /var/lib/apt/lists/*
+ && apt-get purge -y --auto-remove gcc libsqlcipher-dev && apt-get install -y --no-install-recommends libsqlcipher1 \
+ && rm -rf /var/lib/apt/lists/* \
+ && rm -f /usr/local/lib/python3.*/ensurepip/_bundled/*.whl
 
 COPY *.py ./
 COPY masking ./masking
