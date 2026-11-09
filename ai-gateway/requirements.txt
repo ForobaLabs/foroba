@@ -1,7 +1,7 @@
 fastapi==0.162.0
 uvicorn==0.54.0
-pydantic-settings==2.16.1
-sqlcipher3==0.5.4
+pydantic-settings==2.16.2
+sqlcipher3==0.6.4
 cryptography==50.0.2
 PyJWT[crypto]==2.15.1
 httpx==0.28.1
@@ -30,11 +30,11 @@ markdown-it-py==4.2.0
 MarkupSafe==3.0.4
 mdurl==0.1.2
 murmurhash==1.0.16
-numpy==2.4.6
+numpy==2.5.4
 opentelemetry-api==1.45.2
 packaging==26.3
 phonenumbers==9.0.42
-preshed==3.0.13
+preshed==3.0.15
 pydantic==2.14.3
 pydantic_core==2.50.4
 Pygments==2.21.0
