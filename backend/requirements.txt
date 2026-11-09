@@ -12,8 +12,8 @@ pyjwt[crypto]==2.15.1
 anyio==4.16.0  # Plan AU H-3: CVE floor
 certifi==2026.10.23  # Plan AU H-3: CVE floor
 idna==3.20  # Plan AU H-3: CVE floor
-email-validator==2.2.0
-pyotp==2.9.0
+email-validator==2.3.0
+pyotp==2.10.0
 qrcode[pil]==7.4.2
 pillow==13.0.0  # CVE fix (19x PYSEC-2026-*, foroba#211) -- transitive via qrcode[pil], pinned explicitly
 slowapi==0.1.10
@@ -33,7 +33,7 @@ ruff==0.17.3
 # requires the system libsqlcipher dev headers at install time:
 #   macOS:  brew install sqlcipher
 #   Debian/Ubuntu (VPS): apt-get install libsqlcipher-dev
-sqlcipher3==0.5.4
+sqlcipher3==0.6.4
 webauthn==2.5.2
 
 # Transitive dependencies, frozen from the production image (pre-beta Task 1.2, 2026-11-06).
