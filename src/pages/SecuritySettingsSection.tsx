@@ -265,7 +265,7 @@ export function SecuritySettingsSection() {
                 onChange={(e) => setNewPw(e.target.value)}
                 autoComplete="new-password"
                 required
-                minLength={8}
+                minLength={12}
               />
             </label>
             <label className="flex flex-col gap-1 text-xs text-[var(--color-text-secondary)]">

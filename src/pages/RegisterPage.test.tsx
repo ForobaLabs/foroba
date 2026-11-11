@@ -35,7 +35,7 @@ test("redirects to the mandatory enrollment wizard after successful registration
   fireEvent.change(screen.getByLabelText("Full name"), { target: { value: "Ada" } });
   fireEvent.change(screen.getByLabelText("Email"), { target: { value: "ada@example.com" } });
   fireEvent.change(screen.getByLabelText("Confirm email"), { target: { value: "ada@example.com" } });
-  fireEvent.change(screen.getByLabelText("Password (min 8 chars)"), {
+  fireEvent.change(screen.getByLabelText("Password (min 12 chars)"), {
     target: { value: "Sup3rSecret!" },
   });
   fireEvent.change(screen.getByLabelText("Confirm password"), {
@@ -53,7 +53,7 @@ test("blocks submission until the Terms of Service checkbox is checked", () => {
   fireEvent.change(screen.getByLabelText("Full name"), { target: { value: "Ada" } });
   fireEvent.change(screen.getByLabelText("Email"), { target: { value: "ada@example.com" } });
   fireEvent.change(screen.getByLabelText("Confirm email"), { target: { value: "ada@example.com" } });
-  fireEvent.change(screen.getByLabelText("Password (min 8 chars)"), {
+  fireEvent.change(screen.getByLabelText("Password (min 12 chars)"), {
     target: { value: "Sup3rSecret!" },
   });
   fireEvent.change(screen.getByLabelText("Confirm password"), {

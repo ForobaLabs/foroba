@@ -12,6 +12,9 @@ describe("friendlyRegisterError", () => {
   it("explains a duplicate account with a next step", () => {
     expect(friendlyRegisterError("Email already registered")).toMatch(/signing in/i);
   });
+  it("states the 12-character password minimum", () => {
+    expect(friendlyRegisterError("password too short")).toMatch(/12 characters/);
+  });
   it("falls back to a generic, actionable message", () => {
     expect(friendlyRegisterError(undefined)).toMatch(/try again/i);
   });

@@ -61,7 +61,7 @@ export function friendlyRegisterError(detail: unknown): string {
     return "That email address can't be used. Check it for typos, or try another one.";
   }
   if (/password/i.test(text) && /(short|least|characters)/i.test(text)) {
-    return "Choose a longer password (at least 8 characters).";
+    return "Choose a longer password (at least 12 characters).";
   }
   if (/already|exists|in use/i.test(text)) {
     return "An account with this email already exists. Try signing in instead.";
@@ -315,29 +315,32 @@ export interface Mfa2FAChallenge {
   mfa_required: true;
   email: string;
   methods: ("totp" | "email_otp" | "webauthn")[];
+  /** Signed ticket proving the password step. Also set as a cookie; echoed in the body defensively. */
+  mfa_ticket?: string;
 }
 
 export async function loginWithMethod(
   email: string,
   code: string,
   method: "totp" | "email_otp",
+  mfaTicket?: string,
 ): Promise<SessionUser> {
   const r = await fetch("/jeli/auth/login/2fa", {
     ...opts,
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, code, method }),
+    body: JSON.stringify({ email, code, method, mfa_ticket: mfaTicket }),
   });
   if (!r.ok) throw new Error("invalid code");
   return r.json();
 }
 
-export async function sendLoginEmailOtp(email: string): Promise<void> {
+export async function sendLoginEmailOtp(email: string, mfaTicket?: string): Promise<void> {
   const r = await fetch("/jeli/auth/login/email-otp/send", {
     ...opts,
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email }),
+    body: JSON.stringify({ email, mfa_ticket: mfaTicket }),
   });
   if (!r.ok) {
     const body = await r.json().catch(() => null);
@@ -345,12 +348,16 @@ export async function sendLoginEmailOtp(email: string): Promise<void> {
   }
 }
 
-export async function loginWithRecoveryCode(email: string, recoveryCode: string): Promise<SessionUser> {
+export async function loginWithRecoveryCode(
+  email: string,
+  recoveryCode: string,
+  mfaTicket?: string,
+): Promise<SessionUser> {
   const r = await fetch("/jeli/auth/login/recovery-code", {
     ...opts,
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, recovery_code: recoveryCode }),
+    body: JSON.stringify({ email, recovery_code: recoveryCode, mfa_ticket: mfaTicket }),
   });
   if (!r.ok) throw new Error("invalid recovery code");
   return r.json();
