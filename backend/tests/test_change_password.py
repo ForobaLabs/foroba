@@ -16,8 +16,8 @@ from rate_limit import limiter
 from settings_store import init_settings
 
 _EMAIL = "pwchange@example.com"
-_PASSWORD = "OldPass1!"
-_NEW_PASSWORD = "NewPass2@"
+_PASSWORD = "OldPass1!long"
+_NEW_PASSWORD = "NewPass2@long"
 
 
 @pytest.fixture(autouse=True)
@@ -112,7 +112,7 @@ def test_change_password_confirm_mismatch(registered):
         json={
             "current_password": _PASSWORD,
             "new_password": _NEW_PASSWORD,
-            "new_password_confirm": "Different3#",
+            "new_password_confirm": "Different3#x",
         },
         headers={"Authorization": f"Bearer {token}"},
     )
@@ -192,16 +192,15 @@ def test_reset_request_unknown_email_returns_204(registered):
     assert r.status_code == 204
 
 
-def test_reset_request_known_email_without_smtp_returns_503(registered, monkeypatch):
-    """Without SMTP configured the endpoint surfaces a 503."""
+def test_reset_request_known_email_without_smtp_returns_204(registered, monkeypatch):
+    """Without SMTP configured the endpoint still returns 204 (no account oracle)."""
     import config as cfg
     monkeypatch.setattr(cfg.settings, "smtp_enabled", False)
     r = registered.post(
         "/auth/me/password/reset-request",
         json={"email": _EMAIL},
     )
-    # SMTP disabled → 503
-    assert r.status_code == 503
+    assert r.status_code == 204
 
 
 # ── reset confirm (POST /auth/me/password/reset) ──────────────────────────────

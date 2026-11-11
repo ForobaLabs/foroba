@@ -41,8 +41,8 @@ def test_lockout_after_five_failed_attempts(client):
             "email": "lock@y.com",
             "email_confirm": "lock@y.com",
             "name": "L",
-            "password": "password123",
-            "password_confirm": "password123",
+            "password": "password12345",
+            "password_confirm": "password12345",
             "tos_accepted": True,
         },
     )
@@ -52,7 +52,7 @@ def test_lockout_after_five_failed_attempts(client):
         r = c.post("/auth/login", json={"email": "lock@y.com", "password": "wrong"})
         assert r.status_code == 401
 
-    r = c.post("/auth/login", json={"email": "lock@y.com", "password": "password123"})
+    r = c.post("/auth/login", json={"email": "lock@y.com", "password": "password12345"})
     assert r.status_code == 423
 
 
@@ -64,8 +64,8 @@ def test_successful_login_resets_counter(client):
             "email": "reset@y.com",
             "email_confirm": "reset@y.com",
             "name": "R",
-            "password": "password123",
-            "password_confirm": "password123",
+            "password": "password12345",
+            "password_confirm": "password12345",
             "tos_accepted": True,
         },
     )
@@ -73,7 +73,7 @@ def test_successful_login_resets_counter(client):
 
     c.post("/auth/login", json={"email": "reset@y.com", "password": "wrong"})
     c.post("/auth/login", json={"email": "reset@y.com", "password": "wrong"})
-    r = c.post("/auth/login", json={"email": "reset@y.com", "password": "password123"})
+    r = c.post("/auth/login", json={"email": "reset@y.com", "password": "password12345"})
     assert r.status_code == 200
 
     user = repo.get_user_by_email(conn, "reset@y.com")
@@ -89,8 +89,8 @@ def test_disabled_account_cannot_login(client):
             "email": "disabled@y.com",
             "email_confirm": "disabled@y.com",
             "name": "D",
-            "password": "password123",
-            "password_confirm": "password123",
+            "password": "password12345",
+            "password_confirm": "password12345",
             "tos_accepted": True,
         },
     )
@@ -99,9 +99,9 @@ def test_disabled_account_cannot_login(client):
     user = repo.get_user_by_email(conn, "disabled@y.com")
     repo.set_account_disabled(conn, user["id"], True)
 
-    r = c.post("/auth/login", json={"email": "disabled@y.com", "password": "password123"})
+    r = c.post("/auth/login", json={"email": "disabled@y.com", "password": "password12345"})
     assert r.status_code == 403
 
     repo.set_account_disabled(conn, user["id"], False)
-    r2 = c.post("/auth/login", json={"email": "disabled@y.com", "password": "password123"})
+    r2 = c.post("/auth/login", json={"email": "disabled@y.com", "password": "password12345"})
     assert r2.status_code == 200

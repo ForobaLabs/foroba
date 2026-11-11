@@ -178,3 +178,43 @@ def test_stepup_cookie_domain_on_forobalabs_host():
     )
     assert r.status_code == 200, r.text
     assert any("stepup_pazuru=" in h and f"Domain={DOMAIN}" in h for h in _cookies(r))
+
+
+# ── Pre-beta Task 2.2 row 1: session and step-up cookie attributes ──
+
+
+def _attrs(header: str) -> set[str]:
+    return {part.strip().split("=", 1)[0].lower() for part in header.split(";")[1:]}
+
+
+def test_session_cookie_is_httponly_lax_and_secure(monkeypatch):
+    from config import settings
+
+    monkeypatch.setattr(settings, "cookie_secure", True)
+    app, _ = _app()
+    r = _register(TestClient(app, base_url=NEW_HOST), "attrs@example.com")
+    [session] = [h for h in _cookies(r) if h.startswith("suite_session=")]
+    assert {"httponly", "secure", "max-age", "domain"} <= _attrs(session)
+    assert "samesite=lax" in session.lower()
+
+
+def test_stepup_cookie_is_httponly_lax_secure_and_short_lived(monkeypatch):
+    import pyotp
+
+    from config import settings
+
+    monkeypatch.setattr(settings, "cookie_secure", True)
+    app, _ = _app()
+    client = TestClient(app, base_url=NEW_HOST)
+    _register(client, "stepup-attrs@example.com")
+    secret = client.post("/auth/2fa/enroll").json()["secret"]
+    client.post("/auth/2fa/verify", json={"code": pyotp.TOTP(secret).now()})
+    r = client.post(
+        "/auth/stepup/verify",
+        json={"app": "tsumi", "method": "totp", "code": pyotp.TOTP(secret).now()},
+    )
+    assert r.status_code == 200, r.text
+    [stepup] = [h for h in _cookies(r) if h.startswith("stepup_tsumi=")]
+    assert {"httponly", "secure"} <= _attrs(stepup)
+    assert "samesite=lax" in stepup.lower()
+    assert f"max-age={settings.stepup_ttl_minutes * 60}" in stepup.lower()

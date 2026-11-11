@@ -28,7 +28,7 @@ from pydantic import BaseModel
 
 import security_log
 from ai_gateway_client import get_client, record_pending_delete
-from auth import keys, refresh_tokens
+from auth import keys, mfa_ticket, refresh_tokens
 from auth import repository as repo
 from auth.avatar_storage import save_avatar
 from auth.conn import get_conn  # re-exported for tests that import it from here
@@ -324,7 +324,14 @@ def login(
         conn.execute("UPDATE users SET password_hash = ? WHERE id = ?", (new_hash, user["id"]))
         conn.commit()
     if _has_any_mfa_method(user) and settings.auth_2fa_enabled:
-        return {"mfa_required": True, "email": user["email"], "methods": _enabled_methods(user)}
+        ticket = mfa_ticket.issue_mfa_ticket(user["id"], user.get("session_version", 1))
+        mfa_ticket.set_ticket_cookie(response, ticket)
+        return {
+            "mfa_required": True,
+            "email": user["email"],
+            "methods": _enabled_methods(user),
+            "mfa_ticket": ticket,
+        }
     repo.reset_failed_login(conn, user["id"])
     security_log.log_event(conn, user_id=user["id"], event="login_success",
                            detail=None, ip=request.client.host if request.client else None)
@@ -341,6 +348,7 @@ def login_2fa(
     conn: sqlite3.Connection = Depends(get_conn),
 ) -> dict:
     user = repo.get_user_by_email(conn, req.email)
+    mfa_ticket.require_mfa_ticket(request, req.mfa_ticket, user)
     if user is not None and repo.is_locked_out(user):
         raise HTTPException(status.HTTP_423_LOCKED, "Account temporarily locked. Try again later.")
     if user is not None and user.get("account_disabled"):
@@ -361,6 +369,7 @@ def login_2fa(
             repo.register_failed_login(conn, user["id"])
             raise HTTPException(401, "Invalid code")
     repo.reset_failed_login(conn, user["id"])
+    mfa_ticket.clear_ticket_cookie(response)
     _set_session_cookie(response, user, request.url.hostname)
     return UserPublic(**user).model_dump()
 
@@ -378,6 +387,7 @@ def login_email_otp_send(
     takes `email` in the body and looks the user up directly. Rate-limited like the rest of the
     login surface to prevent using it as an email-flooding vector."""
     user = repo.get_user_by_email(conn, req.email)
+    mfa_ticket.require_mfa_ticket(request, req.mfa_ticket, user)
     if user is None or not user.get("email_otp_enabled"):
         raise HTTPException(400, "Email OTP is not set up for this account")
     if repo.is_locked_out(user):
@@ -398,6 +408,7 @@ def login_recovery_code(
     conn: sqlite3.Connection = Depends(get_conn),
 ) -> dict:
     user = repo.get_user_by_email(conn, req.email)
+    mfa_ticket.require_mfa_ticket(request, req.mfa_ticket, user)
     if user is not None and repo.is_locked_out(user):
         raise HTTPException(status.HTTP_423_LOCKED, "Account temporarily locked. Try again later.")
     if user is not None and user.get("account_disabled"):
@@ -407,6 +418,7 @@ def login_recovery_code(
             repo.register_failed_login(conn, user["id"])
         raise HTTPException(401, "Invalid recovery code")
     repo.reset_failed_login(conn, user["id"])
+    mfa_ticket.clear_ticket_cookie(response)
     _set_session_cookie(response, user, request.url.hostname)
     return UserPublic(**user).model_dump()
 
@@ -878,12 +890,15 @@ async def upload_avatar(
 @limiter.limit("5/minute")
 def change_password(
     request: Request,
+    response: Response,
     req: ChangePasswordRequest,
     user: dict = Depends(get_current_user),
     conn: sqlite3.Connection = Depends(get_conn),
 ) -> None:
-    """Change the authenticated user's password. Revokes all refresh tokens so that
-    mobile sessions (which can live for 30 days) are invalidated immediately."""
+    """Change the authenticated user's password and revoke every other session: refresh
+    tokens (30-day mobile sessions) and, via a session_version bump pushed to Pazuru/Tsumi,
+    every issued access/suite_session JWT. A browser caller gets a fresh cookie so the
+    device that changed the password stays signed in."""
     if not verify_password(req.current_password, user["password_hash"]):
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Current password is incorrect")
     conn.execute(
@@ -891,7 +906,16 @@ def change_password(
         (hash_password(req.new_password), user["id"]),
     )
     conn.commit()
-    refresh_tokens.revoke_all_for_user(conn, user["id"])
+    _revoke_every_session(conn, user["id"])
+    if request.cookies.get("suite_session"):
+        _set_session_cookie(
+            response, repo.get_user_by_id(conn, user["id"]), request.url.hostname
+        )
+
+
+def _revoke_every_session(conn: sqlite3.Connection, user_id: int) -> None:
+    refresh_tokens.revoke_all_for_user(conn, user_id)
+    invalidate_sessions_downstream(user_id, repo.bump_session_version(conn, user_id))
 
 
 @router.post("/me/password/reset-request", status_code=204)
@@ -908,11 +932,9 @@ def password_reset_request(
         return  # silent — no oracle
     try:
         generate_and_send(conn, user["id"], user["email"])
-    except EmailNotConfiguredError as exc:
-        raise HTTPException(
-            status.HTTP_503_SERVICE_UNAVAILABLE,
-            "Email delivery is not configured on this server",
-        ) from exc
+    except EmailNotConfiguredError:
+        # Same 204 as an unknown address: a 503 here told callers the account exists.
+        logger.error("password reset requested but email delivery is not configured")
 
 
 @router.post("/me/password/reset", status_code=204)
@@ -922,8 +944,8 @@ def password_reset_confirm(
     req: PasswordResetConfirmRequest,
     conn: sqlite3.Connection = Depends(get_conn),
 ) -> None:
-    """Complete a password reset: verify the OTP, update the hash, revoke all
-    refresh tokens. Returns 400 on invalid / expired code."""
+    """Complete a password reset: verify the OTP, update the hash, revoke every
+    session. Returns 400 on invalid / expired code."""
     user = repo.get_user_by_email(conn, req.email)
     if user is None or not verify_email_otp(conn, user["id"], req.code):
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Invalid or expired code")
@@ -932,7 +954,7 @@ def password_reset_confirm(
         (hash_password(req.new_password), user["id"]),
     )
     conn.commit()
-    refresh_tokens.revoke_all_for_user(conn, user["id"])
+    _revoke_every_session(conn, user["id"])
 
 
 @router.get("/visible-owners")

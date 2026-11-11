@@ -219,3 +219,26 @@ def test_reenrol_needed_states(monkeypatch):
     _add_cred(conn, user_id, b"new", "forobalabs.com")
     assert passkey_service.reenrol_needed(conn, user_id) is False  # one current is enough
     assert passkey_service.has_current_credential(conn, user_id) is True
+
+
+def test_verify_authentication_rejects_sign_count_regression(monkeypatch):
+    """Pre-beta Task 2.2 row 8: a counter that does not advance (cloned authenticator) is
+    refused by the real library, and the stored counter is left untouched."""
+    import hashlib
+
+    from webauthn.helpers.exceptions import InvalidAuthenticationResponse
+
+    monkeypatch.setattr(settings, "webauthn_origin", "https://app.forobalabs.com")
+    conn, user_id = _conn_with_credential(b"cred-2")
+    conn.execute("UPDATE webauthn_credentials SET sign_count = 5")
+    conn.commit()
+    challenge = b"c" * 32
+    store_challenge(conn, user_id, bytes_to_base64url(challenge), purpose="authentication")
+    cred = json.loads(_auth_credential_json(challenge, "https://app.forobalabs.com", b"cred-2"))
+    rp_hash = hashlib.sha256(settings.webauthn_rp_id.encode()).digest()
+    cred["response"]["authenticatorData"] = bytes_to_base64url(
+        rp_hash + b"\x01" + (3).to_bytes(4, "big")
+    )
+    with pytest.raises(InvalidAuthenticationResponse, match="sign count"):
+        verify_authentication(conn, user_id, json.dumps(cred))
+    assert conn.execute("SELECT sign_count FROM webauthn_credentials").fetchone()[0] == 5

@@ -86,7 +86,9 @@ def create_token(
 def decode_token(token: str, public_key: str) -> dict:
     """Session tokens only. A missing `typ` is accepted for tokens issued before
     Plan AU M-2 (≤30-day grace); any other `typ` (e.g. "stepup") is rejected."""
-    claims = jwt.decode(token, public_key, algorithms=[_ALGO])
+    claims = jwt.decode(
+        token, public_key, algorithms=[_ALGO], options={"require": ["exp", "sub"]}
+    )
     if claims.get("typ", "session") != "session":
         raise jwt.InvalidTokenError("not a session token")
     return claims

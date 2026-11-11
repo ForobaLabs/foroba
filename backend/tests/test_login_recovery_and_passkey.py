@@ -6,6 +6,7 @@ from fastapi.testclient import TestClient
 
 from auth import repository as repo
 from auth.conn import get_conn
+from auth.mfa_ticket import issue_mfa_ticket
 from auth.router import router as auth_router
 from db import init_schema, seed_mock_users
 from rate_limit import limiter
@@ -30,6 +31,11 @@ def _client() -> tuple[TestClient, sqlite3.Connection]:
     return TestClient(app), conn
 
 
+def _ticket(conn: sqlite3.Connection, email: str = "demo@foroba.app") -> str:
+    user = repo.get_user_by_email(conn, email)
+    return issue_mfa_ticket(user["id"], user.get("session_version", 1))
+
+
 def test_login_with_recovery_code_succeeds_and_consumes_it():
     c, conn = _client()
     demo = repo.get_user_by_email(conn, "demo@foroba.app")
@@ -37,13 +43,21 @@ def test_login_with_recovery_code_succeeds_and_consumes_it():
     codes = generate_and_store(conn, demo["id"])
     r = c.post(
         "/auth/login/recovery-code",
-        json={"email": "demo@foroba.app", "recovery_code": codes[0]},
+        json={
+            "email": "demo@foroba.app",
+            "recovery_code": codes[0],
+            "mfa_ticket": _ticket(conn),
+        },
     )
     assert r.status_code == 200
     assert c.cookies.get("suite_session")
     r2 = c.post(
         "/auth/login/recovery-code",
-        json={"email": "demo@foroba.app", "recovery_code": codes[0]},
+        json={
+            "email": "demo@foroba.app",
+            "recovery_code": codes[0],
+            "mfa_ticket": _ticket(conn),
+        },
     )
     assert r2.status_code == 401  # single-use
 
@@ -55,7 +69,11 @@ def test_login_with_invalid_recovery_code_rejected():
     generate_and_store(conn, demo["id"])
     r = c.post(
         "/auth/login/recovery-code",
-        json={"email": "demo@foroba.app", "recovery_code": "NOTVALID12"},
+        json={
+            "email": "demo@foroba.app",
+            "recovery_code": "NOTVALID12",
+            "mfa_ticket": _ticket(conn),
+        },
     )
     assert r.status_code == 401
 
@@ -73,13 +91,19 @@ def test_login_email_otp_send_works_before_authentication(monkeypatch):
     monkeypatch.setattr(
         "email_otp.send_otp_email", lambda to, code, **kw: sent.update(code=code)
     )
-    r = c.post("/auth/login/email-otp/send", json={"email": "demo@foroba.app"})
+    r = c.post(
+        "/auth/login/email-otp/send",
+        json={"email": "demo@foroba.app", "mfa_ticket": _ticket(conn)},
+    )
     assert r.status_code == 200
     assert r.json() == {"sent": True}
     assert "code" in sent
 
 
 def test_login_email_otp_send_rejects_when_not_enrolled():
-    c, _conn = _client()
-    r = c.post("/auth/login/email-otp/send", json={"email": "demo@foroba.app"})
+    c, conn = _client()
+    r = c.post(
+        "/auth/login/email-otp/send",
+        json={"email": "demo@foroba.app", "mfa_ticket": _ticket(conn)},
+    )
     assert r.status_code == 400

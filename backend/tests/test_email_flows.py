@@ -91,8 +91,8 @@ def _register(client, email="alice@example.com"):
             "email": email,
             "email_confirm": email,
             "name": "Alice Test",
-            "password": "Secret1234!",
-            "password_confirm": "Secret1234!",
+            "password": "Secret12345!",
+            "password_confirm": "Secret12345!",
             "tos_accepted": True,
         },
     )
@@ -441,7 +441,7 @@ class TestHouseholdInvite:
         bob_client = TestClient(client.app)
         bob_client.post(
             "/auth/login",
-            json={"email": "bob@example.com", "password": "Secret1234!"},
+            json={"email": "bob@example.com", "password": "Secret12345!"},
         )
         resp = bob_client.post("/auth/household/invite/accept", json={"token": token_str})
         assert resp.status_code == 204, resp.text
@@ -513,7 +513,7 @@ class TestHouseholdJoinConsent:
 
         bob_client = TestClient(client.app)
         bob_client.post(
-            "/auth/login", json={"email": "bob@example.com", "password": "Secret1234!"}
+            "/auth/login", json={"email": "bob@example.com", "password": "Secret12345!"}
         )
         accept_resp = bob_client.post(
             "/auth/household/invite/accept", json={"token": token.group(1)}

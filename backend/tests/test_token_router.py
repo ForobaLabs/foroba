@@ -16,9 +16,9 @@ from rate_limit import limiter
 from settings_store import init_settings
 
 _USER_EMAIL = "native@example.com"
-_USER_PASSWORD = "Nat1vePass!"
+_USER_PASSWORD = "Nat1vePass!x"
 _OTHER_EMAIL = "other@example.com"
-_OTHER_PASSWORD = "Other1Pass!"
+_OTHER_PASSWORD = "Other1Pass!x"
 
 
 @pytest.fixture(autouse=True)

@@ -14,8 +14,8 @@ _REG = {
     "email": "consent@y.com",
     "email_confirm": "consent@y.com",
     "name": "Consent",
-    "password": "password123",
-    "password_confirm": "password123",
+    "password": "password12345",
+    "password_confirm": "password12345",
     "tos_accepted": True,
 }
 

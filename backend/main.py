@@ -44,6 +44,7 @@ from backup_scheduler import start_backup_scheduler
 from billing.router import router as billing_router
 from billing.sweep import start_billing_sweep_scheduler
 from config import settings
+from csrf_origin import OriginCheckMiddleware
 from db import purge_mock_users as _purge
 from db import seed_demo_household as _seed_household
 from db import seed_mock_users as _seed
@@ -138,6 +139,7 @@ class MaintenanceModeMiddleware(BaseHTTPMiddleware):
 
 
 app.add_middleware(MaintenanceModeMiddleware)
+app.add_middleware(OriginCheckMiddleware, allowed_origins=ALLOWED_ORIGINS)
 
 app.add_middleware(
     CORSMiddleware,

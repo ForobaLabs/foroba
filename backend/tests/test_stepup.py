@@ -52,3 +52,21 @@ def test_issue_stepup_cookies_mints_both_apps():
     tsumi_claims = verify_stepup_token(cookies["tsumi"], expected_app="tsumi")
     assert pazuru_claims["sub"] == "42"
     assert tsumi_claims["sub"] == "42"
+
+
+def test_verify_rejects_stepup_token_without_exp():
+    """Pre-beta Task 2.2 row 9: a step-up token must carry an expiry."""
+    import jwt
+
+    from auth import keys
+    from config import settings
+
+    private_key, _, kid = keys.get_keypair(settings)
+    token = jwt.encode(
+        {"sub": "42", "app": "pazuru", "typ": "stepup"},
+        private_key,
+        algorithm="RS256",
+        headers={"kid": kid},
+    )
+    with pytest.raises(StepupTokenError):
+        verify_stepup_token(token, expected_app="pazuru")
