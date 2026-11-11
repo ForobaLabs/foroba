@@ -162,7 +162,7 @@ export function RegisterPage() {
             <PasswordInput showLabel={t("login.showPassword")} hideLabel={t("login.hidePassword")}
               id="password"
               autoComplete="new-password"
-              minLength={8}
+              minLength={12}
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}

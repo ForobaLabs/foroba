@@ -55,7 +55,7 @@ export function LoginPage() {
 
   useEffect(() => {
     if (challenge && method === "email_otp" && !emailOtpSent) {
-      sendLoginEmailOtp(challenge.email)
+      sendLoginEmailOtp(challenge.email, challenge.mfa_ticket)
         .then(() => setEmailOtpSent(true))
         .catch((err) => setError(err instanceof Error ? err.message : t("login.errSendCode")));
     }
@@ -102,7 +102,7 @@ export function LoginPage() {
     setError(null);
     setLoading(true);
     try {
-      await loginWithMethod(challenge.email, code, method);
+      await loginWithMethod(challenge.email, code, method, challenge.mfa_ticket);
       await finishLogin();
     } catch {
       setError(t("login.errCode"));
@@ -117,7 +117,7 @@ export function LoginPage() {
     setError(null);
     setLoading(true);
     try {
-      await loginWithRecoveryCode(challenge.email, recoveryCode);
+      await loginWithRecoveryCode(challenge.email, recoveryCode, challenge.mfa_ticket);
       await finishLogin();
     } catch {
       setError(t("login.errRecovery"));
@@ -414,7 +414,7 @@ export function LoginPage() {
                 value={forgotNewPw}
                 onChange={(e) => setForgotNewPw(e.target.value)}
                 required
-                minLength={8}
+                minLength={12}
                 autoComplete="new-password"
               />
               <PasswordInput showLabel={t("login.showPassword")} hideLabel={t("login.hidePassword")}

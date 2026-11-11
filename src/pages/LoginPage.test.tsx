@@ -194,3 +194,29 @@ test("password field is masked by default and can be revealed with the eye toggl
   fireEvent.click(screen.getByRole("button", { name: "Hide password" }));
   expect(input.type).toBe("password");
 });
+
+test("echoes the mfa_ticket from the password step into the second-factor request", async () => {
+  const bodies: Record<string, unknown> = {};
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async (url: RequestInfo | URL, init?: RequestInit) => {
+      const path = String(url);
+      if (init?.body) bodies[path] = JSON.parse(String(init.body));
+      const body = path.endsWith("/auth/login/2fa")
+        ? fakeUser
+        : { mfa_required: true, email: "demo@foroba.app", methods: ["totp"], mfa_ticket: "tkt-1" };
+      return { ok: true, json: async () => body } as Response;
+    }),
+  );
+  renderPage();
+
+  fireEvent.change(screen.getByLabelText("Email"), { target: { value: "demo@foroba.app" } });
+  fireEvent.change(screen.getByLabelText("Password"), { target: { value: "Demo!2026" } });
+  fireEvent.click(screen.getByRole("button", { name: "Sign in" }));
+  await waitFor(() => expect(screen.getByText("Verify it's you")).toBeInTheDocument());
+  fireEvent.change(screen.getByLabelText("Authenticator app code"), { target: { value: "123456" } });
+  fireEvent.click(screen.getByRole("button", { name: "Verify" }));
+
+  await waitFor(() => expect(screen.getByText("Home")).toBeInTheDocument());
+  expect(bodies["/jeli/auth/login/2fa"]).toMatchObject({ code: "123456", mfa_ticket: "tkt-1" });
+});

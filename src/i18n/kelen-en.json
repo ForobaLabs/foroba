@@ -455,7 +455,7 @@
     "email": "Email",
     "emailConfirm": "Confirm email",
     "emailMismatch": "Emails do not match",
-    "password": "Password (min 8 chars)",
+    "password": "Password (min 12 chars)",
     "passwordHelper": "Mix upper/lower case, numbers, and symbols for a stronger password.",
     "passwordConfirm": "Confirm password",
     "passwordMismatch": "Passwords do not match",
