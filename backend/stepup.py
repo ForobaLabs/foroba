@@ -47,7 +47,9 @@ def issue_stepup_token(
 def verify_stepup_token(token: str, *, expected_app: str) -> dict:
     _, public_key, _ = keys.get_keypair(settings)
     try:
-        claims = jwt.decode(token, public_key, algorithms=[_ALGO])
+        claims = jwt.decode(
+            token, public_key, algorithms=[_ALGO], options={"require": ["exp", "sub"]}
+        )
     except jwt.PyJWTError as exc:
         raise StepupTokenError(str(exc)) from exc
     if claims.get("typ") != "stepup":

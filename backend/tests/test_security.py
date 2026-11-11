@@ -72,3 +72,39 @@ def test_token_rejects_expired():
     token = create_token(user_id=1, private_key=PRIVATE_KEY, ttl_minutes=-1)
     with pytest.raises(jwt.ExpiredSignatureError):
         decode_token(token, public_key=PUBLIC_KEY)
+
+
+# ── Pre-beta Task 2.2 row 9: algorithm pinning and mandatory expiry ──
+
+
+def _forge(payload: dict, key: str, algorithm: str) -> str:
+    return jwt.encode(payload, key, algorithm=algorithm)
+
+
+def test_token_rejects_alg_none():
+    token = _forge({"sub": "1", "exp": 4_102_444_800}, None, "none")
+    with pytest.raises(jwt.PyJWTError):
+        decode_token(token, PUBLIC_KEY)
+
+
+def test_token_rejects_hs256_signed_with_the_public_key():
+    """Classic RS256→HS256 confusion: the public key used as an HMAC secret."""
+    import hashlib
+    import hmac
+    import json
+    from base64 import urlsafe_b64encode
+
+    def b64(raw: bytes) -> str:
+        return urlsafe_b64encode(raw).rstrip(b"=").decode()
+
+    head = b64(json.dumps({"alg": "HS256", "typ": "JWT"}).encode())
+    body = b64(json.dumps({"sub": "1", "exp": 4_102_444_800}).encode())
+    sig = hmac.new(PUBLIC_KEY.encode(), f"{head}.{body}".encode(), hashlib.sha256).digest()
+    with pytest.raises(jwt.PyJWTError):
+        decode_token(f"{head}.{body}.{b64(sig)}", PUBLIC_KEY)
+
+
+def test_token_without_exp_is_rejected():
+    token = _forge({"sub": "1"}, PRIVATE_KEY, "RS256")
+    with pytest.raises(jwt.PyJWTError):
+        decode_token(token, PUBLIC_KEY)
