@@ -50,3 +50,28 @@ def test_manual_toggle(app_conn):
     assert r.status_code == 200
     row = conn.execute("SELECT audience FROM users WHERE email='demo@foroba.app'").fetchone()
     assert row["audience"] == "expert"
+
+
+_FULL = {"experience": 3, "instruments": 3, "frequency": 2, "knowledge": 2, "risk": 2}
+
+
+@pytest.mark.parametrize(
+    "answers",
+    [
+        {},  # nothing answered
+        {"experience": 3},  # partial
+        {**_FULL, "experience": 99},  # out of range
+        {**_FULL, "experience": -1},  # negative index
+    ],
+)
+def test_submit_rejects_incomplete_or_out_of_range_answers(app_conn, answers):
+    c, conn = app_conn
+    before = conn.execute(
+        "SELECT audience, audience_locked FROM users WHERE email='demo@foroba.app'"
+    ).fetchone()
+    r = c.post("/onboarding/mifid", json={"answers": answers})
+    assert r.status_code == 422
+    after = conn.execute(
+        "SELECT audience, audience_locked FROM users WHERE email='demo@foroba.app'"
+    ).fetchone()
+    assert tuple(after) == tuple(before)  # nothing locked by a rejected submission

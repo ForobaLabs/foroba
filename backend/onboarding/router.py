@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import sqlite3
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
 from auth import repository as repo
@@ -23,6 +23,16 @@ class AudienceRequest(BaseModel):
     audience: str  # "base" | "expert"
 
 
+def _validate_answers(answers: dict[str, int]) -> None:
+    """Every question answered with an in-range option index, else 422 (never a 500)."""
+    for q in QUESTIONNAIRE["questions"]:
+        idx = answers.get(q["id"])
+        if idx is None or not 0 <= idx < len(q["options"]):
+            raise HTTPException(
+                status_code=422, detail=f"Invalid or missing answer for '{q['id']}'"
+            )
+
+
 @router.get("/onboarding/mifid")
 def get_questionnaire() -> dict:
     return QUESTIONNAIRE
@@ -34,6 +44,7 @@ def submit(
     user: dict = Depends(get_current_user),
     conn: sqlite3.Connection = Depends(get_conn),
 ) -> dict:
+    _validate_answers(req.answers)
     audience = score_mifid(req.answers)
     repo.set_audience(conn, user["id"], audience, locked=True)
     return {"audience": audience, "locked": True}
