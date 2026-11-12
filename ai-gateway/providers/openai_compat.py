@@ -2,6 +2,7 @@
 
 import asyncio
 import json
+import re
 from collections.abc import AsyncIterator
 from urllib.parse import urlsplit
 
@@ -17,6 +18,9 @@ CF_QUOTA_CODE = 4006
 _client: httpx.AsyncClient | None = None
 
 
+_ACCOUNT_ID_RE = re.compile(r"[A-Za-z0-9_-]{1,64}")
+
+
 async def _guard(request: httpx.Request) -> None:
     if request.url.host not in ALLOWED_HOSTS:
         raise ProviderError("bad_request")
@@ -30,7 +34,9 @@ def _get_client() -> httpx.AsyncClient:
 
 
 def _url(spec: ProviderSpec, account_id: str | None) -> str:
-    if spec.needs_account_id and not account_id:
+    if spec.needs_account_id and not (
+        account_id and _ACCOUNT_ID_RE.fullmatch(account_id)
+    ):
         raise ProviderError("bad_request")
     base = spec.base_url.format(account_id=account_id or "").rstrip("/")
     if urlsplit(base).hostname not in ALLOWED_HOSTS:
@@ -126,7 +132,9 @@ async def stream(
             while True:
                 try:
                     line = await (
-                        asyncio.wait_for(anext(lines), FIRST_BYTE_S) if first else anext(lines)
+                        asyncio.wait_for(anext(lines), FIRST_BYTE_S)
+                        if first
+                        else anext(lines)
                     )
                 except StopAsyncIteration:
                     break
@@ -149,7 +157,11 @@ async def stream(
                     for tc in delta.get("tool_calls") or []:
                         slot = calls.setdefault(
                             tc.get("index", 0),
-                            {"id": "", "type": "function", "function": {"name": "", "arguments": ""}},
+                            {
+                                "id": "",
+                                "type": "function",
+                                "function": {"name": "", "arguments": ""},
+                            },
                         )
                         slot["id"] = tc.get("id") or slot["id"]
                         fn = tc.get("function") or {}

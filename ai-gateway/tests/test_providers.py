@@ -20,7 +20,10 @@ def _ok(neurons=None, content="ok"):
     usage = {"prompt_tokens": 1, "completion_tokens": 1}
     if neurons is not None:
         usage["neurons"] = neurons
-    return {"choices": [{"message": {"role": "assistant", "content": content}}], "usage": usage}
+    return {
+        "choices": [{"message": {"role": "assistant", "content": content}}],
+        "usage": usage,
+    }
 
 
 @pytest.mark.asyncio
@@ -47,7 +50,9 @@ async def test_other_providers_not_metered():
 
 @pytest.mark.asyncio
 async def test_disallowed_host_blocked():
-    evil = ProviderSpec(base_url="https://evil.example/v1", models=("m",), needs_account_id=False)
+    evil = ProviderSpec(
+        base_url="https://evil.example/v1", models=("m",), needs_account_id=False
+    )
     with pytest.raises(ProviderError) as ei:
         await openai_compat.complete(evil, KEY, None, _req())
     assert ei.value.kind == "bad_request"
@@ -57,7 +62,9 @@ async def test_disallowed_host_blocked():
 @pytest.mark.asyncio
 @respx.mock
 async def test_401_maps_to_auth():
-    respx.post("https://api.openai.com/v1/chat/completions").mock(return_value=httpx.Response(401))
+    respx.post("https://api.openai.com/v1/chat/completions").mock(
+        return_value=httpx.Response(401)
+    )
     with pytest.raises(ProviderError) as ei:
         await openai_compat.complete(PROVIDERS["openai"], KEY, None, _req())
     assert ei.value.kind == "auth"
@@ -66,8 +73,12 @@ async def test_401_maps_to_auth():
 @pytest.mark.asyncio
 @respx.mock
 async def test_4006_maps_to_quota():
-    respx.post("https://api.cloudflare.com/client/v4/accounts/a/ai/v1/chat/completions").mock(
-        return_value=httpx.Response(400, json={"errors": [{"code": 4006, "message": "limit"}]})
+    respx.post(
+        "https://api.cloudflare.com/client/v4/accounts/a/ai/v1/chat/completions"
+    ).mock(
+        return_value=httpx.Response(
+            400, json={"errors": [{"code": 4006, "message": "limit"}]}
+        )
     )
     with pytest.raises(ProviderError) as ei:
         await openai_compat.complete(PROVIDERS["cloudflare"], KEY, "a", _req())
@@ -122,11 +133,18 @@ async def test_stream_yields_tokens_then_usage():
         'data: {"choices":[],"usage":{"neurons":7}}\n\n'
         "data: [DONE]\n\n"
     )
-    respx.post("https://api.cloudflare.com/client/v4/accounts/a/ai/v1/chat/completions").mock(
-        return_value=httpx.Response(200, content=sse, headers={"content-type": "text/event-stream"})
+    respx.post(
+        "https://api.cloudflare.com/client/v4/accounts/a/ai/v1/chat/completions"
+    ).mock(
+        return_value=httpx.Response(
+            200, content=sse, headers={"content-type": "text/event-stream"}
+        )
     )
     events = [
-        e async for e in openai_compat.stream(PROVIDERS["cloudflare"], KEY, "a", _req(stream=True))
+        e
+        async for e in openai_compat.stream(
+            PROVIDERS["cloudflare"], KEY, "a", _req(stream=True)
+        )
     ]
     assert [e["text"] for e in events if e["type"] == "token"] == ["Ci", "ao"]
     assert events[-1] == {"type": "usage", "neurons": 7}
@@ -146,7 +164,10 @@ async def test_stream_accumulates_tool_calls():
         return_value=httpx.Response(200, content=sse)
     )
     events = [
-        e async for e in openai_compat.stream(PROVIDERS["openai"], KEY, None, _req(stream=True))
+        e
+        async for e in openai_compat.stream(
+            PROVIDERS["openai"], KEY, None, _req(stream=True)
+        )
     ]
     calls = next(e for e in events if e["type"] == "tool_calls")["calls"]
     assert calls[0]["id"] == "c1"
@@ -167,7 +188,14 @@ async def test_json_mode_sets_response_format():
 
 def test_allowed_hosts_derived_from_registry():
     assert "api.cloudflare.com" in ALLOWED_HOSTS and "openrouter.ai" in ALLOWED_HOSTS
-    assert set(PROVIDERS) == {"cloudflare", "openai", "anthropic", "mistral", "gemini", "openrouter"}
+    assert set(PROVIDERS) == {
+        "cloudflare",
+        "openai",
+        "anthropic",
+        "mistral",
+        "gemini",
+        "openrouter",
+    }
 
 
 @pytest.mark.asyncio
@@ -180,11 +208,18 @@ async def test_stream_coerces_non_string_content_to_text():
         'data: {"choices":[{"delta":{"content":0}}]}\n\n'
         "data: [DONE]\n\n"
     )
-    respx.post("https://api.cloudflare.com/client/v4/accounts/a/ai/v1/chat/completions").mock(
-        return_value=httpx.Response(200, content=sse, headers={"content-type": "text/event-stream"})
+    respx.post(
+        "https://api.cloudflare.com/client/v4/accounts/a/ai/v1/chat/completions"
+    ).mock(
+        return_value=httpx.Response(
+            200, content=sse, headers={"content-type": "text/event-stream"}
+        )
     )
     events = [
-        e async for e in openai_compat.stream(PROVIDERS["cloudflare"], KEY, "a", _req(stream=True))
+        e
+        async for e in openai_compat.stream(
+            PROVIDERS["cloudflare"], KEY, "a", _req(stream=True)
+        )
     ]
     assert [e["text"] for e in events if e["type"] == "token"] == ["Nel ", "2026", "0"]
 
@@ -192,8 +227,18 @@ async def test_stream_coerces_non_string_content_to_text():
 @pytest.mark.asyncio
 @respx.mock
 async def test_complete_coerces_non_string_content_to_text():
-    respx.post("https://api.cloudflare.com/client/v4/accounts/a/ai/v1/chat/completions").mock(
-        return_value=httpx.Response(200, json=_ok(content=2026))
-    )
+    respx.post(
+        "https://api.cloudflare.com/client/v4/accounts/a/ai/v1/chat/completions"
+    ).mock(return_value=httpx.Response(200, json=_ok(content=2026)))
     res = await openai_compat.complete(PROVIDERS["cloudflare"], KEY, "a", _req())
     assert res.text == "2026"
+
+
+@pytest.mark.parametrize(
+    "bad",
+    ["../../../x", "a/b", "acc?x=1", "acc#frag", "a@evil.com", "acc 1", "", "x" * 65],
+)
+def test_cloudflare_account_id_cannot_alter_the_request_path(bad):
+    """Pre-beta 2.4: account_id is interpolated into the URL path; only [A-Za-z0-9_-] is safe."""
+    with pytest.raises(ProviderError):
+        openai_compat._url(PROVIDERS["cloudflare"], bad)

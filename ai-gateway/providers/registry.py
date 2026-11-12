@@ -27,7 +27,8 @@ PROVIDERS: dict[str, ProviderSpec] = {
         ("gemini-2.5-flash", "gemini-2.5-pro"),
     ),
     "openrouter": ProviderSpec(
-        "https://openrouter.ai/api/v1", ("meta-llama/llama-4-scout", "openai/gpt-4o-mini")
+        "https://openrouter.ai/api/v1",
+        ("meta-llama/llama-4-scout", "openai/gpt-4o-mini"),
     ),
 }
 

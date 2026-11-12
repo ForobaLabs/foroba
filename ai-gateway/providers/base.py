@@ -28,4 +28,6 @@ class ProviderError(Exception):
     def __init__(self, kind: ErrorKind, status: int | None = None):
         self.kind = kind
         self.status = status
-        super().__init__(f"provider error: {kind}" + (f" (HTTP {status})" if status else ""))
+        super().__init__(
+            f"provider error: {kind}" + (f" (HTTP {status})" if status else "")
+        )
