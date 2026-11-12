@@ -144,3 +144,62 @@ def test_import_suite_forwards_to_pazuru_and_tsumi(monkeypatch):
     assert result["pazuru"]["restored_files"] == ["pazuru.db"]
     assert result["tsumi"]["restored_files"] == ["tsumi.duckdb"]
     assert len(imported_local) == 1
+
+
+def test_export_suite_sends_per_app_stepup_tokens(monkeypatch):
+    """Pazuru/Tsumi's /admin/backup/export answer 428 without a step-up token scoped to
+    them; the nightly job and the admin route must send one per app."""
+    monkeypatch.setattr(orch.settings, "pazuru_api_url", "http://pazuru-host")
+    monkeypatch.setattr(orch.settings, "tsumi_api_url", "http://tsumi-host")
+    monkeypatch.setattr(orch, "export_archive", lambda: _mini_tar("f.db", b"f"))
+    seen: dict[str, dict] = {}
+
+    class _Capturing(_FakeClient):
+        async def get(self, url: str, **kwargs: Any) -> _FakeResponse:
+            seen[url] = kwargs.get("headers") or {}
+            return await super().get(url, **kwargs)
+
+    monkeypatch.setattr(
+        orch.httpx,
+        "AsyncClient",
+        lambda *a, **kw: _Capturing(
+            {"pazuru": _mini_tar("p.db", b"p"), "tsumi": _mini_tar("t", b"t")}
+        ),
+    )
+
+    asyncio.run(
+        orch.export_suite("pw", cookie="c", stepup={"pazuru": "sp-token", "tsumi": "st-token"})
+    )
+
+    assert seen["http://pazuru-host/admin/backup/export"]["X-Stepup-Token"] == "sp-token"
+    assert seen["http://tsumi-host/admin/backup/export"]["X-Stepup-Token"] == "st-token"
+
+
+def test_import_suite_sends_per_app_stepup_tokens(monkeypatch):
+    monkeypatch.setattr(orch.settings, "pazuru_api_url", "http://pazuru-host")
+    monkeypatch.setattr(orch.settings, "tsumi_api_url", "http://tsumi-host")
+    monkeypatch.setattr(orch, "export_archive", lambda: _mini_tar("f.db", b"f"))
+    monkeypatch.setattr(orch, "import_archive", lambda data: {"restored_files": []})
+    monkeypatch.setattr(
+        orch.httpx,
+        "AsyncClient",
+        lambda *a, **kw: _FakeClient(
+            {"pazuru": _mini_tar("p.db", b"p"), "tsumi": _mini_tar("t", b"t")}
+        ),
+    )
+    encrypted = asyncio.run(orch.export_suite("pw", cookie="c"))
+    seen: dict[str, dict] = {}
+
+    class _Capturing(_FakeClient):
+        async def post(self, url: str, **kwargs: Any) -> _FakeResponse:
+            seen[url] = kwargs.get("headers") or {}
+            return _FakeResponse(b"", json_body={"ok": True})
+
+    monkeypatch.setattr(orch.httpx, "AsyncClient", lambda *a, **kw: _Capturing({}))
+
+    asyncio.run(
+        orch.import_suite(encrypted, "pw", cookie="c", stepup={"pazuru": "sp", "tsumi": "st"})
+    )
+
+    assert seen["http://pazuru-host/admin/backup/import"]["X-Stepup-Token"] == "sp"
+    assert seen["http://tsumi-host/admin/backup/import"]["X-Stepup-Token"] == "st"

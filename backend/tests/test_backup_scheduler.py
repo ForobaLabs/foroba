@@ -65,8 +65,14 @@ def test_happy_path_exports_and_uploads(monkeypatch):
 
     monkeypatch.setattr(sched, "create_token", fake_create_token)
 
-    async def fake_export_suite(passphrase, cookie):
+    monkeypatch.setattr(
+        sched, "issue_stepup_cookies", lambda uid: {"pazuru": f"sp{uid}", "tsumi": f"st{uid}"}
+    )
+    seen_stepup: dict = {}
+
+    async def fake_export_suite(passphrase, cookie, stepup=None):
         assert cookie == "fake-jwt"
+        seen_stepup.update(stepup or {})
         return b"encrypted-archive"
 
     monkeypatch.setattr(sched.backup_orchestrator, "export_suite", fake_export_suite)
@@ -83,6 +89,7 @@ def test_happy_path_exports_and_uploads(monkeypatch):
     assert captured_token_args["user_id"] == 2
     assert captured_token_args["is_admin"] is True
     assert uploaded == [b"encrypted-archive"]
+    assert seen_stepup == {"pazuru": "sp2", "tsumi": "st2"}
 
 
 def test_happy_path_logs_and_does_not_raise_on_export_failure(monkeypatch):
@@ -98,7 +105,7 @@ def test_happy_path_logs_and_does_not_raise_on_export_failure(monkeypatch):
     monkeypatch.setattr(sched.keys, "get_keypair", lambda settings: ("priv", "pub", "kid1"))
     monkeypatch.setattr(sched, "create_token", lambda *a, **kw: "fake-jwt")
 
-    async def failing_export(passphrase, cookie):
+    async def failing_export(passphrase, cookie, stepup=None):
         raise RuntimeError("pazuru unreachable")
 
     monkeypatch.setattr(sched.backup_orchestrator, "export_suite", failing_export)

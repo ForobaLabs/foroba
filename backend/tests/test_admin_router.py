@@ -165,7 +165,7 @@ def test_export_backup_calls_orchestrator(setup, monkeypatch):
     tc, _conn, admin, _ = setup
     tc.app.dependency_overrides[get_current_user] = lambda: admin
 
-    async def _fake_export_suite(passphrase, cookie):
+    async def _fake_export_suite(passphrase, cookie, stepup=None):
         assert passphrase == "pw"
         return b"encrypted-bytes"
 
@@ -181,7 +181,7 @@ def test_import_backup_calls_orchestrator(setup, monkeypatch):
     tc, _conn, admin, _ = setup
     tc.app.dependency_overrides[get_current_user] = lambda: admin
 
-    async def _fake_import_suite(encrypted, passphrase, cookie):
+    async def _fake_import_suite(encrypted, passphrase, cookie, stepup=None):
         assert passphrase == "pw"
         assert encrypted == b"uploaded-bytes"
         return {"foroba": {"restored_files": []}, "pazuru": {}, "tsumi": {}}
@@ -236,7 +236,7 @@ def test_import_backup_wrong_passphrase_returns_400(setup, monkeypatch):
     tc, _conn, admin, _ = setup
     tc.app.dependency_overrides[get_current_user] = lambda: admin
 
-    async def _fake_import_suite(encrypted, passphrase, cookie):
+    async def _fake_import_suite(encrypted, passphrase, cookie, stepup=None):
         raise admin_router.backup_orchestrator.InvalidPassphrase("bad pw")
 
     monkeypatch.setattr(admin_router.backup_orchestrator, "import_suite", _fake_import_suite)

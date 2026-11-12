@@ -186,8 +186,13 @@ async def admin_export_suite(
     body: BackupExportRequest,
     _: dict = Depends(require_admin),
     suite_session: str | None = Cookie(default=None),
+    stepup_pazuru: str | None = Cookie(default=None),
+    stepup_tsumi: str | None = Cookie(default=None),
 ) -> Response:
-    data = await backup_orchestrator.export_suite(body.passphrase, cookie=suite_session)
+    stepup = {k: v for k, v in (("pazuru", stepup_pazuru), ("tsumi", stepup_tsumi)) if v}
+    data = await backup_orchestrator.export_suite(
+        body.passphrase, cookie=suite_session, stepup=stepup
+    )
     return Response(content=data, media_type="application/octet-stream")
 
 
@@ -197,9 +202,14 @@ async def admin_import_suite(
     passphrase: str = Form(...),
     _: dict = Depends(require_admin),
     suite_session: str | None = Cookie(default=None),
+    stepup_pazuru: str | None = Cookie(default=None),
+    stepup_tsumi: str | None = Cookie(default=None),
 ) -> dict:
     data = await file.read()
+    stepup = {k: v for k, v in (("pazuru", stepup_pazuru), ("tsumi", stepup_tsumi)) if v}
     try:
-        return await backup_orchestrator.import_suite(data, passphrase, cookie=suite_session)
+        return await backup_orchestrator.import_suite(
+            data, passphrase, cookie=suite_session, stepup=stepup
+        )
     except (backup_orchestrator.InvalidPassphrase, ValueError) as exc:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc)) from exc

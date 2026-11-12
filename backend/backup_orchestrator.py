@@ -59,18 +59,30 @@ def decrypt_archive(encrypted: bytes, passphrase: str) -> bytes:
         raise InvalidPassphrase("Wrong passphrase or corrupted archive") from err
 
 
-async def _fetch_export(client: httpx.AsyncClient, base_url: str, cookie: str) -> bytes:
+async def _fetch_export(
+    client: httpx.AsyncClient, base_url: str, cookie: str, stepup_token: str | None = None
+) -> bytes:
     resp = await client.get(
-        f"{base_url}/admin/backup/export", cookies={"suite_session": cookie}, timeout=30.0
+        f"{base_url}/admin/backup/export",
+        cookies={"suite_session": cookie},
+        headers={"X-Stepup-Token": stepup_token} if stepup_token else {},
+        timeout=30.0,
     )
     resp.raise_for_status()
     return resp.content
 
 
-async def _post_import(client: httpx.AsyncClient, base_url: str, cookie: str, data: bytes) -> dict:
+async def _post_import(
+    client: httpx.AsyncClient,
+    base_url: str,
+    cookie: str,
+    data: bytes,
+    stepup_token: str | None = None,
+) -> dict:
     resp = await client.post(
         f"{base_url}/admin/backup/import",
         cookies={"suite_session": cookie},
+        headers={"X-Stepup-Token": stepup_token} if stepup_token else {},
         files={"file": ("backup.tar.gz", data, "application/gzip")},
         timeout=30.0,
     )
@@ -78,11 +90,17 @@ async def _post_import(client: httpx.AsyncClient, base_url: str, cookie: str, da
     return resp.json()
 
 
-async def export_suite(passphrase: str, cookie: str) -> bytes:
+async def export_suite(passphrase: str, cookie: str, stepup: dict[str, str] | None = None) -> bytes:
+    """`stepup` maps app name -> app-scoped step-up token; Pazuru/Tsumi answer 428
+    to admin backup export without one."""
     foroba_blob = export_archive()
     async with httpx.AsyncClient() as client:
-        pazuru_blob = await _fetch_export(client, settings.pazuru_api_url, cookie)
-        tsumi_blob = await _fetch_export(client, settings.tsumi_api_url, cookie)
+        pazuru_blob = await _fetch_export(
+            client, settings.pazuru_api_url, cookie, (stepup or {}).get("pazuru")
+        )
+        tsumi_blob = await _fetch_export(
+            client, settings.tsumi_api_url, cookie, (stepup or {}).get("tsumi")
+        )
 
     manifest = json.dumps(
         {
@@ -107,7 +125,9 @@ async def export_suite(passphrase: str, cookie: str) -> bytes:
     return _encrypt(outer.getvalue(), passphrase)
 
 
-async def import_suite(encrypted: bytes, passphrase: str, cookie: str) -> dict:
+async def import_suite(
+    encrypted: bytes, passphrase: str, cookie: str, stepup: dict[str, str] | None = None
+) -> dict:
     outer_bytes = decrypt_archive(encrypted, passphrase)
     with tarfile.open(fileobj=io.BytesIO(outer_bytes), mode="r:") as tar:
         names = set(tar.getnames())
@@ -126,7 +146,11 @@ async def import_suite(encrypted: bytes, passphrase: str, cookie: str) -> dict:
         ):
             try:
                 result[app_name] = await _post_import(
-                    client, base_url, cookie, blobs[f"{app_name}.tar.gz"]
+                    client,
+                    base_url,
+                    cookie,
+                    blobs[f"{app_name}.tar.gz"],
+                    (stepup or {}).get(app_name),
                 )
             except (httpx.HTTPError, RuntimeError) as exc:
                 result[app_name] = {"error": str(exc)}

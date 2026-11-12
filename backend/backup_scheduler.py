@@ -24,6 +24,7 @@ from auth.conn import get_conn
 from auth.repository import list_all_users
 from auth.security import create_token
 from config import settings
+from stepup import issue_stepup_cookies
 
 logger = logging.getLogger("foroba.backup_scheduler")
 
@@ -54,6 +55,7 @@ async def _run_daily_backup_async() -> None:
         archive = await backup_orchestrator.export_suite(
             settings.backup_encryption_passphrase,
             cookie=token,
+            stepup=issue_stepup_cookies(admin["id"]),
         )
         key = offsite_backup.upload_backup(archive)
         logger.info("Offsite backup scheduler: uploaded %s", key)
