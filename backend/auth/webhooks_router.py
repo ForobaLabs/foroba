@@ -11,6 +11,7 @@ from pydantic import BaseModel, field_validator
 import db
 from auth.conn import get_conn
 from auth.dependencies import get_current_user
+from url_guard import UnsafeUrlError, assert_public_https_url
 
 router = APIRouter(prefix="/auth/webhooks", tags=["webhooks"])
 
@@ -21,9 +22,10 @@ class WebhookCreate(BaseModel):
     @field_validator("target_url")
     @classmethod
     def _require_https(cls, v: str) -> str:
-        if not v.startswith("https://"):
-            raise ValueError("target_url must use https://")
-        return v
+        try:
+            return assert_public_https_url(v)
+        except UnsafeUrlError as exc:
+            raise ValueError(str(exc)) from exc
 
 
 class WebhookOut(BaseModel):

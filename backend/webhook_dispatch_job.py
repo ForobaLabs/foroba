@@ -34,6 +34,7 @@ from auth.repository import get_user_by_id
 from auth.security import create_token
 from config import settings
 from stepup import issue_stepup_cookies
+from url_guard import assert_public_https_url
 
 logger = logging.getLogger("foroba.webhook_dispatch_job")
 
@@ -82,6 +83,8 @@ async def _deliver_event(client, conn, webhook: dict, event: dict) -> None:
     ).encode()
 
     try:
+        # Re-resolve at delivery time: a host valid at registration may now point inward.
+        await asyncio.to_thread(assert_public_https_url, webhook["target_url"], resolve=True)
         resp = await client.post(
             webhook["target_url"],
             content=body,

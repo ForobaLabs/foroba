@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import hashlib
 import hmac
+import socket
 import sqlite3
 
 import httpx
@@ -12,6 +13,18 @@ import pytest
 
 import db
 import webhook_dispatch_job as wdj
+
+
+@pytest.fixture(autouse=True)
+def _public_dns(monkeypatch):
+    """Delivery re-resolves the target (SSRF guard); keep these tests offline."""
+    monkeypatch.setattr(
+        socket,
+        "getaddrinfo",
+        lambda host, port, *a, **k: [
+            (socket.AF_INET, socket.SOCK_STREAM, 6, "", ("93.184.216.34", port))
+        ],
+    )
 
 
 @pytest.fixture
