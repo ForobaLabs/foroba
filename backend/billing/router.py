@@ -18,6 +18,9 @@ from config import settings
 
 router = APIRouter(prefix="/billing", tags=["billing"])
 
+# Paddle subscription events are a few KB; anything near this cap is not from Paddle.
+MAX_WEBHOOK_BYTES = 256 * 1024
+
 
 def _require_enabled() -> None:
     if not settings.billing_enabled:
@@ -31,13 +34,20 @@ class CheckoutRequest(BaseModel):
 @router.post("/webhook")
 async def webhook(request: Request, conn: sqlite3.Connection = Depends(get_conn)):
     _require_enabled()
-    body = await request.body()
+    declared = request.headers.get("content-length", "")
+    if declared.isdigit() and int(declared) > MAX_WEBHOOK_BYTES:
+        raise HTTPException(status_code=413, detail="Payload too large")
+    body = b""
+    async for chunk in request.stream():
+        body += chunk
+        if len(body) > MAX_WEBHOOK_BYTES:
+            raise HTTPException(status_code=413, detail="Payload too large")
     try:
         verify_signature(
             request.headers.get("Paddle-Signature", ""), body, settings.paddle_webhook_secret
         )
     except SignatureError:
-        raise HTTPException(status_code=400, detail="Invalid signature") from None
+        raise HTTPException(status_code=401, detail="Invalid signature") from None
     try:
         payload = json.loads(body)
     except ValueError:

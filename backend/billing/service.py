@@ -65,10 +65,14 @@ def apply_event(
         conn.commit()
         return "ignored"
     existing = conn.execute(
-        "SELECT last_event_at FROM subscriptions "
+        "SELECT user_id, last_event_at FROM subscriptions "
         "WHERE provider = 'paddle' AND provider_subscription_id = ?",
         (ev.subscription_id,),
     ).fetchone()
+    if existing and existing["user_id"] != ev.user_id:
+        # A subscription is bound to the user who first claimed it; never re-point it.
+        conn.commit()
+        return "ignored"
     if existing and existing["last_event_at"] > _iso(ev.occurred_at):
         conn.commit()
         return "stale"

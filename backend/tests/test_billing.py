@@ -247,7 +247,7 @@ def test_webhook_disabled_returns_503(client, monkeypatch):
 
 
 def test_webhook_rejects_bad_signature(client, conn):
-    assert post_webhook(client, payload(), header="ts=1;h1=00").status_code == 400
+    assert post_webhook(client, payload(), header="ts=1;h1=00").status_code == 401
     assert user(conn)["tier"] == "free"
 
 
@@ -408,3 +408,104 @@ def test_paddle_cancel_without_key_raises(monkeypatch):
     monkeypatch.setattr(billing_provider.settings, "paddle_api_key", "")
     with pytest.raises(BillingProviderError):
         PaddleProvider().cancel_subscription("sub_123")
+
+
+# --- Task 2.7: webhook hardening (status codes, replay, ordering, size cap) -----------
+def test_bad_signature_is_401_and_changes_nothing(client, conn):
+    assert post_webhook(client, payload(), header="ts=1;h1=00").status_code == 401
+    assert user(conn)["tier"] == "free"
+    assert conn.execute("SELECT COUNT(*) FROM billing_events").fetchone()[0] == 0
+
+
+def test_missing_signature_header_is_401(client):
+    raw = json.dumps(payload()).encode()
+    assert client.post("/billing/webhook", content=raw).status_code == 401
+
+
+def test_stale_timestamp_is_401_even_with_a_valid_hmac(client, conn):
+    old = int((datetime.now(UTC) - timedelta(minutes=6)).timestamp())
+    raw = json.dumps(payload()).encode()
+    r = post_webhook(client, payload(), header=sign(raw, old))
+    assert r.status_code == 401
+    assert user(conn)["tier"] == "free"
+
+
+def test_future_timestamp_beyond_tolerance_is_401(client):
+    future = int((datetime.now(UTC) + timedelta(minutes=6)).timestamp())
+    raw = json.dumps(payload()).encode()
+    assert post_webhook(client, payload(), header=sign(raw, future)).status_code == 401
+
+
+def test_replayed_event_id_changes_state_once(client, conn):
+    assert post_webhook(client, payload()).json()["result"] == "applied"
+    assert post_webhook(client, payload()).json()["result"] == "duplicate"
+    assert conn.execute("SELECT COUNT(*) FROM subscriptions").fetchone()[0] == 1
+    assert conn.execute("SELECT COUNT(*) FROM billing_events").fetchone()[0] == 1
+
+
+def test_updated_arriving_before_created_converges_to_latest_state(conn):
+    updated = parse_paddle_event(
+        payload(
+            event_id="evt_u",
+            etype="subscription.updated",
+            status="canceled",
+            occurred="2026-11-02T10:00:00Z",
+        )
+    )
+    created = parse_paddle_event(
+        payload(
+            event_id="evt_c",
+            etype="subscription.created",
+            status="active",
+            occurred="2026-11-01T10:00:00Z",
+        )
+    )
+    assert apply_event(conn, updated, now=NOW) == "applied"
+    assert apply_event(conn, created, now=NOW) == "stale"
+    assert user(conn)["tier"] == "free"
+    assert (
+        conn.execute("SELECT status FROM subscriptions WHERE provider_subscription_id='sub_1'")
+        .fetchone()[0]
+        == "canceled"
+    )
+
+
+def test_unknown_customer_is_200_ledgered_and_harmless(client, conn):
+    r = post_webhook(client, payload(user_id="424242"))
+    assert r.status_code == 200 and r.json()["result"] == "ignored"
+    assert conn.execute("SELECT COUNT(*) FROM billing_events").fetchone()[0] == 1
+    assert conn.execute("SELECT COUNT(*) FROM subscriptions").fetchone()[0] == 0
+    assert user(conn)["tier"] == "free"
+
+
+def test_oversized_body_is_413_before_signature_work(client, conn):
+    big = json.dumps({"pad": "x" * (300 * 1024)}).encode()
+    r = client.post(
+        "/billing/webhook",
+        content=big,
+        headers={"Paddle-Signature": sign(big, int(datetime.now(UTC).timestamp()))},
+    )
+    assert r.status_code == 413
+    assert user(conn)["tier"] == "free"
+
+
+def test_body_just_under_the_cap_is_still_processed(client):
+    r = post_webhook(client, {**payload(), "pad": "x" * (100 * 1024)})
+    assert r.status_code == 200
+
+
+def test_event_cannot_rebind_a_subscription_to_another_user(conn):
+    repo.create_user(
+        conn, email="c@test.local", name="C", password_hash="x", tier="free", audience="base"
+    )
+    other = repo.get_user_by_email(conn, "c@test.local")["id"]
+    assert apply_event(conn, parse_paddle_event(payload()), now=NOW) == "applied"
+    hijack = parse_paddle_event(
+        payload(event_id="evt_h", user_id=str(other), occurred="2026-11-03T10:00:00Z")
+    )
+    assert apply_event(conn, hijack, now=NOW) == "ignored"
+    assert repo.get_user_by_email(conn, "c@test.local")["tier"] == "free"
+    owner = conn.execute(
+        "SELECT user_id FROM subscriptions WHERE provider_subscription_id='sub_1'"
+    ).fetchone()[0]
+    assert owner == user(conn)["id"]
