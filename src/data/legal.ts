@@ -7,7 +7,7 @@
 
 export const PRIVACY_POLICY = {
   title: 'Privacy Policy',
-  lastUpdated: '2026-08-09',
+  lastUpdated: '2026-11-12',
   content: `DRAFT — Pending final review by a qualified lawyer before public launch.
 
 WHO WE ARE
@@ -56,7 +56,11 @@ When you delete your account, your personal data is removed from our live databa
 
 WHO WE SHARE YOUR DATA WITH
 
-Brevo SAS — transactional email (pending); EU-based (France).
+OVH SAS — server hosting (France, EU). Databases are encrypted; OVH has no access to their content.
+Enable Banking Oy — bank account connection (Finland, EU); only if you connect a bank.
+Brevo SAS — transactional email (France, EU).
+Paddle — merchant of record for paid subscriptions (receives your email, name and billing country at checkout); only if you subscribe.
+Cloudflare — DNS, static websites, inbound email routing for our support addresses, and encrypted backup storage (R2, EU region).
 GlitchTip error monitoring runs self-hosted on our own server — no data is sent to a third party.
 
 AI providers — only if you opt in. By default AI features run on our own server with a local model and nothing is sent out. If you choose cloud AI for a feature, requests are processed by Cloudflare (Workers AI); if you add your own API key, requests go to the provider you pick (OpenAI, Anthropic, Mistral, Google Gemini, OpenRouter or Cloudflare). We ask for your explicit consent first, which you can withdraw at any time in Settings; names, addresses, IBANs and similar identifiers are masked before sending, and providers may not train on your data. Your API keys are stored encrypted and never shown again.
@@ -65,6 +69,8 @@ We do not sell your personal data. We do not share your data with advertisers.
 
 INTERNATIONAL TRANSFERS
 Your personal data is processed within the European Union. GlitchTip is self-hosted on our EU server. Cloudflare R2 backup storage uses an EU-region bucket.
+
+Exceptions: if you opt in to cloud AI, masked prompts are processed by Cloudflare Workers AI (global edge network) or by the provider whose key you supply, which may be outside the EU (typically the US). Mail you send to our support addresses is routed through Cloudflare Email Routing. Where personal data leaves the EU, we rely on the provider's Standard Contractual Clauses or EU–US Data Privacy Framework certification.
 
 COOKIES
 We use two types of cookies, both strictly necessary:

@@ -3,7 +3,7 @@
 **[USER ACTION: lawyer — final review required before public beta]**
 
 **Version:** 0.1-draft
-**Last updated:** 2026-08-09
+**Last updated:** 2026-11-12
 **Applies to:** Personal Finance HUB (Foroba, Pazuru, Tsumi)
 
 ---
@@ -45,7 +45,7 @@ We collect only the data necessary to provide the service.
 - **What:** Your chat messages and, internally, embeddings of your transaction descriptions used to provide contextually relevant responses.
 - **Why:** To provide the Jeli AI assistant feature.
 - **Legal basis:** Performance of a contract.
-- **Important:** Jeli runs entirely on our server using a local AI model (Ollama). Your financial data and chat messages are **never sent to an external AI provider**.
+- **Important:** By default Jeli runs on our own server with a local AI model and nothing leaves it. If you explicitly opt in to cloud AI for a feature (premium), masked prompts are processed by Cloudflare Workers AI, or by the provider whose API key you supply. Names, e-mail addresses, IBANs and similar identifiers are masked before sending. Consent is per feature and can be withdrawn at any time in Settings; withdrawing stops cloud calls immediately.
 
 ### Security monitoring data
 
@@ -87,7 +87,11 @@ We use the following service providers (processors) who process personal data on
 |---|---|---|
 | Enable Banking Oy | Bank account connection (AISP) | EU (Finland) |
 | GlitchTip | Error monitoring (pseudonymous) | [USER ACTION: confirm location] |
-| Brevo SAS | Transactional email (pending) | EU (France) |
+| Brevo SAS | Transactional email | EU (France) |
+| OVH SAS | Server hosting | EU (France) |
+| Cloudflare, Inc. | DNS, static sites, inbound email routing, encrypted backup storage (R2), cloud AI inference (opt-in) | EU bucket for backups; global edge otherwise |
+| Paddle | Merchant of record for paid subscriptions (only if you subscribe) | See Paddle's terms |
+| AI provider of your choice (OpenAI, Google Gemini, OpenRouter…) | Only if you supply your own API key (BYOK) | Provider-defined |
 
 We do not sell your personal data. We do not share your data with advertisers.
 
@@ -97,7 +101,7 @@ Market data providers (Twelve Data, iTick, Binance, CoinGecko, ECB) receive only
 
 ## International transfers
 
-Your personal data is processed within the European Union. The AI assistant (Jeli) runs locally on our server — your data is never sent to a US-based or external AI provider.
+Your personal data is processed within the European Union. Exceptions: opt-in cloud AI (Cloudflare Workers AI or your own provider key) and inbound support mail via Cloudflare Email Routing may involve processing outside the EU; we rely on Standard Contractual Clauses or the EU–US Data Privacy Framework for those transfers.
 
 GlitchTip error monitoring is self-hosted on the same EU server. Cloudflare R2 backup storage uses an EU-region bucket. Both confirmed. See ADR-0004.
 
