@@ -1,0 +1,200 @@
+{"cat": "iban", "text": "Veuillez virer sur l'IBAN IT5338363913652783376608418", "pii": ["IT5338363913652783376608418"]}
+{"cat": "iban", "text": "IBAN: FR21 1580 1953 6640 0642 6138 159 intestato a mio fratello", "pii": ["FR21 1580 1953 6640 0642 6138 159"]}
+{"cat": "iban", "text": "Bonifico verso DE13434320188397770624", "pii": ["DE13434320188397770624"]}
+{"cat": "iban", "text": "My IBAN is ES04 8162 7237 2821 1820 3547 please check", "pii": ["ES04 8162 7237 2821 1820 3547"]}
+{"cat": "iban", "text": "My IBAN is NL3026073380281567 please check", "pii": ["NL3026073380281567"]}
+{"cat": "iban", "text": "Veuillez virer sur l'IBAN IT80 5897 0172 0347 4558 5209 748", "pii": ["IT80 5897 0172 0347 4558 5209 748"]}
+{"cat": "iban", "text": "My IBAN is FR6790175377665549584854290 please check", "pii": ["FR6790175377665549584854290"]}
+{"cat": "iban", "text": "Veuillez virer sur l'IBAN DE69 5483 1697 7133 6970 70", "pii": ["DE69 5483 1697 7133 6970 70"]}
+{"cat": "iban", "text": "Veuillez virer sur l'IBAN ES5882270752700717888170", "pii": ["ES5882270752700717888170"]}
+{"cat": "iban", "text": "My IBAN is NL87 5558 3023 1820 53 please check", "pii": ["NL87 5558 3023 1820 53"]}
+{"cat": "iban", "text": "Bonifico verso IT7795356692372833785636401", "pii": ["IT7795356692372833785636401"]}
+{"cat": "iban", "text": "Bonifico verso FR28 0641 5402 1908 5069 3564 221", "pii": ["FR28 0641 5402 1908 5069 3564 221"]}
+{"cat": "iban", "text": "Veuillez virer sur l'IBAN DE37749302360579624032", "pii": ["DE37749302360579624032"]}
+{"cat": "iban", "text": "IBAN: ES48 0777 6226 4601 5551 8563 intestato a mio fratello", "pii": ["ES48 0777 6226 4601 5551 8563"]}
+{"cat": "iban", "text": "Veuillez virer sur l'IBAN NL3751279060335371", "pii": ["NL3751279060335371"]}
+{"cat": "iban", "text": "My IBAN is IT22 6507 7815 8603 7507 3044 030 please check", "pii": ["IT22 6507 7815 8603 7507 3044 030"]}
+{"cat": "iban", "text": "IBAN: FR2458480062186647885100587 intestato a mio fratello", "pii": ["FR2458480062186647885100587"]}
+{"cat": "iban", "text": "Veuillez virer sur l'IBAN DE12 9952 9559 5696 7917 63", "pii": ["DE12 9952 9559 5696 7917 63"]}
+{"cat": "iban", "text": "Bonifico verso ES6687388040453995038682", "pii": ["ES6687388040453995038682"]}
+{"cat": "iban", "text": "My IBAN is NL59 1599 3359 1953 98 please check", "pii": ["NL59 1599 3359 1953 98"]}
+{"cat": "iban", "text": "My IBAN is IT5056059706093710284480804 please check", "pii": ["IT5056059706093710284480804"]}
+{"cat": "iban", "text": "Bonifico verso FR58 2057 7390 2570 3311 1301 335", "pii": ["FR58 2057 7390 2570 3311 1301 335"]}
+{"cat": "iban", "text": "Bonifico verso DE64131311228836999304", "pii": ["DE64131311228836999304"]}
+{"cat": "iban", "text": "IBAN: ES37 4714 4404 3660 6016 1814 intestato a mio fratello", "pii": ["ES37 4714 4404 3660 6016 1814"]}
+{"cat": "iban", "text": "Veuillez virer sur l'IBAN NL2896461892548877", "pii": ["NL2896461892548877"]}
+{"cat": "card", "text": "card number 4129658302856441 was declined", "pii": ["4129658302856441"]}
+{"cat": "card", "text": "card number 4504 5037 4850 3667 was declined", "pii": ["4504 5037 4850 3667"]}
+{"cat": "card", "text": "Pagato con carta n. 4325-9973-2943-1750", "pii": ["4325-9973-2943-1750"]}
+{"cat": "card", "text": "card number 4746089275925950 was declined", "pii": ["4746089275925950"]}
+{"cat": "card", "text": "Pagato con carta n. 4139 6480 6283 2177", "pii": ["4139 6480 6283 2177"]}
+{"cat": "card", "text": "Ma carte bancaire 4250-2154-6038-1380 a été bloquée", "pii": ["4250-2154-6038-1380"]}
+{"cat": "card", "text": "card number 4378568638671547 was declined", "pii": ["4378568638671547"]}
+{"cat": "card", "text": "Pagato con carta n. 4657 3947 0076 1450", "pii": ["4657 3947 0076 1450"]}
+{"cat": "card", "text": "card number 4291-4163-8089-0283 was declined", "pii": ["4291-4163-8089-0283"]}
+{"cat": "card", "text": "Carta 4879818139165331 scade 09/28", "pii": ["4879818139165331"]}
+{"cat": "card", "text": "Carta 4504 4283 3436 4623 scade 09/28", "pii": ["4504 4283 3436 4623"]}
+{"cat": "card", "text": "Pagato con carta n. 4973-1508-8307-6760", "pii": ["4973-1508-8307-6760"]}
+{"cat": "card", "text": "card number 4140140339835750 was declined", "pii": ["4140140339835750"]}
+{"cat": "card", "text": "Carta 4225 2701 8103 9686 scade 09/28", "pii": ["4225 2701 8103 9686"]}
+{"cat": "card", "text": "card number 4632-0548-4633-1176 was declined", "pii": ["4632-0548-4633-1176"]}
+{"cat": "card", "text": "Ma carte bancaire 4732416889651985 a été bloquée", "pii": ["4732416889651985"]}
+{"cat": "card", "text": "Carta 4623 0355 3502 9537 scade 09/28", "pii": ["4623 0355 3502 9537"]}
+{"cat": "card", "text": "Ma carte bancaire 4215-7288-7263-7896 a été bloquée", "pii": ["4215-7288-7263-7896"]}
+{"cat": "card", "text": "Carta 4621868254571061 scade 09/28", "pii": ["4621868254571061"]}
+{"cat": "card", "text": "Carta 4170 9304 0064 6414 scade 09/28", "pii": ["4170 9304 0064 6414"]}
+{"cat": "card", "text": "Ma carte bancaire 4383-5050-7874-3512 a été bloquée", "pii": ["4383-5050-7874-3512"]}
+{"cat": "card", "text": "card number 4852906919750660 was declined", "pii": ["4852906919750660"]}
+{"cat": "card", "text": "Pagato con carta n. 4475 1605 8944 4850", "pii": ["4475 1605 8944 4850"]}
+{"cat": "card", "text": "Pagato con carta n. 4270-1034-9842-1822", "pii": ["4270-1034-9842-1822"]}
+{"cat": "card", "text": "Pagato con carta n. 4933047594607686", "pii": ["4933047594607686"]}
+{"cat": "cf", "text": "Codice fiscale VGNQUA60E70H881E", "pii": ["VGNQUA60E70H881E"]}
+{"cat": "cf", "text": "Il mio codice fiscale è UDCEWV65M75H697V", "pii": ["UDCEWV65M75H697V"]}
+{"cat": "cf", "text": "Codice fiscale JWLFXN41C91H087R", "pii": ["JWLFXN41C91H087R"]}
+{"cat": "cf", "text": "Il mio codice fiscale è KKUWYK78R28H801I", "pii": ["KKUWYK78R28H801I"]}
+{"cat": "cf", "text": "CF: HOXHQI94D37H969C del titolare", "pii": ["HOXHQI94D37H969C"]}
+{"cat": "cf", "text": "Il mio codice fiscale è NIKFEY66P36H943T", "pii": ["NIKFEY66P36H943T"]}
+{"cat": "cf", "text": "Codice fiscale ABRMSP43M58H393D", "pii": ["ABRMSP43M58H393D"]}
+{"cat": "cf", "text": "CF: QXKFAN53C05H934U del titolare", "pii": ["QXKFAN53C05H934U"]}
+{"cat": "cf", "text": "Il mio codice fiscale è DWSPCE83L92H718T", "pii": ["DWSPCE83L92H718T"]}
+{"cat": "cf", "text": "Codice fiscale YXDBDF40C09H860F", "pii": ["YXDBDF40C09H860F"]}
+{"cat": "cf", "text": "CF: VGQETO59S05H205W del titolare", "pii": ["VGQETO59S05H205W"]}
+{"cat": "cf", "text": "CF: TXQFDA56M62H281T del titolare", "pii": ["TXQFDA56M62H281T"]}
+{"cat": "cf", "text": "Codice fiscale AFNTRM90P98H755D", "pii": ["AFNTRM90P98H755D"]}
+{"cat": "cf", "text": "CF: ILIXRX26P72H868Y del titolare", "pii": ["ILIXRX26P72H868Y"]}
+{"cat": "cf", "text": "Codice fiscale NOUSMH41M23H736Q", "pii": ["NOUSMH41M23H736Q"]}
+{"cat": "nir", "text": "Numéro de sécurité sociale 1 61 71 40 946 215 44", "pii": ["1 61 71 40 946 215 44"]}
+{"cat": "nir", "text": "Mon NIR : 1 14 58 44 365 516 51", "pii": ["1 14 58 44 365 516 51"]}
+{"cat": "nir", "text": "Numéro de sécurité sociale 1 70 51 62 503 294 66", "pii": ["1 70 51 62 503 294 66"]}
+{"cat": "nir", "text": "Mon NIR : 2 88 94 42 250 412 74", "pii": ["2 88 94 42 250 412 74"]}
+{"cat": "nir", "text": "Mon NIR : 2 08 02 09 732 992 13", "pii": ["2 08 02 09 732 992 13"]}
+{"cat": "nir", "text": "Mon NIR : 1 54 44 12 486 834 21", "pii": ["1 54 44 12 486 834 21"]}
+{"cat": "nir", "text": "Numéro de sécurité sociale 1 21 68 22 444 046 17", "pii": ["1 21 68 22 444 046 17"]}
+{"cat": "nir", "text": "N° INSEE 1 68 53 45 946 468 92", "pii": ["1 68 53 45 946 468 92"]}
+{"cat": "nir", "text": "Mon NIR : 1 92 75 51 018 923 10", "pii": ["1 92 75 51 018 923 10"]}
+{"cat": "nir", "text": "N° INSEE 1 36 05 53 917 713 40", "pii": ["1 36 05 53 917 713 40"]}
+{"cat": "email", "text": "Contactez-moi sur elena.ricci67@orange.fr", "pii": ["elena.ricci67@orange.fr"]}
+{"cat": "email", "text": "Scrivimi a thomas.dubois32@orange.fr", "pii": ["thomas.dubois32@orange.fr"]}
+{"cat": "email", "text": "Please send the receipt to james.wright52@libero.it", "pii": ["james.wright52@libero.it"]}
+{"cat": "email", "text": "Please send the receipt to giulia.romano94@yahoo.com", "pii": ["giulia.romano94@yahoo.com"]}
+{"cat": "email", "text": "Email: aurelie.fournier61@proton.me", "pii": ["aurelie.fournier61@proton.me"]}
+{"cat": "email", "text": "Please send the receipt to william.davies10@gmail.com", "pii": ["william.davies10@gmail.com"]}
+{"cat": "email", "text": "Email: matteo.colombo76@libero.it", "pii": ["matteo.colombo76@libero.it"]}
+{"cat": "email", "text": "Contactez-moi sur antoine.girard37@libero.it", "pii": ["antoine.girard37@libero.it"]}
+{"cat": "email", "text": "Please send the receipt to james.evans8@outlook.fr", "pii": ["james.evans8@outlook.fr"]}
+{"cat": "email", "text": "Email: chiara.esposito96@yahoo.com", "pii": ["chiara.esposito96@yahoo.com"]}
+{"cat": "email", "text": "Scrivimi a margaux.lambert90@orange.fr", "pii": ["margaux.lambert90@orange.fr"]}
+{"cat": "email", "text": "Scrivimi a sophia.thomas58@proton.me", "pii": ["sophia.thomas58@proton.me"]}
+{"cat": "email", "text": "Scrivimi a matteo.marino85@yahoo.com", "pii": ["matteo.marino85@yahoo.com"]}
+{"cat": "email", "text": "Scrivimi a camille.girard15@outlook.fr", "pii": ["camille.girard15@outlook.fr"]}
+{"cat": "email", "text": "Please send the receipt to jack.taylor63@yahoo.com", "pii": ["jack.taylor63@yahoo.com"]}
+{"cat": "email", "text": "Scrivimi a marco.marino38@outlook.fr", "pii": ["marco.marino38@outlook.fr"]}
+{"cat": "email", "text": "Contactez-moi sur nicolas.lambert96@gmail.com", "pii": ["nicolas.lambert96@gmail.com"]}
+{"cat": "email", "text": "Please send the receipt to henry.wilson22@proton.me", "pii": ["henry.wilson22@proton.me"]}
+{"cat": "email", "text": "Please send the receipt to francesca.conti78@libero.it", "pii": ["francesca.conti78@libero.it"]}
+{"cat": "email", "text": "Scrivimi a margaux.dupont74@yahoo.com", "pii": ["margaux.dupont74@yahoo.com"]}
+{"cat": "phone", "text": "Mon numéro est le +39 324 951 4268", "pii": ["+39 324 951 4268"]}
+{"cat": "phone", "text": "Chiamami al +33 6 48 89 27 16", "pii": ["+33 6 48 89 27 16"]}
+{"cat": "phone", "text": "Reach me on +221 77 924 78 20", "pii": ["+221 77 924 78 20"]}
+{"cat": "phone", "text": "Chiamami al +225 07 17 63 82 59", "pii": ["+225 07 17 63 82 59"]}
+{"cat": "phone", "text": "Tel. +39 387 527 5197", "pii": ["+39 387 527 5197"]}
+{"cat": "phone", "text": "Chiamami al +33 6 29 74 91 34", "pii": ["+33 6 29 74 91 34"]}
+{"cat": "phone", "text": "Reach me on +221 77 829 78 56", "pii": ["+221 77 829 78 56"]}
+{"cat": "phone", "text": "Chiamami al +225 07 68 76 82 13", "pii": ["+225 07 68 76 82 13"]}
+{"cat": "phone", "text": "Tel. +39 351 317 7979", "pii": ["+39 351 317 7979"]}
+{"cat": "phone", "text": "Mon numéro est le +33 7 64 15 17 52", "pii": ["+33 7 64 15 17 52"]}
+{"cat": "phone", "text": "Tel. +221 77 481 52 75", "pii": ["+221 77 481 52 75"]}
+{"cat": "phone", "text": "Reach me on +225 07 39 98 66 48", "pii": ["+225 07 39 98 66 48"]}
+{"cat": "phone", "text": "Tel. +39 354 204 7045", "pii": ["+39 354 204 7045"]}
+{"cat": "phone", "text": "Mon numéro est le +33 6 91 62 25 96", "pii": ["+33 6 91 62 25 96"]}
+{"cat": "phone", "text": "Mon numéro est le +221 77 450 97 96", "pii": ["+221 77 450 97 96"]}
+{"cat": "phone", "text": "Chiamami al +225 07 95 26 48 63", "pii": ["+225 07 95 26 48 63"]}
+{"cat": "phone", "text": "Reach me on +39 363 781 3740", "pii": ["+39 363 781 3740"]}
+{"cat": "phone", "text": "Reach me on +33 7 21 71 94 25", "pii": ["+33 7 21 71 94 25"]}
+{"cat": "phone", "text": "Reach me on +221 77 960 58 32", "pii": ["+221 77 960 58 32"]}
+{"cat": "phone", "text": "Chiamami al +225 07 22 99 28 71", "pii": ["+225 07 22 99 28 71"]}
+{"cat": "address", "text": "Residente in Via 45 Roma, 10121 Torino", "pii": ["Via 45 Roma, 10121 Torino"]}
+{"cat": "address", "text": "Spedire a Goethestraße 57, 80331 München", "pii": ["Goethestraße 57, 80331 München"]}
+{"cat": "address", "text": "Residente in Schillerstraße 8, 20095 Hamburg", "pii": ["Schillerstraße 8, 20095 Hamburg"]}
+{"cat": "address", "text": "Billing address: des Lilas rue 41, 31000 Toulouse", "pii": ["des Lilas rue 41, 31000 Toulouse"]}
+{"cat": "address", "text": "Residente in Victor Hugo rue 103, 31000 Toulouse", "pii": ["Victor Hugo rue 103, 31000 Toulouse"]}
+{"cat": "address", "text": "Spedire a de la Paix rue 103, 69003 Lyon", "pii": ["de la Paix rue 103, 69003 Lyon"]}
+{"cat": "address", "text": "J'habite au Via 104 Dante Alighieri, 00184 Roma", "pii": ["Via 104 Dante Alighieri, 00184 Roma"]}
+{"cat": "address", "text": "Spedire a Via 1 Alessandro Manzoni, 20121 Milano", "pii": ["Via 1 Alessandro Manzoni, 20121 Milano"]}
+{"cat": "address", "text": "Spedire a des Lilas rue 8, 69003 Lyon", "pii": ["des Lilas rue 8, 69003 Lyon"]}
+{"cat": "address", "text": "Billing address: Schillerstraße 98, 10115 Berlin", "pii": ["Schillerstraße 98, 10115 Berlin"]}
+{"cat": "address", "text": "Billing address: Via 96 Alessandro Manzoni, 40121 Bologna", "pii": ["Via 96 Alessandro Manzoni, 40121 Bologna"]}
+{"cat": "address", "text": "Spedire a Via 44 Roma, 10121 Torino", "pii": ["Via 44 Roma, 10121 Torino"]}
+{"cat": "address", "text": "Billing address: Schillerstraße 75, 10115 Berlin", "pii": ["Schillerstraße 75, 10115 Berlin"]}
+{"cat": "address", "text": "Residente in Goethestraße 20, 80331 München", "pii": ["Goethestraße 20, 80331 München"]}
+{"cat": "address", "text": "Spedire a Via 21 Garibaldi, 20121 Milano", "pii": ["Via 21 Garibaldi, 20121 Milano"]}
+{"cat": "address", "text": "J'habite au Schillerstraße 24, 20095 Hamburg", "pii": ["Schillerstraße 24, 20095 Hamburg"]}
+{"cat": "address", "text": "Spedire a Pasteur rue 69, 31000 Toulouse", "pii": ["Pasteur rue 69, 31000 Toulouse"]}
+{"cat": "address", "text": "J'habite au Schillerstraße 55, 20095 Hamburg", "pii": ["Schillerstraße 55, 20095 Hamburg"]}
+{"cat": "address", "text": "Residente in des Lilas rue 100, 13001 Marseille", "pii": ["des Lilas rue 100, 13001 Marseille"]}
+{"cat": "address", "text": "Residente in de la Paix rue 95, 75002 Paris", "pii": ["de la Paix rue 95, 75002 Paris"]}
+{"cat": "address", "text": "Residente in Pasteur rue 30, 69003 Lyon", "pii": ["Pasteur rue 30, 69003 Lyon"]}
+{"cat": "address", "text": "Spedire a Via 80 Giuseppe Verdi, 20121 Milano", "pii": ["Via 80 Giuseppe Verdi, 20121 Milano"]}
+{"cat": "address", "text": "Residente in de la Paix rue 60, 31000 Toulouse", "pii": ["de la Paix rue 60, 31000 Toulouse"]}
+{"cat": "address", "text": "Residente in Via 33 Giuseppe Verdi, 20121 Milano", "pii": ["Via 33 Giuseppe Verdi, 20121 Milano"]}
+{"cat": "address", "text": "J'habite au Hauptstraße 83, 10115 Berlin", "pii": ["Hauptstraße 83, 10115 Berlin"]}
+{"cat": "person", "text": "Ho parlato con Giulia Conti ieri", "pii": ["Giulia Conti"]}
+{"cat": "person", "text": "Le titulaire du compte est Thomas Dupont", "pii": ["Thomas Dupont"]}
+{"cat": "person", "text": "I spoke with Charlotte Walker yesterday", "pii": ["Charlotte Walker"]}
+{"cat": "person", "text": "Il titolare del conto è Luca Colombo", "pii": ["Luca Colombo"]}
+{"cat": "person", "text": "Virement au bénéfice de Aurélie Bonnet", "pii": ["Aurélie Bonnet"]}
+{"cat": "person", "text": "Transfer to Jack Evans", "pii": ["Jack Evans"]}
+{"cat": "person", "text": "Bonifico a favore di Matteo Ricci", "pii": ["Matteo Ricci"]}
+{"cat": "person", "text": "Virement au bénéfice de Mathieu Lefèvre", "pii": ["Mathieu Lefèvre"]}
+{"cat": "person", "text": "I spoke with Charlotte Davies yesterday", "pii": ["Charlotte Davies"]}
+{"cat": "person", "text": "Il titolare del conto è Matteo Ferrari", "pii": ["Matteo Ferrari"]}
+{"cat": "person", "text": "J'ai parlé avec Antoine Bonnet hier", "pii": ["Antoine Bonnet"]}
+{"cat": "person", "text": "Transfer to Sophia Johnson", "pii": ["Sophia Johnson"]}
+{"cat": "person", "text": "Bonifico a favore di Francesca Conti", "pii": ["Francesca Conti"]}
+{"cat": "person", "text": "Le titulaire du compte est Nicolas Girard", "pii": ["Nicolas Girard"]}
+{"cat": "person", "text": "I spoke with Grace Smith yesterday", "pii": ["Grace Smith"]}
+{"cat": "person", "text": "Bonifico a favore di Luca Conti", "pii": ["Luca Conti"]}
+{"cat": "person", "text": "J'ai parlé avec Aurélie Dupont hier", "pii": ["Aurélie Dupont"]}
+{"cat": "person", "text": "The account holder is Emily Taylor", "pii": ["Emily Taylor"]}
+{"cat": "person", "text": "Il titolare del conto è Matteo Romano", "pii": ["Matteo Romano"]}
+{"cat": "person", "text": "Virement au bénéfice de Margaux Dubois", "pii": ["Margaux Dubois"]}
+{"cat": "person", "text": "Transfer to Jack Wilson", "pii": ["Jack Wilson"]}
+{"cat": "person", "text": "Bonifico a favore di Giulia Marino", "pii": ["Giulia Marino"]}
+{"cat": "person", "text": "J'ai parlé avec Élodie Moreau hier", "pii": ["Élodie Moreau"]}
+{"cat": "person", "text": "The account holder is Henry Evans", "pii": ["Henry Evans"]}
+{"cat": "person", "text": "Ho parlato con Chiara Colombo ieri", "pii": ["Chiara Colombo"]}
+{"cat": "person", "text": "Virement au bénéfice de Julien Fournier", "pii": ["Julien Fournier"]}
+{"cat": "person", "text": "I spoke with Grace Wilson yesterday", "pii": ["Grace Wilson"]}
+{"cat": "person", "text": "Il titolare del conto è Giulia Marino", "pii": ["Giulia Marino"]}
+{"cat": "person", "text": "Le titulaire du compte est Camille Dubois", "pii": ["Camille Dubois"]}
+{"cat": "person", "text": "Transfer to Jack Wright", "pii": ["Jack Wright"]}
+{"cat": "person", "text": "Ho parlato con Francesca Marino ieri", "pii": ["Francesca Marino"]}
+{"cat": "person", "text": "J'ai parlé avec Thomas Girard hier", "pii": ["Thomas Girard"]}
+{"cat": "person", "text": "The account holder is Henry Brown", "pii": ["Henry Brown"]}
+{"cat": "person", "text": "Il titolare del conto è Luca Romano", "pii": ["Luca Romano"]}
+{"cat": "person", "text": "J'ai parlé avec Antoine Moreau hier", "pii": ["Antoine Moreau"]}
+{"cat": "person", "text": "Transfer to Henry Davies", "pii": ["Henry Davies"]}
+{"cat": "person", "text": "Bonifico a favore di Francesca Ricci", "pii": ["Francesca Ricci"]}
+{"cat": "person", "text": "Virement au bénéfice de Antoine Moreau", "pii": ["Antoine Moreau"]}
+{"cat": "person", "text": "I spoke with James Taylor yesterday", "pii": ["James Taylor"]}
+{"cat": "person", "text": "Il titolare del conto è Elena Marino", "pii": ["Elena Marino"]}
+{"cat": "person", "text": "Virement au bénéfice de Sophie Fournier", "pii": ["Sophie Fournier"]}
+{"cat": "person", "text": "The account holder is Oliver Davies", "pii": ["Oliver Davies"]}
+{"cat": "person", "text": "Il titolare del conto è Alessandro Ricci", "pii": ["Alessandro Ricci"]}
+{"cat": "person", "text": "Virement au bénéfice de Sophie Dubois", "pii": ["Sophie Dubois"]}
+{"cat": "person", "text": "I spoke with Grace Smith yesterday", "pii": ["Grace Smith"]}
+{"cat": "account", "text": "c/c n. 2287505476 filiale 123", "pii": ["2287505476"]}
+{"cat": "account", "text": "numéro de compte 4537467982 chez ma banque", "pii": ["4537467982"]}
+{"cat": "account", "text": "c/c n. 2352219908 filiale 123", "pii": ["2352219908"]}
+{"cat": "account", "text": "c/c n. 457185540247 filiale 123", "pii": ["457185540247"]}
+{"cat": "account", "text": "Il mio numero di conto è 6940228074", "pii": ["6940228074"]}
+{"cat": "account", "text": "Il mio numero di conto è 043773457113", "pii": ["043773457113"]}
+{"cat": "account", "text": "account number 76185172288 at my bank", "pii": ["76185172288"]}
+{"cat": "account", "text": "c/c n. 8851353331 filiale 123", "pii": ["8851353331"]}
+{"cat": "account", "text": "Il mio numero di conto è 7242456133", "pii": ["7242456133"]}
+{"cat": "account", "text": "numéro de compte 59128089388 chez ma banque", "pii": ["59128089388"]}
+{"cat": "account", "text": "numéro de compte 3547625316 chez ma banque", "pii": ["3547625316"]}
+{"cat": "account", "text": "c/c n. 0583157617 filiale 123", "pii": ["0583157617"]}
+{"cat": "account", "text": "c/c n. 16198220816 filiale 123", "pii": ["16198220816"]}
+{"cat": "account", "text": "Il mio numero di conto è 6403714054", "pii": ["6403714054"]}
+{"cat": "account", "text": "c/c n. 105833814742 filiale 123", "pii": ["105833814742"]}

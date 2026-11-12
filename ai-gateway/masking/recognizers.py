@@ -24,6 +24,8 @@ LABELS = (
     "MATRICOLA",
     "DOCUMENTO",
     "DATA_NASCITA",
+    "NIR",
+    "CONTO",
 )
 
 S_STRUCT, S_LABELLED, S_KNOWN, S_COUNTERPARTY, S_CAP, S_NER = (
@@ -103,6 +105,18 @@ class StructuredRecognizer(_Base):
         + r"(?:(?:\+|00)39[ .-]?)?(?:3\d{2}[ .-]?\d{3}[ .-]?\d{3,4}|0\d{1,3}[ .-]?\d{5,8})"
         + _POST
     )
+    # International numbers (+33, +221, +225, ...): the explicit prefix makes it unambiguous.
+    _PHONE_INTL = re.compile(
+        _PRE + r"(?:\+|00)(?!39)[1-9]\d{0,2}(?:[ .-]?\d){8,11}" + _POST
+    )
+    # French NIR (social security number): 15 digits, optional spaces, key = 97 - n13 % 97.
+    _NIR = re.compile(_PRE + r"[12](?:[ .]?\d){14}" + _POST)
+    # Bank account numbers introduced by a label (IT/FR/EN).
+    _ACCOUNT = re.compile(
+        r"(?i:\b(?:numero\s+di\s+conto|n\.?\s*conto|c/c|conto\s+corrente|numéro\s+de\s+compte|"
+        r"n°\s*de\s+compte|account\s+(?:number|no\.?|#)|acct\.?\s*(?:no\.?|#)?))"
+        r"[ \t:#.]*(?i:è|est|is|n\.?|nr\.?|n°)?[ \t:#.]*(\d{8,14})(?!\d)"
+    )
     _MATRICOLA = re.compile(
         r"(?<![A-Za-z])(?:n\.?[ \t]*)?(?:matricola(?:[ \t]+inps)?|matr\.?|badge|tessera|posizione[ \t]+inps|inps[ \t]+(?:n\.?|nr\.?|numero)|cod(?:ice)?\.?[ \t]+dipendente)(?![A-Za-z])[ \t]*(?:n\.?|nr\.?|numero)?[ \t]*[:;#]?[ \t]*([A-Za-z0-9][A-Za-z0-9\-/]{2,})",
         re.IGNORECASE,
@@ -135,6 +149,8 @@ class StructuredRecognizer(_Base):
                 "MATRICOLA",
                 "DOCUMENTO",
                 "DATA_NASCITA",
+                "NIR",
+                "CONTO",
             ],
             "ItStructured",
         )
@@ -166,6 +182,15 @@ class StructuredRecognizer(_Base):
         for m in self._PHONE.finditer(text):
             if len(re.sub(r"\D", "", m.group(0))) >= 9:
                 add("TELEFONO", m.start(), m.end())
+        for m in self._PHONE_INTL.finditer(text):
+            if 9 <= len(re.sub(r"\D", "", m.group(0))) <= 15:
+                add("TELEFONO", m.start(), m.end())
+        for m in self._NIR.finditer(text):
+            digits = re.sub(r"\D", "", m.group(0))
+            if len(digits) == 15 and 97 - int(digits[:13]) % 97 == int(digits[13:]):
+                add("NIR", m.start(), m.end())
+        for m in self._ACCOUNT.finditer(text):
+            add("CONTO", m.start(1), m.end(1))
         for rx, label in (
             (self._MATRICOLA, "MATRICOLA"),
             (self._DOC, "DOCUMENTO"),
@@ -282,6 +307,34 @@ class LabelledRecognizer(_Base):
                 )
             )
         return out
+
+
+class CuePersonRecognizer(_Base):
+    """Person names introduced by an unambiguous cue phrase (IT/FR/EN). The Italian NER model
+    misses many French/English names, so a cue such as "Transfer to" or "Virement au bénéfice
+    de" is treated as a labelled field."""
+
+    _CUE = (
+        r"transfer\s+to|payment\s+to|sent\s+to|spoke\s+with|account\s+holder\s+is|holder\s+is|"
+        r"virement\s+(?:au\s+bénéfice\s+de|à|a)|titulaire\s+du\s+compte\s+est|parlé\s+avec|"
+        r"a\s+favore\s+di|intestato\s+a|titolare\s+del\s+conto\s+è|parlato\s+con|"
+        r"pagamento\s+a|bonifico\s+a"
+    )
+    _WORD = r"[A-ZÀ-Ý][A-Za-zÀ-ÿ'’-]+"
+    _RX = re.compile(
+        rf"(?i:\b(?:{_CUE}))[ \t]+({_WORD}(?:[ \t]+(?:(?:de|da|di|van|von|le|la|del)[ \t]+)?{_WORD}){{1,2}})"
+    )
+
+    def __init__(self):
+        super().__init__(["PERSONA"], "CuePerson")
+
+    def analyze(self, text, entities=None, nlp_artifacts=None):
+        return [
+            RecognizerResult(
+                entity_type="PERSONA", start=m.start(1), end=m.end(1), score=S_LABELLED
+            )
+            for m in self._RX.finditer(text)
+        ]
 
 
 class CounterpartyRecognizer(_Base):

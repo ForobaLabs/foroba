@@ -16,6 +16,7 @@ from masking.recognizers import (
     LABELS,
     S_KNOWN,
     CounterpartyRecognizer,
+    CuePersonRecognizer,
     LabelledRecognizer,
     NerRecognizer,
     StructuredRecognizer,
@@ -45,7 +46,7 @@ def _key(label: str, original: str) -> tuple:
         )
     elif label == "PERSONA":
         return (label, tuple(sorted(re.sub(r"[.,]", " ", text).split())))
-    elif label in ("IBAN", "CARTA", "CF", "PIVA"):
+    elif label in ("IBAN", "CARTA", "CF", "PIVA", "NIR", "CONTO", "TELEFONO"):
         text = re.sub(r"[\s-]", "", text)
     return (label, text)
 
@@ -109,6 +110,7 @@ def get_analyzer() -> AnalyzerEngine:
     for rec in (
         StructuredRecognizer(),
         LabelledRecognizer(),
+        CuePersonRecognizer(),
         CounterpartyRecognizer(),
         NerRecognizer(),
     ):
