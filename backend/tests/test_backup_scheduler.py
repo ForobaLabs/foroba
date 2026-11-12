@@ -84,8 +84,14 @@ def test_happy_path_exports_and_uploads(monkeypatch):
         lambda data: uploaded.append(data) or "backups/suite-fake.bin",
     )
 
+    pruned_calls: list[int] = []
+    monkeypatch.setattr(
+        sched.offsite_backup, "prune_backups", lambda: pruned_calls.append(1) or []
+    )
+
     asyncio.run(sched._run_daily_backup_async())
 
+    assert pruned_calls == [1]
     assert captured_token_args["user_id"] == 2
     assert captured_token_args["is_admin"] is True
     assert uploaded == [b"encrypted-archive"]
@@ -111,3 +117,26 @@ def test_happy_path_logs_and_does_not_raise_on_export_failure(monkeypatch):
     monkeypatch.setattr(sched.backup_orchestrator, "export_suite", failing_export)
 
     asyncio.run(sched._run_daily_backup_async())  # must not raise
+
+
+def test_prune_failure_does_not_fail_the_backup(monkeypatch, caplog):
+    monkeypatch.setattr(sched.offsite_backup, "is_configured", lambda: True)
+    monkeypatch.setattr(sched, "get_conn", lambda: object())
+    admin = {"id": 2, "is_admin": 1, "tier": "free", "audience": "base"}
+    monkeypatch.setattr(sched, "list_all_users", lambda conn: [admin])
+    monkeypatch.setattr(sched.keys, "get_keypair", lambda settings: ("p", "q", "k"))
+    monkeypatch.setattr(sched, "create_token", lambda *a, **k: "tok")
+    monkeypatch.setattr(sched, "issue_stepup_cookies", lambda uid: {})
+
+    async def fake_export(passphrase, cookie, stepup=None):
+        return b"x"
+
+    monkeypatch.setattr(sched.backup_orchestrator, "export_suite", fake_export)
+    monkeypatch.setattr(sched.offsite_backup, "upload_backup", lambda d: "backups/k.bin")
+
+    def boom():
+        raise RuntimeError("r2 down")
+
+    monkeypatch.setattr(sched.offsite_backup, "prune_backups", boom)
+    asyncio.run(sched._run_daily_backup_async())
+    assert "retention prune failed" in caplog.text

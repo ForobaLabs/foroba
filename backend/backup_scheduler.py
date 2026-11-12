@@ -59,6 +59,12 @@ async def _run_daily_backup_async() -> None:
         )
         key = offsite_backup.upload_backup(archive)
         logger.info("Offsite backup scheduler: uploaded %s", key)
+        try:
+            pruned = offsite_backup.prune_backups()
+            if pruned:
+                logger.info("Offsite backup scheduler: pruned %d old archive(s)", len(pruned))
+        except Exception:
+            logger.exception("Offsite backup scheduler: retention prune failed")
     except Exception:
         logger.exception("Offsite backup scheduler: run failed")
 

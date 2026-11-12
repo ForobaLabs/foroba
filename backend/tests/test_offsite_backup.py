@@ -84,3 +84,53 @@ def test_upload_backup_propagates_client_errors(monkeypatch):
 
     with pytest.raises(RuntimeError, match="R2 unreachable"):
         ob.upload_backup(b"data")
+
+
+def _obj(key: str, days_old: int):
+    from datetime import UTC, datetime, timedelta
+
+    return {"Key": key, "LastModified": datetime.now(UTC) - timedelta(days=days_old)}
+
+
+def test_prune_deletes_only_objects_older_than_retention(monkeypatch):
+    from unittest.mock import MagicMock
+
+    _set_config(monkeypatch)
+    client = MagicMock()
+    objs = [_obj(f"backups/suite-{d}.bin", d) for d in (0, 1, 2, 3, 4, 5, 6, 7, 40, 90)]
+    client.list_objects_v2.return_value = {"Contents": objs}
+    monkeypatch.setattr(ob, "_client", lambda: client)
+
+    deleted = ob.prune_backups(retention_days=30, min_keep=7)
+
+    assert sorted(deleted) == ["backups/suite-40.bin", "backups/suite-90.bin"]
+    sent = client.delete_objects.call_args.kwargs["Delete"]["Objects"]
+    assert sorted(o["Key"] for o in sent) == sorted(deleted)
+
+
+def test_prune_never_drops_below_min_keep(monkeypatch):
+    from unittest.mock import MagicMock
+
+    _set_config(monkeypatch)
+    client = MagicMock()
+    # Backups stopped for months: everything is "old", but the newest 7 must survive.
+    objs = [_obj(f"backups/suite-{d}.bin", d) for d in range(100, 110)]
+    client.list_objects_v2.return_value = {"Contents": objs}
+    monkeypatch.setattr(ob, "_client", lambda: client)
+
+    deleted = ob.prune_backups(retention_days=30, min_keep=7)
+
+    assert len(deleted) == 3
+    assert "backups/suite-100.bin" not in deleted
+
+
+def test_prune_noop_when_nothing_to_delete(monkeypatch):
+    from unittest.mock import MagicMock
+
+    _set_config(monkeypatch)
+    client = MagicMock()
+    client.list_objects_v2.return_value = {"Contents": [_obj("backups/suite-1.bin", 1)]}
+    monkeypatch.setattr(ob, "_client", lambda: client)
+
+    assert ob.prune_backups() == []
+    client.delete_objects.assert_not_called()

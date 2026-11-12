@@ -10,7 +10,7 @@ empty `.env` means the feature is simply off, not an error.
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 import boto3
 
@@ -43,3 +43,29 @@ def upload_backup(data: bytes) -> str:
     key = f"backups/suite-{datetime.now(UTC).strftime('%Y%m%dT%H%M%SZ')}.bin"
     _client().put_object(Bucket=settings.r2_bucket, Key=key, Body=data)
     return key
+
+
+def prune_backups(retention_days: int = 30, min_keep: int = 7) -> list[str]:
+    """Delete archives older than `retention_days`, always keeping the newest `min_keep`
+    (so a long outage of the backup job can never empty the bucket). Returns deleted keys."""
+    client = _client()
+    items: list[dict] = []
+    token: str | None = None
+    while True:
+        kwargs = {"Bucket": settings.r2_bucket, "Prefix": "backups/"}
+        if token:
+            kwargs["ContinuationToken"] = token
+        page = client.list_objects_v2(**kwargs)
+        items.extend(page.get("Contents", []))
+        token = page.get("NextContinuationToken")
+        if not token:
+            break
+    items.sort(key=lambda o: o["LastModified"], reverse=True)
+    cutoff = datetime.now(UTC) - timedelta(days=retention_days)
+    stale = [o["Key"] for o in items[min_keep:] if o["LastModified"] < cutoff]
+    for i in range(0, len(stale), 1000):
+        client.delete_objects(
+            Bucket=settings.r2_bucket,
+            Delete={"Objects": [{"Key": k} for k in stale[i : i + 1000]]},
+        )
+    return stale
