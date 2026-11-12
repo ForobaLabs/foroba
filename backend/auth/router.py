@@ -246,6 +246,12 @@ def update_processing(
     conn.commit()
 
 
+# Credentials and session internals are never part of a portability bundle.
+_EXPORT_SECRET_FIELDS = frozenset(
+    {"password_hash", "totp_secret", "totp_secret_pending", "session_version"}
+)
+
+
 @router.get("/account/export")
 async def export_account(
     user: dict = Depends(get_current_user),
@@ -253,8 +259,7 @@ async def export_account(
     suite_session: str | None = Cookie(default=None),
 ) -> dict:
     """GDPR art.20 — machine-readable portability bundle: Foroba + Pazuru + Tsumi data."""
-    profile = dict(user)
-    profile.pop("password_hash", None)
+    profile = {k: v for k, v in user.items() if k not in _EXPORT_SECRET_FIELDS}
     consents = repo.get_consents(conn, user["id"])
 
     stepup = issue_stepup_cookies(user["id"])

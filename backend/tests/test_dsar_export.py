@@ -70,3 +70,12 @@ def test_marketing_objection_flag(client):
     assert r.status_code == 204, r.text
     me = client.get("/auth/me").json()
     assert me["marketing_objection"] is True
+
+
+def test_export_profile_never_contains_credentials_or_secrets(client):
+    client.post("/auth/register", json=_REG)
+    profile = client.get("/auth/account/export").json()["foroba"]["profile"]
+    leaked = {"password_hash", "totp_secret", "totp_secret_pending", "session_version"} & set(
+        profile
+    )
+    assert leaked == set()

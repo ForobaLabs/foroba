@@ -499,6 +499,15 @@ def delete_user(conn: sqlite3.Connection, user_id: int) -> None:
     conn.execute("DELETE FROM email_otp_codes WHERE user_id = ?", (user_id,))
     conn.execute("DELETE FROM recovery_codes WHERE user_id = ?", (user_id,))
     conn.execute("DELETE FROM share_preferences WHERE user_id = ?", (user_id,))
+    conn.execute("DELETE FROM refresh_tokens WHERE user_id = ?", (user_id,))
+    conn.execute("DELETE FROM device_push_tokens WHERE user_id = ?", (user_id,))
+    conn.execute("DELETE FROM dsar_requests WHERE user_id = ?", (user_id,))
+    conn.execute("DELETE FROM invite_codes WHERE created_by_user_id = ?", (user_id,))
+    # Security log rows stay for abuse analytics but lose every identifier (user, IP, detail).
+    conn.execute(
+        "UPDATE security_events SET user_id = NULL, ip = NULL, detail = NULL WHERE user_id = ?",
+        (user_id,),
+    )
     conn.execute("DELETE FROM users WHERE id = ?", (user_id,))
     conn.commit()
 
