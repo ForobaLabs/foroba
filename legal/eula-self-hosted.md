@@ -12,7 +12,7 @@
 
 This End-User Licence Agreement ("EULA") applies to any person or organisation ("Instance Operator") who runs their own self-hosted instance of Personal Finance HUB software ("the Software").
 
-This EULA governs the relationship between the **Instance Operator** and **bambac961 / Personal Finance HUB** ("the Developer"), not the relationship between the Instance Operator and the users of their instance.
+This EULA governs the relationship between the **Instance Operator** and **Foroba Labs** ("the Developer"), not the relationship between the Instance Operator and the users of their instance.
 
 If you are using a hosted instance operated by someone else, the Terms of Service and Privacy Policy of that operator apply to you instead.
 

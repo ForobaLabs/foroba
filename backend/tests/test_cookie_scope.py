@@ -21,7 +21,7 @@ from twofa.router import router as twofa_router
 
 DOMAIN = ".forobalabs.com"
 NEW_HOST = "https://app.forobalabs.com"
-OLD_HOST = "https://foroba-app.duckdns.org"
+OLD_HOST = "https://legacy.example.org"
 
 
 @pytest.mark.parametrize(
@@ -31,7 +31,7 @@ OLD_HOST = "https://foroba-app.duckdns.org"
         ("APP.ForobaLabs.com", DOMAIN),
         ("app.forobalabs.com:443", DOMAIN),
         ("forobalabs.com", DOMAIN),
-        ("foroba-app.duckdns.org", None),
+        ("legacy.example.org", None),
         ("evilforobalabs.com", None),
         ("forobalabs.com.attacker.net", None),
         ("localhost", None),

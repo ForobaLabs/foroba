@@ -157,10 +157,10 @@ def test_post_waitlist_rate_limited(client):
 def test_confirm_link_ignores_host_header(client, monkeypatch):
     """Plan AU M-4: the e-mailed link comes from API_PUBLIC_BASE_URL, never the Host header."""
     c, _, sent = client
-    monkeypatch.setattr(settings, "api_public_base_url", "https://foroba-app.duckdns.org/")
+    monkeypatch.setattr(settings, "api_public_base_url", "https://legacy.example.org/")
     c.post("/api/public/v1/waitlist", json=_body(), headers={"Host": "evil.example"})
     assert "evil.example" not in sent[0][2]
-    assert "https://foroba-app.duckdns.org/api/public/v1/waitlist/confirm?token=" in sent[0][2]
+    assert "https://legacy.example.org/api/public/v1/waitlist/confirm?token=" in sent[0][2]
 
 
 def test_no_email_when_base_url_unset(client, monkeypatch):

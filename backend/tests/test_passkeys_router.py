@@ -101,7 +101,7 @@ def _give_passkey(c, raw_id: str, rp_id: str | None) -> None:
 def test_me_passkey_reenrol_needed(full_client):
     c = full_client
     assert c.get("/auth/me").json()["passkey_reenrol_needed"] is False  # no credentials
-    _give_passkey(c, "b2xk", "foroba-app.duckdns.org")
+    _give_passkey(c, "b2xk", "legacy.example.org")
     assert c.get("/auth/me").json()["passkey_reenrol_needed"] is True  # stale only
     _give_passkey(c, "bmV3", "forobalabs.com")
     assert c.get("/auth/me").json()["passkey_reenrol_needed"] is False  # one current
@@ -109,7 +109,7 @@ def test_me_passkey_reenrol_needed(full_client):
 
 def test_stepup_methods_hide_passkey_when_only_stale(full_client):
     c = full_client
-    _give_passkey(c, "b2xk", "foroba-app.duckdns.org")
+    _give_passkey(c, "b2xk", "legacy.example.org")
     assert c.get("/auth/2fa/methods").json()["webauthn_enabled"] is False
     _give_passkey(c, "bmV3", "forobalabs.com")
     assert c.get("/auth/2fa/methods").json()["webauthn_enabled"] is True
@@ -117,7 +117,7 @@ def test_stepup_methods_hide_passkey_when_only_stale(full_client):
 
 def test_login_options_refused_when_only_stale(full_client):
     c = full_client
-    _give_passkey(c, "b2xk", "foroba-app.duckdns.org")
+    _give_passkey(c, "b2xk", "legacy.example.org")
     resp = c.post("/auth/login/webauthn/options-by-email", json={"email": "pk@example.com"})
     assert resp.status_code == 400
     _give_passkey(c, "bmV3", "forobalabs.com")

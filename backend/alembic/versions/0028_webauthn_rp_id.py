@@ -1,7 +1,7 @@
 """webauthn_credentials.rp_id — detect passkeys registered under a previous RP ID.
 
 A WebAuthn credential only works for the RP ID it was created under. When the RP ID moves
-(foroba-app.duckdns.org -> forobalabs.com) old credentials can never verify, so the app must
+(legacy.example.org -> forobalabs.com) old credentials can never verify, so the app must
 know which ones are stale. Existing rows are backfilled with the RP ID this deploy runs with
 (WEBAUTHN_RP_ID, default "localhost"). Mirrors db.init_schema.
 

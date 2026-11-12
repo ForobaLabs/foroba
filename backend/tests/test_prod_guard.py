@@ -7,7 +7,7 @@ from prod_guard import check_production_config
 GOOD = {
     "ENVIRONMENT": "production",
     "INTERNAL_API_TOKEN": "x" * 32,
-    "ALLOWED_ORIGINS": "https://foroba-app.duckdns.org",
+    "ALLOWED_ORIGINS": "https://legacy.example.org",
 }
 
 
@@ -31,8 +31,8 @@ def test_native_and_loopback_origins_are_allowed():
         {"INTERNAL_API_TOKEN": ""},
         {"ALLOWED_ORIGINS": ""},
         {"ALLOWED_ORIGINS": "*"},
-        {"ALLOWED_ORIGINS": "http://foroba-app.duckdns.org"},
-        {"ALLOWED_ORIGINS": "https://a.b,http://51.254.141.126:8080"},
+        {"ALLOWED_ORIGINS": "http://legacy.example.org"},
+        {"ALLOWED_ORIGINS": "https://a.b,http://203.0.113.10:8080"},
         {"ALLOWED_ORIGINS": "http://localhost.evil.example"},
     ],
 )

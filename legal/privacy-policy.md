@@ -12,7 +12,7 @@
 
 **Hosted instance (operator-run):** The controller of your personal data is the organisation or individual operating this instance of Personal Finance HUB. Contact: [USER ACTION: insert controller name, address, and contact email before launch].
 
-**Self-hosted instance:** If you are running your own instance of Personal Finance HUB, the controller is you (the person running the server). This software project (bambac961 / Personal Finance HUB) is the software supplier — not your data controller in that scenario.
+**Self-hosted instance:** If you are running your own instance of Personal Finance HUB, the controller is you (the person running the server). This software project (Foroba Labs) is the software supplier — not your data controller in that scenario.
 
 ---
 

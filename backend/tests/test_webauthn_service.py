@@ -52,8 +52,8 @@ def test_store_and_consume_challenge_round_trip():
 
 
 def test_webauthn_origins_single(monkeypatch):
-    monkeypatch.setattr(settings, "webauthn_origin", "https://foroba-app.duckdns.org")
-    assert settings.webauthn_origins == ["https://foroba-app.duckdns.org"]
+    monkeypatch.setattr(settings, "webauthn_origin", "https://legacy.example.org")
+    assert settings.webauthn_origins == ["https://legacy.example.org"]
 
 
 def test_webauthn_origins_list(monkeypatch):
@@ -167,7 +167,7 @@ def test_init_schema_has_rp_id():
 
 
 def test_init_schema_adds_and_backfills_rp_id_on_legacy_table(monkeypatch):
-    monkeypatch.setenv("WEBAUTHN_RP_ID", "foroba-app.duckdns.org")
+    monkeypatch.setenv("WEBAUTHN_RP_ID", "legacy.example.org")
     conn = sqlite3.connect(":memory:")
     conn.row_factory = sqlite3.Row
     conn.executescript(
@@ -180,7 +180,7 @@ def test_init_schema_adds_and_backfills_rp_id_on_legacy_table(monkeypatch):
     )
     init_schema(conn)
     row = conn.execute("SELECT rp_id FROM webauthn_credentials").fetchone()
-    assert row["rp_id"] == "foroba-app.duckdns.org"
+    assert row["rp_id"] == "legacy.example.org"
 
 
 def test_registration_stores_current_rp_id(monkeypatch):
@@ -200,7 +200,7 @@ def test_registration_stores_current_rp_id(monkeypatch):
 def test_auth_options_exclude_stale_credentials(monkeypatch):
     monkeypatch.setattr(settings, "webauthn_rp_id", "forobalabs.com")
     conn, user_id = _conn_with_user()
-    _add_cred(conn, user_id, b"old", "foroba-app.duckdns.org")
+    _add_cred(conn, user_id, b"old", "legacy.example.org")
     opts = json.loads(passkey_service.authentication_options_for_user(conn, user_id))
     assert opts["allowCredentials"] == []
     _add_cred(conn, user_id, b"new", "forobalabs.com")
@@ -212,7 +212,7 @@ def test_reenrol_needed_states(monkeypatch):
     monkeypatch.setattr(settings, "webauthn_rp_id", "forobalabs.com")
     conn, user_id = _conn_with_user()
     assert passkey_service.reenrol_needed(conn, user_id) is False  # no credentials
-    _add_cred(conn, user_id, b"old", "foroba-app.duckdns.org")
+    _add_cred(conn, user_id, b"old", "legacy.example.org")
     assert passkey_service.reenrol_needed(conn, user_id) is True  # stale only
     _add_cred(conn, user_id, b"null", None)
     assert passkey_service.reenrol_needed(conn, user_id) is True  # unknown RP counts as stale

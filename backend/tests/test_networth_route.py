@@ -85,7 +85,7 @@ def test_networth_route_forwards_cookie(monkeypatch):
         # The route mints its own stepup_pazuru/stepup_tsumi tokens server-side
         # (see main.py::networth_summary docstring) rather than forwarding the
         # client-supplied cookies verbatim -- those never actually reach
-        # foroba-app.duckdns.org in production (DuckDNS PSL treats each
+        # legacy.example.org in production (DuckDNS PSL treats each
         # subdomain independently), and trusting a client-supplied stepup
         # token would defeat the point of step-up verification. So the client
         # cookies here (sp-99/st-99) must be ignored, and instead a freshly

@@ -75,7 +75,7 @@ async def generate(
     suite_session: str | None = Cookie(default=None),
 ) -> ReportOut:
     # DuckDNS PSL: stepup_pazuru/stepup_tsumi cookies are subdomain-scoped and
-    # never forwarded to foroba-app.duckdns.org — mint server-side instead.
+    # never forwarded to legacy.example.org — mint server-side instead.
     stepup = issue_stepup_cookies(user["id"])
     try:
         row = mrs.start_new_report(conn, user, body.year_month, trigger="manual")

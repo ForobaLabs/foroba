@@ -331,7 +331,7 @@ async def networth_summary(
 
     Step-up tokens are minted server-side (same pattern as /auth/account/export)
     because stepup_pazuru/stepup_tsumi cookies are set on their respective subdomains
-    and are never forwarded to foroba-app.duckdns.org by the browser (DuckDNS PSL
+    and are never forwarded to legacy.example.org by the browser (DuckDNS PSL
     treats each subdomain independently)."""
     stepup = issue_stepup_cookies(user["id"])
     return await networth_service.fetch_networth(
